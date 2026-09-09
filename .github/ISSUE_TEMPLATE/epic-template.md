@@ -2,7 +2,7 @@
 name: Epic Template
 about: Use this template to create a new project Epic and define its objective and
   scope.
-title: 'Epic: [Name]'
+title: "[Epic]: "
 labels: ''
 assignees: ''
 
