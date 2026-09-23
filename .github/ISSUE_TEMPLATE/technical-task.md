@@ -1,11 +1,11 @@
 ---
 name: Technical Task
-about: Use this template to define a technical task, its scope, and the expected technical
+about:
+  Use this template to define a technical task, its scope, and the expected technical
   outcome.
-title: "[TECH]: "
+title: '[TECH]: '
 labels: ''
 assignees: ''
-
 ---
 
 ## Objective

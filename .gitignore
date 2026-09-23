@@ -6,6 +6,10 @@ node_modules/
 .env.local
 .env.*.local
 
+# build output
+dist/
+dist-ssr/
+
 # logs
 npm-debug.log*
 *.log

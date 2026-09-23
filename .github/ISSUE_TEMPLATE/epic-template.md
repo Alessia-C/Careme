@@ -1,11 +1,11 @@
 ---
 name: Epic Template
-about: Use this template to create a new project Epic and define its objective and
+about:
+  Use this template to create a new project Epic and define its objective and
   scope.
-title: "[Epic]: "
+title: '[Epic]: '
 labels: ''
 assignees: ''
-
 ---
 
 ## Objective

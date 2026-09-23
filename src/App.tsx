@@ -3,7 +3,7 @@ function App() {
     <div>
       <h1>Careme</h1>
     </div>
-  )
+  );
 }
 
 export default App;

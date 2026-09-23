@@ -1,11 +1,11 @@
 ---
 name: User Story
-about: Use this template to define a user requirement, its expected behavior, and
+about:
+  Use this template to define a user requirement, its expected behavior, and
   acceptance criteria.
-title: "[US]: "
+title: '[US]: '
 labels: ''
 assignees: ''
-
 ---
 
 ## User Story
