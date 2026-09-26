@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const supabase = createClient(supabaseUrl, supabaseKey);
     // Query minima solo per verificare che la connessione funzioni
     const { error } = await supabase
-      .from('pg_stat_activity' as never)
+      .from('profiles' as never)
       .select('*')
       .limit(1);
 
