@@ -63,6 +63,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
+    "minimist": "^1.2.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   }
