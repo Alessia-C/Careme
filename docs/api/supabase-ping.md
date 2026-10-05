@@ -64,4 +64,4 @@ curl http://localhost:3000/api/supabase-ping
 
 - Runs `select * from profiles limit 1`. The returned rows are thrown away; only success or failure matters.
 - Uses the **service role key**, which bypasses RLS. A `200` therefore proves connectivity and that the schema exists, but says nothing about RLS policies.
-- Requires the env vars described in the [README](../../README.md#environment-variables). Locally, run it with `vercel dev` after `supabase start`.
+- Requires the env vars described in the [README](../../README.md#environment-variables). Locally, run it with `vercel dev`. The migrations must already be applied to the project (`supabase db push`).
