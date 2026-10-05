@@ -6,3 +6,4 @@ test-results/
 node_modules/
 package-lock.json
 *.min.js
+e2e/__screenshots__/
