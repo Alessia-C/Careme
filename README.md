@@ -23,14 +23,15 @@ A web app for tracking personal skincare and makeup products: what you own, whic
 
 ### Tech stack
 
-| Layer    | Technology                                                                        |
-| -------- | --------------------------------------------------------------------------------- |
-| Frontend | React 19, TypeScript 6, Vite 6                                                    |
-| Backend  | Vercel serverless functions (Node, `@vercel/node`) in [`api/`](api/)              |
-| Database | Supabase: Postgres 17, Auth, Row Level Security; client `@supabase/supabase-js` 2 |
-| Testing  | Vitest 4 + Testing Library (unit), Playwright 1.63 (E2E and visual regression)    |
-| Tooling  | ESLint 10, Prettier 3, Husky + lint-staged, GitHub Actions, Dependabot            |
-| Hosting  | Vercel (preview deployment per PR, production from `main`)                        |
+| Layer      | Technology                                                                        |
+| ---------- | --------------------------------------------------------------------------------- |
+| Frontend   | React 19, TypeScript 6, Vite 6                                                    |
+| Backend    | Vercel serverless functions (Node, `@vercel/node`) in [`api/`](api/)              |
+| Database   | Supabase: Postgres 17, Auth, Row Level Security; client `@supabase/supabase-js` 2 |
+| Monitoring | Sentry (`@sentry/react` in the frontend, `@sentry/node` in `api/`)                |
+| Testing    | Vitest 4 + Testing Library (unit), Playwright 1.63 (E2E and visual regression)    |
+| Tooling    | ESLint 10, Prettier 3, Husky + lint-staged, GitHub Actions, Dependabot            |
+| Hosting    | Vercel (preview deployment per PR, production from `main`)                        |
 
 ## Requirements
 
@@ -100,14 +101,16 @@ vercel dev              # then open http://localhost:3000/api/supabase-ping
 
 All variables are listed in [`.env.example`](.env.example). Put local values in `.env.local`, which is git-ignored. Never commit real keys.
 
-| Variable                    | Used by          | Required                      | Description                                                                                                           |
-| --------------------------- | ---------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_URL`              | `api/` functions | Yes, for `/api/supabase-ping` | Supabase project URL: `https://<project-ref>.supabase.co`.                                                            |
-| `SUPABASE_SERVICE_ROLE_KEY` | `api/` functions | Yes, for `/api/supabase-ping` | Service role key. **Bypasses RLS: server-side only, never expose it to the browser** (never prefix it with `VITE_`).  |
-| `VITE_SUPABASE_URL`         | Frontend (Vite)  | Not yet                       | Supabase API URL for the browser client. Already provided in CI.                                                      |
-| `VITE_SUPABASE_ANON_KEY`    | Frontend (Vite)  | Not yet                       | Public anon key for the browser client. Already provided in CI.                                                       |
-| `E2E_BASE_URL`              | Playwright       | No                            | Runs E2E tests against an already running URL (for example a Vercel preview) instead of building and serving locally. |
-| `CI`                        | Playwright       | No                            | Set automatically on GitHub Actions. Turns on retries, the GitHub reporter and the `@visual` tests.                   |
+| Variable                    | Used by          | Required                      | Description                                                                                                                                                                                           |
+| --------------------------- | ---------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`              | `api/` functions | Yes, for `/api/supabase-ping` | Supabase project URL: `https://<project-ref>.supabase.co`.                                                                                                                                            |
+| `SUPABASE_SERVICE_ROLE_KEY` | `api/` functions | Yes, for `/api/supabase-ping` | Service role key. **Bypasses RLS: server-side only, never expose it to the browser** (never prefix it with `VITE_`).                                                                                  |
+| `VITE_SUPABASE_URL`         | Frontend (Vite)  | Not yet                       | Supabase API URL for the browser client. Already provided in CI.                                                                                                                                      |
+| `VITE_SUPABASE_ANON_KEY`    | Frontend (Vite)  | Not yet                       | Public anon key for the browser client. Already provided in CI.                                                                                                                                       |
+| `SENTRY_DSN`                | `api/` functions | No                            | Sentry DSN for the serverless functions. Sentry is disabled when empty. Same value as `VITE_SENTRY_DSN`, from Sentry → **Settings → Projects → careme → Client Keys (DSN)**. The DSN is not a secret. |
+| `VITE_SENTRY_DSN`           | Frontend (Vite)  | No                            | Sentry DSN for the browser. Sentry is disabled when empty. Same value as `SENTRY_DSN`.                                                                                                                |
+| `E2E_BASE_URL`              | Playwright       | No                            | Runs E2E tests against an already running URL (for example a Vercel preview) instead of building and serving locally.                                                                                 |
+| `CI`                        | Playwright       | No                            | Set automatically on GitHub Actions. Turns on retries, the GitHub reporter and the `@visual` tests.                                                                                                   |
 
 Only variables prefixed with `VITE_` are exposed to frontend code (`import.meta.env.VITE_*`). Everything else is only available to the serverless functions (`process.env.*`).
 
@@ -115,6 +118,8 @@ Only variables prefixed with `VITE_` are exposed to frontend code (`import.meta.
 
 - **Vercel (preview/production):** Project → Settings → Environment Variables. `vercel env pull .env.local` downloads them into your local file.
 - **GitHub Actions:** repository secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, used by the E2E workflow.
+
+> **`vercel dev` and Sentry:** `vercel dev` loads the **Development** environment variables of the linked Vercel project, not the root `.env.local`. To capture errors locally, `SENTRY_DSN` must also exist on Vercel for the Development environment. Variables marked **Sensitive** on Vercel are not available in Development.
 
 ## Configuration
 
@@ -229,7 +234,10 @@ Dependabot opens weekly dependency update PRs.
 
 ```
 api/                      Vercel serverless functions (one file = one endpoint)
+  _lib/
+    sentry.ts             Sentry init + withSentry() handler wrapper
   health.ts               GET /api/health
+  sentry-test.ts          GET /api/sentry-test
   supabase-ping.ts        GET /api/supabase-ping
 docs/api/                 API documentation: index, template, one file per endpoint
 e2e/                      Playwright tests
@@ -240,6 +248,8 @@ src/                      React app
   App.tsx                 Root component
   App.test.tsx            Unit test for App
   setupTests.ts           Vitest setup (jest-dom matchers)
+  lib/
+    sentry.ts             Sentry init + /?sentry-test=1 test error
   types/
     database.types.ts     Generated Supabase types (empty until you run `supabase gen types`)
 supabase/
@@ -263,12 +273,13 @@ Each endpoint in `api/` is documented in [`docs/api/`](docs/api/), and the [API 
 
 ## Troubleshooting
 
-| Problem                                                            | Fix                                                                                                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run lint` fails with a syntax or engine error                 | Your Node version is too old. Switch to Node 22 (`nvm use`).                                                                               |
-| `/api/...` returns 404                                             | You are on `npm run dev`. Use `vercel dev` instead.                                                                                        |
-| `/api/supabase-ping` → `Missing Supabase environment variables`    | `.env.local` is missing `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`, or `vercel dev` was started before you created the file. Restart it. |
-| `/api/supabase-ping` → `relation "public.profiles" does not exist` | Migrations haven't been applied to the project. Run `supabase db push`.                                                                    |
-| `supabase link` / `db push` fails with an authentication error     | Run `supabase login` again and use the database password from **Project Settings → Database**.                                             |
-| E2E: `Executable doesn't exist`                                    | Run `npx playwright install chromium firefox webkit`.                                                                                      |
-| E2E: port 4173 already in use                                      | Stop the running `npm run preview`, or keep it running: Playwright reuses it locally.                                                      |
+| Problem                                                            | Fix                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run lint` fails with a syntax or engine error                 | Your Node version is too old. Switch to Node 22 (`nvm use`).                                                                                                                                                                                                       |
+| `/api/...` returns 404                                             | You are on `npm run dev`. Use `vercel dev` instead.                                                                                                                                                                                                                |
+| `/api/supabase-ping` → `Missing Supabase environment variables`    | `.env.local` is missing `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`, or `vercel dev` was started before you created the file. Restart it.                                                                                                                         |
+| `/api/supabase-ping` → `relation "public.profiles" does not exist` | Migrations haven't been applied to the project. Run `supabase db push`.                                                                                                                                                                                            |
+| `supabase link` / `db push` fails with an authentication error     | Run `supabase login` again and use the database password from **Project Settings → Database**.                                                                                                                                                                     |
+| `npm run lint` / `npm test` hang on macOS                          | The project is in an iCloud-synced folder (Desktop/Documents) and some `node_modules` files have been evicted. Move the project outside iCloud (e.g. `~/dev`), delete `node_modules` and run `npm ci`. Also check you are on Node 22.13+ (see [`.nvmrc`](.nvmrc)). |
+| E2E: `Executable doesn't exist`                                    | Run `npx playwright install chromium firefox webkit`.                                                                                                                                                                                                              |
+| E2E: port 4173 already in use                                      | Stop the running `npm run preview`, or keep it running: Playwright reuses it locally.                                                                                                                                                                              |

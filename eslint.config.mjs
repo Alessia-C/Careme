@@ -7,7 +7,17 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default defineConfig([
-  { ignores: ['dist', 'node_modules', 'coverage'] },
+  {
+    ignores: [
+      'dist',
+      'node_modules',
+      'coverage',
+      '.vercel',
+      'playwright-report',
+      'test-results',
+      'blob-report',
+    ],
+  },
   {
     files: ['**/*.{js,mjs,cjs}'],
     plugins: { js },

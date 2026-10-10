@@ -33,3 +33,5 @@ coverage
 /playwright/.cache/
 /playwright/.auth/
 playwright-report/
+.vercel
+.env*

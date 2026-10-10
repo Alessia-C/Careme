@@ -7,10 +7,11 @@ The backend is a set of Vercel serverless functions in [`api/`](../../api/). Eac
 
 ## Endpoints
 
-| Method | Path                                     | Auth | Description                               |
-| ------ | ---------------------------------------- | ---- | ----------------------------------------- |
-| `GET`  | [`/api/health`](health.md)               | None | Liveness check for the serverless runtime |
-| `GET`  | [`/api/supabase-ping`](supabase-ping.md) | None | Checks the connection to Supabase         |
+| Method | Path                                     | Auth | Description                                              |
+| ------ | ---------------------------------------- | ---- | -------------------------------------------------------- |
+| `GET`  | [`/api/health`](health.md)               | None | Liveness check for the serverless runtime                |
+| `GET`  | [`/api/supabase-ping`](supabase-ping.md) | None | Checks the connection to Supabase                        |
+| `GET`  | [`/api/sentry-test`](sentry-test.md)     | None | Throws a deliberate error to verify Sentry error capture |
 
 ## Conventions
 
