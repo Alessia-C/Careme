@@ -46,6 +46,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
+    "@types/express": "^5.0.6",
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -70,6 +71,7 @@
     "@sentry/node": "^11.6.0",
     "@sentry/react": "^10.76.1",
     "@supabase/supabase-js": "^2.117.2",
+    "express": "^5.3.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   }
