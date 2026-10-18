@@ -10,7 +10,11 @@ import {
   createUserClient,
   isRateLimitError,
 } from '../_lib/supabase.js';
-import { normalizeEmail, validateEmail } from '../../shared/validation.js';
+import {
+  isRole,
+  normalizeEmail,
+  validateEmail,
+} from '../../shared/validation.js';
 
 // Supabase reports these only after the credentials were verified, so a
 // distinct message does not reveal which emails are registered.
@@ -65,6 +69,20 @@ async function handleLogin(
     return res.status(403).json({ message: 'Account blocked' });
   }
 
+  // The role is only a hint for the UI: authorization is enforced by RLS.
+  const { data: profile, error: roleError } = await userClient
+    .from('profiles' as never)
+    .select('role')
+    .eq('id', data.user.id)
+    .single();
+  if (roleError) {
+    throw roleError;
+  }
+  const role = (profile as { role?: unknown } | null)?.role;
+  if (!isRole(role)) {
+    throw new Error('Unexpected profile role');
+  }
+
   return res.status(200).json({
     message: 'Login successful',
     session: {
@@ -72,7 +90,7 @@ async function handleLogin(
       refresh_token: data.session.refresh_token,
       expires_at: data.session.expires_at,
     },
-    user: { id: data.user.id, email: data.user.email },
+    user: { id: data.user.id, email: data.user.email, role },
   });
 }
 

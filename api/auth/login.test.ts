@@ -4,11 +4,15 @@ import handler from './login.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
-const { signInWithPassword, rpc, createClient } = vi.hoisted(() => ({
-  signInWithPassword: vi.fn(),
-  rpc: vi.fn(),
-  createClient: vi.fn(),
-}));
+const { signInWithPassword, rpc, single, from, createClient } = vi.hoisted(
+  () => ({
+    signInWithPassword: vi.fn(),
+    rpc: vi.fn(),
+    single: vi.fn(),
+    from: vi.fn(),
+    createClient: vi.fn(),
+  }),
+);
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
 
@@ -37,9 +41,15 @@ async function callHandler(method: string, body: unknown) {
 beforeEach(() => {
   vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co');
   vi.stubEnv('SUPABASE_ANON_KEY', 'anon-key');
-  createClient.mockReturnValue({ auth: { signInWithPassword }, rpc });
+  // from('profiles').select('role').eq('id', ...).single() chain.
+  const query = { select: vi.fn(), eq: vi.fn(), single };
+  query.select.mockReturnValue(query);
+  query.eq.mockReturnValue(query);
+  from.mockReturnValue(query);
+  createClient.mockReturnValue({ auth: { signInWithPassword }, rpc, from });
   signInWithPassword.mockResolvedValue(signedIn);
   rpc.mockResolvedValue({ data: true, error: null });
+  single.mockResolvedValue({ data: { role: 'user' }, error: null });
 });
 
 afterEach(() => {
@@ -96,8 +106,29 @@ describe('POST /api/auth/login - successful login', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Login successful',
       session,
-      user: { id: 'user-1', email: 'test@example.com' },
+      user: { id: 'user-1', email: 'test@example.com', role: 'user' },
     });
+  });
+
+  it('should return the admin role for an admin profile', async () => {
+    single.mockResolvedValue({ data: { role: 'admin' }, error: null });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: expect.objectContaining({ role: 'admin' }),
+      }),
+    );
+  });
+
+  it('should read only the role of the logged-in user', async () => {
+    await callHandler('POST', validBody);
+
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(from().select).toHaveBeenCalledWith('role');
+    expect(from().eq).toHaveBeenCalledWith('id', 'user-1');
   });
 
   it('should normalize the email before calling Supabase', async () => {
@@ -217,6 +248,31 @@ describe('POST /api/auth/login - unexpected failures', () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
   });
+
+  it('should return a generic 500 and no tokens when the role read fails', async () => {
+    single.mockResolvedValue({ data: null, error: new Error('read failed') });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
+  });
+
+  it.each([
+    ['unknown', { role: 'operator' }],
+    ['missing', {}],
+    ['no profile', null],
+  ])(
+    'should return a generic 500 and no tokens when the role is %s',
+    async (_label, profile) => {
+      single.mockResolvedValue({ data: profile, error: null });
+
+      const res = await callHandler('POST', validBody);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
+    },
+  );
 
   it('should return a generic 500 when the Supabase env vars are missing', async () => {
     vi.stubEnv('SUPABASE_ANON_KEY', '');
