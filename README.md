@@ -79,11 +79,11 @@ cp .env.example .env.local
 
 Then fill in `.env.local` with the values from the Supabase dashboard, under **Project Settings → API**:
 
-| Supabase dashboard | Variable(s) in `.env.local`         |
-| ------------------ | ----------------------------------- |
-| Project URL        | `SUPABASE_URL`, `VITE_SUPABASE_URL` |
-| `anon` public key  | `VITE_SUPABASE_ANON_KEY`            |
-| `service_role` key | `SUPABASE_SERVICE_ROLE_KEY`         |
+| Supabase dashboard | Variable(s) in `.env.local`                   |
+| ------------------ | --------------------------------------------- |
+| Project URL        | `SUPABASE_URL`, `VITE_SUPABASE_URL`           |
+| `anon` public key  | `SUPABASE_ANON_KEY`, `VITE_SUPABASE_ANON_KEY` |
+| `service_role` key | `SUPABASE_SERVICE_ROLE_KEY`                   |
 
 If the project is already linked on Vercel, `vercel env pull .env.local` downloads the same values instead.
 
@@ -104,6 +104,7 @@ All variables are listed in [`.env.example`](.env.example). Put local values in 
 | Variable                    | Used by          | Required                      | Description                                                                                                                                                                                           |
 | --------------------------- | ---------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SUPABASE_URL`              | `api/` functions | Yes, for `/api/supabase-ping` | Supabase project URL: `https://<project-ref>.supabase.co`.                                                                                                                                            |
+| `SUPABASE_ANON_KEY`         | `api/` functions | Yes, for `/api/auth/signup`   | Public anon key. Row Level Security applies to every request made with it.                                                                                                                            |
 | `SUPABASE_SERVICE_ROLE_KEY` | `api/` functions | Yes, for `/api/supabase-ping` | Service role key. **Bypasses RLS: server-side only, never expose it to the browser** (never prefix it with `VITE_`).                                                                                  |
 | `VITE_SUPABASE_URL`         | Frontend (Vite)  | Not yet                       | Supabase API URL for the browser client. Already provided in CI.                                                                                                                                      |
 | `VITE_SUPABASE_ANON_KEY`    | Frontend (Vite)  | Not yet                       | Public anon key for the browser client. Already provided in CI.                                                                                                                                       |
