@@ -1,5 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { makeReq, makeRes } from '../_lib/test-helpers.js';
 import handler from './signup.js';
 
 // vi.mock is hoisted above the imports, so the fake must be created with
@@ -16,17 +16,6 @@ const validBody = {
   firstName: 'Test',
   lastName: 'User',
 };
-
-// Fakes with only the members the handler uses. The casts are justified: the
-// real Vercel types have many more members that the handler never touches.
-function makeReq(method: string, body: unknown): VercelRequest {
-  return { method, body } as unknown as VercelRequest;
-}
-
-function makeRes() {
-  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
-  return { res, asVercel: res as unknown as VercelResponse };
-}
 
 async function callHandler(method: string, body: unknown) {
   const { res, asVercel } = makeRes();

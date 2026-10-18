@@ -19,8 +19,11 @@ export const validateInput = (input: string): boolean => {
   return isNonEmpty;
 };
 
+export const normalizeEmail = (email: string): string =>
+  email.trim().toLowerCase();
+
 export const validateEmail = (email: string): boolean => {
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   if (!validateInput(normalizedEmail)) {
     return false;
   }
@@ -28,3 +31,14 @@ export const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(normalizedEmail);
 };
+
+export function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+export type Role = 'user' | 'admin';
+
+// The DB check constraint is the source of truth, but the value read at
+// runtime is still an untyped string: validate it before trusting the type.
+export const isRole = (value: unknown): value is Role =>
+  value === 'user' || value === 'admin';

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { validateEmail, validateInput, validatePassword } from './validation';
+import {
+  isObject,
+  normalizeEmail,
+  validateEmail,
+  validateInput,
+  validatePassword,
+} from './validation';
 
 describe('validation password', () => {
   it.each([
@@ -63,6 +69,40 @@ describe('validation email', () => {
     ['two @', 'user@@example.com'],
   ])('should return false for an email with %s', (_reason, email) => {
     const result = validateEmail(email);
+    expect(result).toBe(false);
+  });
+});
+
+describe('validation normalizeEmail', () => {
+  it.each([
+    ['uppercase letters', 'Test@Example.COM', 'test@example.com'],
+    ['surrounding spaces', '  test@example.com ', 'test@example.com'],
+    ['an already normalized email', 'test@example.com', 'test@example.com'],
+  ])('should normalize %s', (_reason, input, expected) => {
+    expect(normalizeEmail(input)).toBe(expected);
+  });
+});
+
+describe('validation isObject', () => {
+  it.each([
+    ['an object with fields', { email: 'a@b.it' }],
+    ['an empty object', {}],
+    // Arrays are objects for typeof: the check only guards against
+    // null and primitives, so this documents the current behavior.
+    ['an array', []],
+  ])('should return true for %s', (_reason, value) => {
+    const result = isObject(value);
+    expect(result).toBe(true);
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['a string', 'text'],
+    ['a number', 42],
+    ['a boolean', true],
+  ])('should return false for %s', (_reason, value) => {
+    const result = isObject(value);
     expect(result).toBe(false);
   });
 });
