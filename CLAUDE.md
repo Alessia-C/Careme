@@ -36,7 +36,7 @@ npx playwright test e2e/smoke.spec.ts --project=chromium   # single E2E file/bro
 ## Architecture
 
 - **Frontend** (`src/`): React 19 + Vite. `main.tsx` initializes Sentry, mounts `<App />` inside `Sentry.ErrorBoundary`, and wires React root error hooks to Sentry. Only `VITE_*` env vars reach the browser (`import.meta.env`).
-- **Backend** (`api/`): Vercel serverless functions, one file = one endpoint (`api/foo.ts` → `/api/foo`). Planned domains: `/api/auth`, `/api/users`, `/api/products`. The final route structure (including whether to use Express inside the functions) is still an open decision: do not introduce Express or restructure `api/` without asking. Files/dirs prefixed with `_` (e.g. `api/_lib/`) are shared helpers, not routes. Wrap handlers with `withSentry()` from `api/_lib/sentry.ts` to capture exceptions and return a generic 500. Relative imports in `api/` use the `.js` extension (ESM, `"type": "module"`).
+- **Backend** (`api/`): Vercel serverless functions, one file = one endpoint (`api/foo.ts` → `/api/foo`). Planned domains: `/api/auth`, `/api/users`, `/api/products`. Express will be used inside the serverless functions, but the route structure is still an open decision: do not add Express or restructure `api/` until the user decides how. Files/dirs prefixed with `_` (e.g. `api/_lib/`) are shared helpers, not routes. Wrap handlers with `withSentry()` from `api/_lib/sentry.ts` to capture exceptions and return a generic 500. Relative imports in `api/` use the `.js` extension (ESM, `"type": "module"`).
 - **Data access**: the frontend never talks to Supabase directly (no Supabase client in `src/`, no `VITE_SUPABASE_*` vars). Everything, auth included, goes through `api/`.
 - **Supabase in the API**: create a per-request client with the caller's JWT (`Authorization` header) so RLS always applies. RLS is the last line of defense, API checks are the first: never rely on only one.
 - **Sentry**: disabled when `SENTRY_DSN` / `VITE_SENTRY_DSN` is empty (unit tests, CI). Test hooks: `/?sentry-test=1` (frontend, throws asynchronously) and `/api/sentry-test` (404 in production).
@@ -51,7 +51,7 @@ Security is a top priority: when in doubt, choose the safer option and ask.
 - Users with role `user` can update only `first_name` and `last_name` on their own profile (password changes go through Supabase Auth). `role` and `status` must never be writable by a non-admin, and this must be enforced in the database, not only in the API. Every migration touching `profiles` must preserve it.
 - `handle_new_user` must take only `first_name`/`last_name` from signup metadata (user-controlled); `role` and `status` always use defaults.
 - A `blocked` user must not be able to do anything. Enforce it in RLS (policies check the profile is `active`), not only at login: existing sessions stay valid until token expiry.
-- TODO: verify that the current migrations already enforce the three rules above.
+- These rules are enforced by `20261018120000_harden_profiles_security.sql` (`is_admin()`/`is_active()` helpers, the `prevent_privilege_change` trigger and `is_active()` checks in every RLS policy). Keep them intact in any later migration touching `profiles` or `products`.
 
 ## Environment
 
@@ -79,3 +79,13 @@ Security is a top priority: when in doubt, choose the safer option and ask.
 - Every change ships with tests for the new behavior; lint, format and type-check must pass.
 - Reuse existing components and helpers instead of creating near-duplicates; follow the project's established patterns and conventions in every change.
 - If, while analyzing the project or working on a task, you find that any rule in this file is violated or that something introduces a security risk, stop and ask the user how to proceed. Do not fix it silently or work around it.
+
+## Learning mode
+
+The user is learning Node.js, Express and testing (Vitest, Playwright) and has never used them before.
+
+- Always reply in Italian. Code, comments and commit messages stay in English.
+- Before using a new concept (middleware, routing, req/res, async/await, test structure, assertions, mocking, E2E selectors, etc.), explain it briefly with a minimal example.
+- For backend code (`api/`) and tests, the user writes the code and you review it: point out problems and explain why, suggest the fix, but do not rewrite it.
+- Do not write complete functions or complete tests unless the user explicitly asks. Small snippets to illustrate a concept are fine.
+- Config and docs are excluded from this mode unless the user says otherwise.
