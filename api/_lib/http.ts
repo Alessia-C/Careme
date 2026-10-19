@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isObject } from '../../shared/validation.js';
 
-type Handler = (
+export type Handler = (
   req: VercelRequest,
   res: VercelResponse,
 ) => unknown | Promise<unknown>;

@@ -6,6 +6,7 @@ import {
 import { sendTooManyRequests, withMethod } from '../_lib/http.js';
 import { withSentry } from '../_lib/sentry.js';
 import { createAnonClient, isRateLimitError } from '../_lib/supabase.js';
+import { getBearerToken } from '../_lib/auth.js';
 
 // Same statuses supabase-js itself ignores on sign out: the JWT is invalid or
 // expired (401), forbidden (403) or the user no longer exists (404). An
@@ -14,15 +15,9 @@ import { createAnonClient, isRateLimitError } from '../_lib/supabase.js';
 const SESSION_INVALID_STATUSES = [401, 403, 404];
 
 async function handleLogout(req: VercelRequest, res: VercelResponse) {
-  // The token is read from the header and not from the body: a logout has no
-  // body and the same header is how every protected endpoint will be called.
-  const authHeader = req.headers.authorization;
-  const prefix = 'Bearer ';
-  const token = authHeader ? authHeader.slice(prefix.length) : undefined;
-  const isTokenEmpty = token === '' || token === undefined;
-  const isAuthHeaderMissing = !authHeader || !authHeader.startsWith(prefix);
+  const token = getBearerToken(req);
 
-  if (isTokenEmpty || isAuthHeaderMissing) {
+  if (!token) {
     return res
       .status(401)
       .json({ message: 'Missing or invalid authorization header' });

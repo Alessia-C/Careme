@@ -67,6 +67,7 @@ curl -X POST http://localhost:3000/api/auth/logout \
 
 - **Client behavior on `401`:** the session is no longer valid, so the client must drop its local session and redirect the user to the login page. The endpoint does not redirect: it only answers with the status.
 - **Scope:** only the session of the token sent is revoked (`local`), not the user's sessions on other devices.
+- **Blocked users:** the endpoint does not use the shared `withAuth` middleware, so a `blocked` user can still log out and have their session revoked. Frontends should call it when any protected endpoint answers `403` with `Account blocked`.
 - **Repeated logout:** calling it again with the same token returns `401`, because the session no longer exists.
 - **Session expiry (60 minutes):** the Supabase access token expires after 3600 seconds (Auth settings) and a protected endpoint rejects an expired token with `401`. Supabase's server-side inactivity timeout is not configurable on the current plan, so the 60-minute inactivity policy is handled by the frontend: it must refresh the session only while the user is active and log out (calling this endpoint, then going to the login) when the user has been inactive for 60 minutes.
 - **No service role key:** the endpoint forwards the caller's own JWT to Supabase Auth, using the anon client.
