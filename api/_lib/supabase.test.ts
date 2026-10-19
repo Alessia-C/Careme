@@ -4,6 +4,7 @@ import {
   createUserClient,
   isRateLimitError,
 } from './supabase.js';
+import { stubSupabaseEnv } from './test-helpers.js';
 
 // vi.mock is hoisted above the imports, so the fake must be created with
 // vi.hoisted to already exist when the mock factory runs.
@@ -12,8 +13,7 @@ const { createClient } = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
 
 beforeEach(() => {
-  vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co');
-  vi.stubEnv('SUPABASE_ANON_KEY', 'anon-key');
+  stubSupabaseEnv();
 });
 
 afterEach(() => {

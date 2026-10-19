@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeReq, makeRes } from '../_lib/test-helpers.js';
+import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
 import handler from './login.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
@@ -39,8 +39,7 @@ async function callHandler(method: string, body: unknown) {
 }
 
 beforeEach(() => {
-  vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co');
-  vi.stubEnv('SUPABASE_ANON_KEY', 'anon-key');
+  stubSupabaseEnv();
   // from('profiles').select('role').eq('id', ...).single() chain.
   const query = { select: vi.fn(), eq: vi.fn(), single };
   query.select.mockReturnValue(query);

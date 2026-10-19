@@ -11,6 +11,13 @@ export function makeReq(
   return { method, body, headers } as unknown as VercelRequest;
 }
 
+// Fake Supabase env vars so the client factories do not throw. Pair it with
+// vi.unstubAllEnvs() in afterEach.
+export function stubSupabaseEnv() {
+  vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co');
+  vi.stubEnv('SUPABASE_ANON_KEY', 'anon-key');
+}
+
 export function makeRes() {
   const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
   return { res, asVercel: res as unknown as VercelResponse };
