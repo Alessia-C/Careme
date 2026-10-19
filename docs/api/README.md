@@ -14,6 +14,7 @@ The backend is a set of Vercel serverless functions in [`api/`](../../api/). Eac
 | `GET`  | [`/api/sentry-test`](sentry-test.md)     | None | Throws a deliberate error to verify Sentry error capture |
 | `POST` | [`/api/auth/signup`](auth-signup.md)     | None | Registers a new user via Supabase Auth                   |
 | `POST` | [`/api/auth/login`](auth-login.md)       | None | Authenticates a user and returns the session             |
+| `POST` | [`/api/auth/logout`](auth-logout.md)     | JWT  | Revokes the caller's current session                     |
 
 ## Conventions
 

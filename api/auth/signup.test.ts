@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeReq, makeRes } from '../_lib/test-helpers.js';
+import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
 import handler from './signup.js';
 
 // vi.mock is hoisted above the imports, so the fake must be created with
@@ -24,8 +24,7 @@ async function callHandler(method: string, body: unknown) {
 }
 
 beforeEach(() => {
-  vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co');
-  vi.stubEnv('SUPABASE_ANON_KEY', 'anon-key');
+  stubSupabaseEnv();
   signUp.mockResolvedValue({
     data: { user: { identities: [{ id: '1' }] } },
     error: null,
