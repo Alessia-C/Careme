@@ -21,6 +21,8 @@ The backend is a set of Vercel serverless functions in [`api/`](../../api/). Eac
 - Request and response bodies are JSON (`Content-Type: application/json`).
 - Successful responses include `"status": "ok"`. Error responses use `{ "status": "error", "message": string }` with an appropriate HTTP status code.
 - Never return secrets or raw stack traces in a response.
+- Protected endpoints wrap their handler with `withAuth()` from [`api/_lib/auth.ts`](../../api/_lib/auth.ts), e.g. `withSentry(withMethod('GET', withAuth(handler)))`. The handler receives `{ id, role }` as third argument. `withAuth` answers `401` for a missing, invalid, expired or revoked token (verified with Supabase `getUser`), `429` on Supabase rate limits and `403` when the profile is `blocked`. The role is read from `profiles.role`, never from the request. Document these errors in the endpoint's doc and set **Auth** to `JWT`.
+- Exception: [`/api/auth/logout`](auth-logout.md) does not use `withAuth`, so a blocked user can still revoke their session.
 
 ## Adding a new endpoint
 
