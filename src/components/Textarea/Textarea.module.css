@@ -1,0 +1,6 @@
+/* Stretch to the box height so the 10px box padding matches the design. */
+.textarea {
+  align-self: stretch;
+  min-height: 50px;
+  resize: vertical;
+}
