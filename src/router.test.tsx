@@ -34,7 +34,7 @@ describe('routes', () => {
 
   it.each([
     ['/login', 'Accedi'],
-    ['/signup', 'Registrati'],
+    ['/signup', 'Sign up'],
   ])('serves %s without authentication', (path, heading) => {
     renderAt(path);
 

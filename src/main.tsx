@@ -15,7 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')!, {
   onRecoverableError: Sentry.reactErrorHandler(),
 }).render(
   <React.StrictMode>
-    <Sentry.ErrorBoundary fallback={<p>Qualcosa è andato storto.</p>}>
+    <Sentry.ErrorBoundary fallback={<p>Something went wrong.</p>}>
       <App />
     </Sentry.ErrorBoundary>
   </React.StrictMode>,

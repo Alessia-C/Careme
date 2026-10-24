@@ -1,9 +1,19 @@
+// Shared with the frontend password checklist, so both sides enforce the same rules.
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 20;
+export const PASSWORD_UPPERCASE_REGEX = /[A-Z]/;
+export const PASSWORD_LOWERCASE_REGEX = /[a-z]/;
+export const PASSWORD_NUMBER_REGEX = /[0-9]/;
+export const PASSWORD_SPECIAL_CHAR_REGEX = /[!@#$%^&*(),.?":{}|<>]/;
+
 export const validatePassword = (password: string): boolean => {
-  const isValidLength = password.length >= 8 && password.length <= 20;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const isValidLength =
+    password.length >= PASSWORD_MIN_LENGTH &&
+    password.length <= PASSWORD_MAX_LENGTH;
+  const hasUpperCase = PASSWORD_UPPERCASE_REGEX.test(password);
+  const hasLowerCase = PASSWORD_LOWERCASE_REGEX.test(password);
+  const hasNumber = PASSWORD_NUMBER_REGEX.test(password);
+  const hasSpecialChar = PASSWORD_SPECIAL_CHAR_REGEX.test(password);
 
   const isValid =
     isValidLength &&

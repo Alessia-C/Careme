@@ -13,7 +13,7 @@ interface SearchInputProps extends Omit<
 
 // No visible label in the design: the input is named through aria-label.
 const SearchInput = ({
-  helperText = 'Scrivi e premi Invio per cercare',
+  helperText = 'Type and press Enter to search',
   ...rest
 }: SearchInputProps) => {
   const id = useId();
@@ -22,11 +22,11 @@ const SearchInput = ({
     <FormField id={id} helper={helperText}>
       <img src={searchIcon} alt="" className={styles.icon} />
       <input
-        placeholder="Cerca..."
+        placeholder="Search..."
         {...rest}
         id={id}
         type="search"
-        aria-label="Cerca"
+        aria-label="Search"
         className={fieldStyles.control}
         aria-describedby={`${id}-helper`}
       />
