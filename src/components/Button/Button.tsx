@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import styles from './Button.module.css';
 
-type Variant = 'primary' | 'secondary';
+type Variant = 'primary' | 'secondary' | 'error';
 type Appearance = 'solid' | 'outline' | 'text';
 
 interface ButtonProps extends Omit<ComponentProps<'button'>, 'children'> {

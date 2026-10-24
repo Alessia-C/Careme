@@ -32,6 +32,13 @@
   --btn-focus: var(--color-grey-900);
 }
 
+.error {
+  --btn-base: var(--color-red-600);
+  --btn-hover: var(--color-red-800);
+  --btn-press: var(--color-red-900);
+  --btn-focus: var(--color-red-900);
+}
+
 .solid {
   background: var(--btn-base);
   color: var(--color-white-100);
