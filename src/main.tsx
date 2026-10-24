@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 import App from './App';
 import { initSentry, maybeThrowTestError } from './lib/sentry';
+import 'normalize.css';
+import './styles/tokens.css';
 
 initSentry();
 maybeThrowTestError();

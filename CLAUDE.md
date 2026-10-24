@@ -8,7 +8,7 @@ Careme: a web app for tracking personal skincare/makeup products (name, brand, c
 
 Requires Node 22.13+ (`.nvmrc`); ESLint 10 fails on older Node.
 
-Approved stack (from the tech stack decision doc): React 19 + Vite + TypeScript, Zustand (global state), React Query (data fetching), Supabase (Postgres + Auth), Node.js on Vercel serverless functions, Vitest, Playwright, Sentry, UptimeRobot. Routing is React Router (`react-router`, Data mode with `createBrowserRouter`). Styling and form libraries are not chosen yet: ask, do not pick one.
+Approved stack (from the tech stack decision doc): React 19 + Vite + TypeScript, Zustand (global state), React Query (data fetching), Supabase (Postgres + Auth), Node.js on Vercel serverless functions, Vitest, Playwright, Sentry, UptimeRobot. Routing is React Router (`react-router`, Data mode with `createBrowserRouter`). Styling: CSS Modules (`*.module.css`), decided in issue #56; global styles in `src/styles/` (`normalize.css` from npm, `tokens.css` with design tokens from Figma). Form libraries are not chosen yet: ask, do not pick one.
 
 ## Commands
 
