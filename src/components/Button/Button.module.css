@@ -6,8 +6,6 @@
   color: var(--btn-base);
   font: var(--text-h6);
   cursor: pointer;
-
-  /* Inset focus ring: does not shift the layout and stays keyboard-visible. */
   &:focus-visible {
     outline: 2px solid var(--btn-focus);
     outline-offset: -2px;
