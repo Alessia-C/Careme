@@ -1,6 +1,6 @@
-// Placeholder: session handling is not designed yet (no endpoint tells the
-// frontend who is logged in). Replace the body when it is, keeping the
-// signature so ProtectedRoute does not change.
+import useAuthStore, { selectIsAuthenticated } from '../stores/authStore';
+
+// Plain function, not a hook, so ProtectedRoute can keep calling it as before.
 export function isAuthenticated(): boolean {
-  return false;
+  return selectIsAuthenticated(useAuthStore.getState());
 }
