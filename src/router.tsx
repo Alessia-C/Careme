@@ -3,7 +3,7 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import AppLayout from './routes/AppLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
+import SignupPage from './pages/SignupPage/SignupPage';
 
 export const routes: RouteObject[] = [
   // Public routes
