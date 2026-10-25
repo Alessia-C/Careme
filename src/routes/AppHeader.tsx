@@ -23,6 +23,11 @@ function AppHeader() {
   return (
     <header className={styles.header}>
       <span role="img" aria-label="Careme" className={styles.logo} />
+      {/* Always in the DOM: screen readers announce text changes of a live
+          region that already exists, not one that appears with its text. */}
+      <p role="status" className={styles.status}>
+        {isPending ? 'Logging out…' : ''}
+      </p>
       <div className={styles.actions}>
         <Button
           label="Logout"

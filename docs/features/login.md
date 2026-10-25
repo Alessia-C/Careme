@@ -28,6 +28,7 @@ Lets an existing user sign in to Careme with email and password. The session is 
    - `429`: "Too many attempts. Please wait a moment and try again."
    - any other non-2xx status, a network error, or a `200` whose body does not contain a valid user and role: "We couldn’t complete your request. Please try again."
 8. If the auth store already holds a session when `/login` renders, the user is redirected to `/` (history entry replaced) without seeing the form.
+9. After a [logout](logout.md) (also one done in another tab) the user arrives with the navigation state `{ signedOut: true }`. The page then shows an info `Feedback` above the form titled "You have been signed out" with the text "Sign in again to continue.", and moves the keyboard focus to the `h1`. Without that state (direct visit, redirect from a protected page) nothing is shown and the focus is not moved. The state lives in the history entry, so it is not kept in the URL.
 
 ## Business rules
 
@@ -54,7 +55,7 @@ The access token is stored by the browser in the `__Host-sb-access-token` cookie
 ## Tests
 
 - Unit tests:
-  - [`src/pages/LoginPage/LoginPage.test.tsx`](../../src/pages/LoginPage/LoginPage.test.tsx): form and signup link, disabled "Forgot password?", button disabled/enabled, no signup password policy, inline errors after blur, request and session stored, `next` honored, external `next` ignored, redirect when already authenticated, progress state, rate-limit message, network failure and retry.
+  - [`src/pages/LoginPage/LoginPage.test.tsx`](../../src/pages/LoginPage/LoginPage.test.tsx): form and signup link, disabled "Forgot password?", button disabled/enabled, no signup password policy, inline errors after blur, request and session stored, `next` honored, external `next` ignored, redirect when already authenticated, signed-out message and focus after a logout (and none on a normal visit), progress state, rate-limit message, network failure and retry.
   - [`src/lib/redirect.test.ts`](../../src/lib/redirect.test.ts): `getSafeNextPath` with internal and unsafe paths.
   - [`src/lib/authApi.test.ts`](../../src/lib/authApi.test.ts): `login()` status mapping and response validation.
   - [`src/router.test.tsx`](../../src/router.test.tsx): unauthenticated access to a protected page redirects to `/login?next=...`.

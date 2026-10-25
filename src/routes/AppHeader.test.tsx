@@ -59,6 +59,11 @@ describe('AppHeader', () => {
     expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
   });
 
+  it('has an empty status region until a logout is in progress', () => {
+    renderHeader();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
   it('renders inside the banner landmark', () => {
     renderHeader();
     expect(screen.getByRole('banner')).toContainElement(
@@ -76,6 +81,7 @@ describe('AppHeader - logout', () => {
     expect(logout).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Login page')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.state).toEqual({ signedOut: true });
     expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().role).toBeNull();
   });
@@ -113,6 +119,7 @@ describe('AppHeader - logout', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
 
     expect(screen.getByRole('button', { name: 'Logout' })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Logging out…');
     expect(useAuthStore.getState().user).not.toBeNull();
 
     finish();

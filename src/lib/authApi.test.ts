@@ -137,13 +137,15 @@ describe('logout', () => {
     vi.unstubAllGlobals();
   });
 
-  it('posts to the logout endpoint without a body or token', async () => {
+  it('posts an empty JSON object, without any token', async () => {
     const fetchMock = mockFetch(new Response(null, { status: 200 }));
 
     await logout();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
     });
   });
 

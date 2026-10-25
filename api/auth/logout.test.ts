@@ -26,7 +26,7 @@ async function callHandler(
   cookies: Record<string, string> = {},
 ) {
   const { res, asVercel } = makeRes();
-  await handler(makeReq(method, undefined, headers, cookies), asVercel);
+  await handler(makeReq(method, {}, headers, cookies), asVercel);
   return res;
 }
 
@@ -69,6 +69,27 @@ describe('POST /api/auth/logout - request shape', () => {
       );
     },
   );
+});
+
+describe('POST /api/auth/logout - CSRF defence', () => {
+  it('should return 415 when the body is not JSON', async () => {
+    const { res, asVercel } = makeRes();
+    await handler(
+      makeReq('POST', {}, { ...validHeaders, 'content-type': 'text/plain' }),
+      asVercel,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when the JSON body is missing', async () => {
+    const { res, asVercel } = makeRes();
+    await handler(makeReq('POST', undefined, validHeaders), asVercel);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(signOut).not.toHaveBeenCalled();
+  });
 });
 
 describe('POST /api/auth/logout - sign out', () => {
@@ -119,6 +140,17 @@ describe('POST /api/auth/logout - sign out', () => {
     expect(signOut).toHaveBeenCalledWith('valid-token', 'local');
   });
 
+  it('should clear the cookie even when the header token is the one revoked', async () => {
+    const res = await callHandler('POST', validHeaders, {
+      '__Host-sb-access-token': 'cookie-token',
+    });
+
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      buildClearedSessionCookie(),
+    );
+  });
+
   it.each([
     ['an already revoked session', new AuthSessionMissingError()],
     [
@@ -156,8 +188,11 @@ describe('POST /api/auth/logout - sign out', () => {
       expect(res.json).toHaveBeenCalledWith({
         message: 'Too many requests, please try again later',
       });
-      // The session is still alive: keep the cookie so the user can retry.
-      expect(res.setHeader).not.toHaveBeenCalled();
+      // The client drops its session anyway, so the cookie goes away too.
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        buildClearedSessionCookie(),
+      );
     },
   );
 });
@@ -176,7 +211,10 @@ describe('POST /api/auth/logout - unexpected failures', () => {
       status: 'error',
       message: 'Internal server error',
     });
-    expect(res.setHeader).not.toHaveBeenCalled();
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      buildClearedSessionCookie(),
+    );
   });
 
   it('should return a generic 500 when the Supabase env vars are missing', async () => {
@@ -186,5 +224,9 @@ describe('POST /api/auth/logout - unexpected failures', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(signOut).not.toHaveBeenCalled();
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      buildClearedSessionCookie(),
+    );
   });
 });

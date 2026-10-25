@@ -3,7 +3,11 @@ import {
   isAuthApiError,
   isAuthSessionMissingError,
 } from '@supabase/supabase-js';
-import { sendTooManyRequests, withMethod } from '../_lib/http.js';
+import {
+  sendTooManyRequests,
+  withMethod,
+  withObjectBody,
+} from '../_lib/http.js';
 import { withSentry } from '../_lib/sentry.js';
 import { createAnonClient, isRateLimitError } from '../_lib/supabase.js';
 import { buildClearedSessionCookie, getAccessToken } from '../_lib/auth.js';
@@ -14,18 +18,18 @@ import { buildClearedSessionCookie, getAccessToken } from '../_lib/auth.js';
 // AuthSessionMissingError instead of an AuthApiError.
 const SESSION_INVALID_STATUSES = [401, 403, 404];
 
-// The session cookie must go away whenever the session is over, even if it was
-// already invalid: a dead cookie left in the browser helps nobody.
-function clearSessionCookie(res: VercelResponse) {
-  res.setHeader('Set-Cookie', buildClearedSessionCookie());
-}
-
 async function handleLogout(req: VercelRequest, res: VercelResponse) {
+  // The cookie is cleared first, on every outcome: the client drops its local
+  // session whatever happens (shared devices), so the browser must not keep a
+  // cookie that could still authenticate the next person. If Supabase then
+  // fails, the token is not revoked but it is no longer in the browser. The
+  // header survives the generic 500 sent by withSentry.
+  res.setHeader('Set-Cookie', buildClearedSessionCookie());
+
   // Not withAuth on purpose: a blocked user must still be able to log out.
   const token = getAccessToken(req);
 
   if (!token) {
-    clearSessionCookie(res);
     return res
       .status(401)
       .json({ message: 'Missing or invalid authorization header' });
@@ -49,7 +53,6 @@ async function handleLogout(req: VercelRequest, res: VercelResponse) {
     isAuthSessionMissingError(error) ||
     (isAuthApiError(error) && SESSION_INVALID_STATUSES.includes(error.status))
   ) {
-    clearSessionCookie(res);
     return res.status(401).json({ message: 'Session expired or invalid' });
   }
 
@@ -57,8 +60,10 @@ async function handleLogout(req: VercelRequest, res: VercelResponse) {
     throw error;
   }
 
-  clearSessionCookie(res);
   return res.status(200).json({ message: 'Logged out successfully' });
 }
 
-export default withSentry(withMethod('POST', handleLogout));
+// withObjectBody is only a CSRF defence here (the body is ignored): a cross-site
+// <form> cannot send application/json without a CORS preflight, so it cannot
+// force a logout.
+export default withSentry(withMethod('POST', withObjectBody(handleLogout)));

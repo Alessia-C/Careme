@@ -17,7 +17,7 @@ function CurrentPath() {
   return <p>{`at ${pathname}${search}`}</p>;
 }
 
-const renderPage = (initialEntry = '/login') =>
+const renderPage = (initialEntry: string | object = '/login') =>
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[initialEntry]}>
@@ -35,6 +35,32 @@ async function fillForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Email*'), 'jane@example.com');
   await user.type(screen.getByLabelText('Password*'), 'any-password');
 }
+
+describe('LoginPage - after a logout', () => {
+  beforeEach(() => {
+    useAuthStore.getState().clearSession();
+  });
+
+  it('tells the user they were signed out and focuses the heading', () => {
+    renderPage({ pathname: '/login', state: { signedOut: true } });
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'You have been signed out',
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveFocus();
+  });
+
+  it('shows no message and keeps the focus where it is on a normal visit', () => {
+    renderPage();
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).not.toHaveFocus();
+  });
+});
 
 describe('LoginPage', () => {
   let fetchMock: ReturnType<typeof vi.fn>;

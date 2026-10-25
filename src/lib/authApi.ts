@@ -91,7 +91,12 @@ export type LogoutResult = { ok: true } | { ok: false; reason: 'failed' };
 // drop its own state afterwards, whatever the outcome.
 export async function logout(): Promise<LogoutResult> {
   try {
-    const response = await fetch('/api/auth/logout', { method: 'POST' });
+    // The API ignores the body but requires JSON: it is a CSRF defence.
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
     return response.ok || response.status === 401
       ? { ok: true }
       : { ok: false, reason: 'failed' };

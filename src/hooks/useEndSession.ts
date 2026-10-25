@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
+import { SIGNED_OUT_STATE } from '../lib/signedOut';
 import useAuthStore from '../stores/authStore';
 
 // Drops everything that belongs to the session of this tab: the store, the
@@ -13,6 +14,6 @@ export function useEndSession() {
   return useCallback(() => {
     clearSession();
     queryClient.clear();
-    navigate('/login', { replace: true });
+    navigate('/login', { replace: true, state: SIGNED_OUT_STATE });
   }, [clearSession, queryClient, navigate]);
 }

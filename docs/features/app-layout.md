@@ -20,6 +20,7 @@ A shared shell (skip link, header with logo and Logout button, main content area
 - `AppHeader` shows:
   - The "Careme" logo on the left. It is the SVG [`src/assets/icons/logo.svg`](../../src/assets/icons/logo.svg) used as a CSS mask, colored with `--color-primary-800`. It has `role="img"` and `aria-label="Careme"`.
   - A "Logout" button on the right (`Button`, secondary variant, text appearance) with a log-out icon. It logs the user out, see [Logout](logout.md).
+  - A visually hidden live region (`role="status"`, always in the DOM) that reads "Logging out…" while the logout request is in progress, see [Logout](logout.md).
 - Responsive behavior (breakpoint 768px):
   - Desktop (>= 768px): header side padding is 61px; the icon and the "Logout" text are both visible.
   - Mobile (< 768px): header side padding is 16px (`--space-16`); only the icon is shown. The "Logout" label is visually hidden but still the accessible name of the button. The button area is at least 44x44px.
