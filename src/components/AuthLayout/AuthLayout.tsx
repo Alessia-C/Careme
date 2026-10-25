@@ -8,24 +8,26 @@ interface AuthLayoutProps {
   // Lets a page move focus to the heading when its content changes.
   headingRef?: Ref<HTMLHeadingElement>;
   info?: {
-    title?: string;
+    title: string;
     description?: string;
-    heading?: string;
+    heading: string;
   };
 }
 
 // Shared frame of the public auth pages
 const AuthLayout = ({ info, headingRef, children }: AuthLayoutProps) => (
   <main className={styles.page}>
-    <title>{info?.title}</title>
+    {info?.title && <title>{info.title}</title>}
     <div className={styles.formPanel}>
-      <div className={styles.brand}>
-        <img src={logo} alt="Careme" className={styles.logo} />
-        <h1 ref={headingRef} tabIndex={-1} className={styles.heading}>
-          {info?.heading}
-        </h1>
-        <p className={styles.description}>{info?.description}</p>
-      </div>
+      {info && (
+        <div className={styles.brand}>
+          <img src={logo} alt="Careme" className={styles.logo} />
+          <h1 ref={headingRef} tabIndex={-1} className={styles.heading}>
+            {info.heading}
+          </h1>
+          <p className={styles.description}>{info.description}</p>
+        </div>
+      )}
       {children}
     </div>
     <aside className={styles.imagePanel}>
