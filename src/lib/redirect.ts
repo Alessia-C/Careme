@@ -1,11 +1,19 @@
-// Only same-site paths are allowed after login: anything else (another origin,
-// a protocol-relative "//host" or "/\host") would be an open redirect.
+// Only same-site paths are allowed after login. Checking the raw string is not
+// enough: the browser's URL parser drops tabs and newlines and turns "\" into
+// "/", so "/<TAB>/evil.example" becomes "//evil.example", another site. Parse
+// it like the browser does and compare the origin instead.
 export function getSafeNextPath(next: string | null): string {
-  const isInternalPath =
-    next !== null &&
-    next.startsWith('/') &&
-    !next.startsWith('//') &&
-    !next.startsWith('/\\');
+  if (!next?.startsWith('/')) {
+    return '/';
+  }
 
-  return isInternalPath ? next : '/';
+  try {
+    const url = new URL(next, window.location.origin);
+    if (url.origin !== window.location.origin) {
+      return '/';
+    }
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return '/';
+  }
 }

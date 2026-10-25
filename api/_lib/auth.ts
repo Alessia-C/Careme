@@ -28,18 +28,29 @@ export function getBearerToken(req: VercelRequest): string | undefined {
 // The browser keeps the session in an HttpOnly cookie, so scripts (and any XSS)
 // cannot read the token. SameSite=Strict is the CSRF protection: the cookie is
 // never sent on cross-site requests.
-export const ACCESS_TOKEN_COOKIE = 'sb-access-token';
+//
+// `vercel dev` serves plain http, where Safari drops Secure cookies and the
+// __Host- prefix (which requires Secure) cannot be used.
+const isLocalDev = () => process.env.VERCEL_ENV === 'development';
+
+// The __Host- prefix makes the browser refuse a cookie that a sibling
+// subdomain or a plain-http response tries to set with a wider Domain (cookie
+// tossing), so another site cannot plant its own session in the victim's
+// browser. It requires Secure, Path=/ and no Domain.
+export const getSessionCookieName = () =>
+  isLocalDev() ? 'sb-access-token' : '__Host-sb-access-token';
 
 export function buildSessionCookie(token: string, maxAgeSeconds: number) {
-  // `vercel dev` serves plain http, where Safari drops Secure cookies.
-  const secure = process.env.VERCEL_ENV === 'development' ? '' : '; Secure';
-  return `${ACCESS_TOKEN_COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAgeSeconds}${secure}`;
+  const secure = isLocalDev() ? '' : '; Secure';
+  return `${getSessionCookieName()}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAgeSeconds}${secure}`;
 }
 
 // Browsers send the cookie; API clients (curl, tests) can still use the
 // Authorization header, which wins when both are present.
 export function getAccessToken(req: VercelRequest): string | undefined {
-  return getBearerToken(req) ?? (req.cookies[ACCESS_TOKEN_COOKIE] || undefined);
+  return (
+    getBearerToken(req) ?? (req.cookies[getSessionCookieName()] || undefined)
+  );
 }
 
 export type AuthContext = { id: string; role: Role };

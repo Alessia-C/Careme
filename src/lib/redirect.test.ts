@@ -17,6 +17,10 @@ describe('getSafeNextPath', () => {
     ['backslash host', '/\\evil.example'],
     ['a relative path', 'products'],
     ['a javascript URL', 'javascript:alert(1)'],
+    ['a tab inside the slashes', '/\t/evil.example'],
+    ['a newline inside the slashes', '/\n/evil.example'],
+    ['a tab before a backslash', '/\t\\evil.example'],
+    ['an unparsable URL', '/\t/['],
   ])('falls back to / when next is %s', (_label, next) => {
     expect(getSafeNextPath(next)).toBe('/');
   });

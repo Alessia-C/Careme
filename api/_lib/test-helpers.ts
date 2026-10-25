@@ -9,7 +9,12 @@ export function makeReq(
   headers: Record<string, string> = {},
   cookies: Record<string, string> = {},
 ): VercelRequest {
-  return { method, body, headers, cookies } as unknown as VercelRequest;
+  return {
+    method,
+    body,
+    headers: { 'content-type': 'application/json', ...headers },
+    cookies,
+  } as unknown as VercelRequest;
 }
 
 // Fake Supabase env vars so the client factories do not throw. Pair it with

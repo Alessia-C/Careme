@@ -115,7 +115,7 @@ describe('POST /api/auth/login - successful login', () => {
     expect(res.setHeader).toHaveBeenCalledWith(
       'Set-Cookie',
       expect.stringMatching(
-        /^sb-access-token=access-jwt; HttpOnly; SameSite=Strict; Path=\/; Max-Age=3600/,
+        /^__Host-sb-access-token=access-jwt; HttpOnly; SameSite=Strict; Path=\/; Max-Age=3600/,
       ),
     );
   });

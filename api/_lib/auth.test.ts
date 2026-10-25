@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthSessionMissingError } from '@supabase/supabase-js';
 import {
-  ACCESS_TOKEN_COOKIE,
   buildSessionCookie,
   getAccessToken,
   getBearerToken,
+  getSessionCookieName,
   withAuth,
 } from './auth.js';
 import { withSentry } from './sentry.js';
@@ -98,13 +98,18 @@ describe('auth', () => {
 
 describe('getAccessToken', () => {
   it('reads the token from the session cookie', () => {
-    const req = makeReq('GET', undefined, {}, { [ACCESS_TOKEN_COOKIE]: 'jwt' });
+    const req = makeReq(
+      'GET',
+      undefined,
+      {},
+      { [getSessionCookieName()]: 'jwt' },
+    );
     expect(getAccessToken(req)).toBe('jwt');
   });
 
   it('prefers the Authorization header over the cookie', () => {
     const req = makeReq('GET', undefined, validHeaders, {
-      [ACCESS_TOKEN_COOKIE]: 'cookie-jwt',
+      [getSessionCookieName()]: 'cookie-jwt',
     });
     expect(getAccessToken(req)).toBe('valid-token');
   });
@@ -114,7 +119,7 @@ describe('getAccessToken', () => {
   });
 
   it('ignores an empty cookie', () => {
-    const req = makeReq('GET', undefined, {}, { [ACCESS_TOKEN_COOKIE]: '' });
+    const req = makeReq('GET', undefined, {}, { [getSessionCookieName()]: '' });
     expect(getAccessToken(req)).toBeUndefined();
   });
 });
@@ -122,13 +127,21 @@ describe('getAccessToken', () => {
 describe('buildSessionCookie', () => {
   it('is HttpOnly, SameSite=Strict and Secure with the given lifetime', () => {
     expect(buildSessionCookie('jwt', 3600)).toBe(
-      'sb-access-token=jwt; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600; Secure',
+      '__Host-sb-access-token=jwt; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600; Secure',
     );
   });
 
-  it('drops Secure under vercel dev, which serves plain http', () => {
+  it('drops Secure and the __Host- prefix under vercel dev (plain http)', () => {
     vi.stubEnv('VERCEL_ENV', 'development');
-    expect(buildSessionCookie('jwt', 3600)).not.toContain('Secure');
+    const cookie = buildSessionCookie('jwt', 3600);
+    expect(cookie).not.toContain('Secure');
+    expect(cookie.startsWith('sb-access-token=jwt;')).toBe(true);
+  });
+
+  it('reads the cookie under the same name it sets', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    const req = makeReq('GET', undefined, {}, { 'sb-access-token': 'jwt' });
+    expect(getAccessToken(req)).toBe('jwt');
   });
 });
 
@@ -193,7 +206,7 @@ describe('withAuth - token', () => {
   });
 
   it('should accept the token from the session cookie', async () => {
-    await callWithAuth({}, { [ACCESS_TOKEN_COOKIE]: 'cookie-jwt' });
+    await callWithAuth({}, { [getSessionCookieName()]: 'cookie-jwt' });
 
     expect(getUser).toHaveBeenCalledWith('cookie-jwt');
     expect(handler).toHaveBeenCalled();

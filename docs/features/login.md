@@ -41,7 +41,7 @@ Lets an existing user sign in to Careme with email and password. The session is 
 
 The page reads and writes no table directly. The API authenticates through Supabase Auth, checks the profile status with `is_active()` and reads `profiles.role` (see [`docs/api/auth-login.md`](../api/auth-login.md)). The frontend never talks to Supabase directly: the request goes through [`src/lib/authApi.ts`](../../src/lib/authApi.ts), whose `login()` returns `{ ok: true, user: { id, email }, role }` or `{ ok: false, reason: 'invalid-credentials' | 'rate-limited' | 'failed' }`.
 
-The access token is stored by the browser in the `sb-access-token` cookie (`HttpOnly`, `Secure` except under `vercel dev`, `SameSite=Strict`, `Path=/`, `Max-Age` equal to the token's `expires_in`). The refresh token is neither stored nor exposed. The in-memory auth store ([`src/stores/authStore.ts`](../../src/stores/authStore.ts)) keeps only the user and the role.
+The access token is stored by the browser in the `__Host-sb-access-token` cookie (`HttpOnly`, `Secure` except under `vercel dev`, `SameSite=Strict`, `Path=/`, `Max-Age` equal to the token's `expires_in`). The refresh token is neither stored nor exposed. The in-memory auth store ([`src/stores/authStore.ts`](../../src/stores/authStore.ts)) keeps only the user and the role.
 
 ## Security and access
 
