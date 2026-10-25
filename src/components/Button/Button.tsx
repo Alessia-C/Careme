@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import styles from './Button.module.css';
 
 type Variant = 'primary' | 'secondary' | 'error';
@@ -8,12 +8,14 @@ interface ButtonProps extends Omit<ComponentProps<'button'>, 'children'> {
   label: string;
   variant?: Variant;
   appearance?: Appearance;
+  icon?: ReactNode;
 }
 
 const Button = ({
   label,
   variant = 'primary',
   appearance = 'solid',
+  icon,
   type = 'button',
   ...rest
 }: ButtonProps) => {
@@ -23,7 +25,8 @@ const Button = ({
 
   return (
     <button {...rest} type={type} className={className}>
-      {label}
+      {icon}
+      <span>{label}</span>
     </button>
   );
 };
