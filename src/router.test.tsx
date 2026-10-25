@@ -20,7 +20,7 @@ describe('routes', () => {
   it('redirects to /login keeping the destination when unauthenticated', () => {
     const router = renderAt('/');
 
-    expect(screen.getByText('Accedi')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to your account')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/login');
     expect(router.state.location.search).toBe('?next=%2F');
   });
@@ -32,6 +32,14 @@ describe('routes', () => {
     expect(screen.getByText('Careme')).toBeInTheDocument();
   });
 
+  it('redirects an authenticated user from /login to the homepage', () => {
+    vi.mocked(isAuthenticated).mockReturnValue(true);
+    const router = renderAt('/login');
+
+    expect(router.state.location.pathname).toBe('/');
+    expect(screen.queryByText('Sign in to your account')).toBeNull();
+  });
+
   it('shows the app header on protected pages', () => {
     vi.mocked(isAuthenticated).mockReturnValue(true);
     renderAt('/');
@@ -41,7 +49,7 @@ describe('routes', () => {
   });
 
   it.each([
-    ['/login', 'Accedi'],
+    ['/login', 'Sign in to your account'],
     ['/signup', 'Create your account'],
   ])('serves %s without authentication', (path, heading) => {
     renderAt(path);

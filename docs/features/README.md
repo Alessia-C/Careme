@@ -14,4 +14,5 @@ Each user-facing feature has one document in this folder. It describes the behav
 | Feature                     | Status      | Description                                                                                    |
 | --------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
 | [App layout](app-layout.md) | In progress | Shell for protected pages: skip link, header with logo and Logout button (UI only), main area. |
+| [Login](login.md)           | In progress | Public `/login` form: generic errors, session in an HttpOnly cookie, safe redirect to `next`.  |
 | [Signup](signup.md)         | In progress | Public `/signup` form: validation, generic errors, "check your email" screen after a 201.      |
