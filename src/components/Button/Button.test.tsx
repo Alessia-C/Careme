@@ -78,4 +78,21 @@ describe('Button', () => {
     expect(button).toHaveAttribute('aria-describedby', 'hint');
     expect(button).toBe(screen.getByTestId('save-button'));
   });
+
+  it('renders the icon before the label', () => {
+    render(<Button label="Logout" icon={<span data-testid="icon" />} />);
+    const button = screen.getByRole('button');
+    const icon = screen.getByTestId('icon');
+    const label = screen.getByText('Logout');
+
+    expect(button.firstChild).toBe(icon);
+    expect(icon.compareDocumentPosition(label)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('keeps the label as accessible name when an icon is set', () => {
+    render(<Button label="Logout" icon={<span aria-hidden="true" />} />);
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+  });
 });

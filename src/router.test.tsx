@@ -32,6 +32,14 @@ describe('routes', () => {
     expect(screen.getByText('Careme')).toBeInTheDocument();
   });
 
+  it('shows the app header on protected pages', () => {
+    vi.mocked(isAuthenticated).mockReturnValue(true);
+    renderAt('/');
+
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+  });
+
   it.each([
     ['/login', 'Accedi'],
     ['/signup', 'Sign up'],
