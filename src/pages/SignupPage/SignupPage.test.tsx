@@ -89,6 +89,31 @@ describe('SignupPage', () => {
     expect(screen.getByText('1 uppercase letter')).toBeInTheDocument();
   });
 
+  it('shows only the error state, without the checklist, after blur on an invalid password', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Password*'), 'weakpass');
+    await user.tab();
+    expect(screen.getByLabelText('Password*')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(screen.queryByText('1 uppercase letter')).not.toBeInTheDocument();
+  });
+
+  it('shows only the error state, without the helper, after blur on a mismatched confirmation', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Password*'), VALID_PASSWORD);
+    await user.type(screen.getByLabelText('Confirm Password*'), 'different');
+    await user.tab();
+    expect(screen.getByLabelText('Confirm Password*')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(screen.queryByText('Passwords match')).not.toBeInTheDocument();
+  });
+
   it('blocks the button when the password misses a requirement', async () => {
     const user = userEvent.setup();
     renderPage();
