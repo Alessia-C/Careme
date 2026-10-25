@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Careme: a web app for tracking personal skincare/makeup products (name, brand, category, status). Currently at the foundation milestone: tooling, DB schema, CI and tests exist; the UI (`src/App.tsx`) is a placeholder and `api/` holds only smoke endpoints. Code comments and some UI strings are in Italian.
+Careme: a web app for tracking personal skincare/makeup products (name, brand, category, status). Currently at the foundation milestone: tooling, DB schema, CI and tests exist; the UI (`src/App.tsx`) is a placeholder and `api/` holds only smoke endpoints. Code comments and some older docs are in Italian; UI strings are in English.
 
 Requires Node 22.13+ (`.nvmrc`); ESLint 10 fails on older Node.
 
-Approved stack (from the tech stack decision doc): React 19 + Vite + TypeScript, Zustand (global state), React Query (data fetching), Supabase (Postgres + Auth), Node.js on Vercel serverless functions, Vitest, Playwright, Sentry, UptimeRobot. Routing is React Router (`react-router`, Data mode with `createBrowserRouter`). Styling and form libraries are not chosen yet: ask, do not pick one.
+Approved stack (from the tech stack decision doc): React 19 + Vite + TypeScript, Zustand (global state), React Query (data fetching), Supabase (Postgres + Auth), Node.js on Vercel serverless functions, Vitest, Playwright, Sentry, UptimeRobot. Routing is React Router (`react-router`, Data mode with `createBrowserRouter`). Styling: CSS Modules (`*.module.css`), decided in issue #56; global styles in `src/styles/` (`normalize.css` from npm, `tokens.css` with design tokens from Figma). Form libraries are not chosen yet: ask, do not pick one.
 
 ## Commands
 
@@ -67,7 +67,7 @@ Security is a top priority: when in doubt, choose the safer option and ask.
 - Prettier: single quotes, semicolons, trailing commas, 80 cols, LF.
 - Commit style: Conventional Commits (`feat:`, `docs:`, `test(e2e):`, `chore(deps):`); feature branches named `<issue>-mk-xxx-<slug>` (e.g. `54-mk-019-tech-zustand-store-for-session-role`, issue #54) merged via PR to `main` (Vercel deploys `main` to production, previews per PR).
 - Code comments and commit messages in English. Do not translate existing Italian comments unless asked.
-- No i18n: UI strings are hardcoded in Italian. Do not introduce translation libraries.
+- No i18n: UI strings are hardcoded in English. Do not introduce translation libraries.
 - Do not add new dependencies (npm packages, libraries, frameworks) unless explicitly requested by the user. If a task seems to need one, propose it and wait for approval instead of installing it.
 - UptimeRobot pings the backend: keep the health endpoint stable (TODO: specify which endpoint).
 - When an open decision listed in this file is made (libraries, API structure, admin features), update CLAUDE.md in the same PR.

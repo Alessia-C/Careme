@@ -1,0 +1,136 @@
+/*
+ * Design tokens estratti dal file Figma "MK" (nodi Colors, Spaces e Typography).
+ * Font: Open Sans. Le variabili Figma "Text Font/*" citano Inter, ma i nodi
+ * di testo della pagina Typography usano Open Sans: vale quest'ultimo.
+ */
+
+:root {
+  --primary-color: var(--color-primary-800);
+  --secondary-color: var(--color-primary-600);
+
+  /* Colors: brand */
+  --color-primary-50: #d0ddd0;
+  --color-primary-200: #c2d4c2;
+  --color-primary-400: #b3c7b3;
+  --color-primary-600: #95b295;
+  --color-primary-800: #779d77;
+  --color-primary-900: #5f825f;
+
+  /* Colors: grey */
+  --color-grey-100: #f4f4f4;
+  --color-grey-200: #e2e2e3;
+  --color-grey-300: #cdcdcd;
+  --color-grey-400: #adadad;
+  --color-grey-600: #7d7d7d;
+  --color-grey-900: #545454;
+
+  /* Colors: neutral grey (variabile Figma senza prefisso MK) */
+  --color-neutral-grey-200: #e5e7ea;
+
+  /* Colors: black with alpha */
+  --color-black-100: #090c09;
+  --color-black-80: #090c09cc;
+  --color-black-60: #090c0999;
+  --color-black-40: #090c0966;
+  --color-black-20: #090c0933;
+
+  /* Colors: white with alpha */
+  --color-white-100: #ffffff;
+  --color-white-80: #ffffffcc;
+  --color-white-60: #ffffff99;
+  --color-white-40: #ffffff66;
+  --color-white-20: #ffffff33;
+
+  /* Colors: text */
+  --color-text-primary-black: #131927;
+  --color-text-primary-white: #ffffff;
+
+  /* Colors: feedback (Green, Red, Yellow, Blue) */
+  --color-green-50: #ecf8ef;
+  --color-green-100: #c5e9cd;
+  --color-green-200: #a9deb4;
+  --color-green-400: #69c57d;
+  --color-green-600: #3da755;
+  --color-green-800: #256533;
+  --color-green-900: #1c4d27;
+
+  --color-red-50: #fdecec;
+  --color-red-100: #fac5c3;
+  --color-red-200: #f7a9a7;
+  --color-red-400: #f16965;
+  --color-red-600: #d93e39;
+  --color-red-800: #832523;
+  --color-red-900: #641d1a;
+
+  --color-yellow-50: #fff7e6;
+  --color-yellow-100: #ffe5b0;
+  --color-yellow-200: #ffd88a;
+  --color-yellow-400: #ffbb33;
+  --color-yellow-600: #e89b00;
+  --color-yellow-800: #8c5e00;
+  --color-yellow-900: #6b4700;
+
+  --color-blue-50: #e6f4ff;
+  --color-blue-100: #b0deff;
+  --color-blue-200: #8aceff;
+  --color-blue-400: #33aaff;
+  --color-blue-600: #0088e8;
+  --color-blue-800: #00528c;
+  --color-blue-900: #003f6b;
+
+  /* Spacing: scala base 4/8 */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-80: 80px;
+  --space-96: 96px;
+  --space-128: 128px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-12: 12px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Typography: famiglia e pesi */
+  --font-family-base: 'Open Sans', sans-serif;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Typography: stili, shorthand "font" (weight size/line-height family) */
+  --text-h1: var(--font-weight-bold) 40px/48px var(--font-family-base);
+  --text-h2: var(--font-weight-semibold) 32px/40px var(--font-family-base);
+  --text-h3: var(--font-weight-semibold) 24px/32px var(--font-family-base);
+  --text-h4: var(--font-weight-semibold) 20px/28px var(--font-family-base);
+  --text-h5: var(--font-weight-semibold) 18px/26px var(--font-family-base);
+  --text-h6: var(--font-weight-semibold) 16px/24px var(--font-family-base);
+  --text-body-large: var(--font-weight-regular) 18px/28px
+    var(--font-family-base);
+  --text-body: var(--font-weight-regular) 16px/24px var(--font-family-base);
+  --text-body-small: var(--font-weight-regular) 14px/20px
+    var(--font-family-base);
+  --text-input: var(--font-weight-light) 14px/20px var(--font-family-base);
+  --text-caption: var(--font-weight-regular) 12px/16px var(--font-family-base);
+  --text-label: var(--font-weight-semibold) 12px/16px var(--font-family-base);
+  --text-overline: var(--font-weight-semibold) 12px/16px var(--font-family-base);
+
+  /* Typography: letter-spacing (solo gli stili che lo specificano) */
+  --tracking-h1: -0.5px;
+  --tracking-h2: -0.25px;
+  --tracking-body-small: 0.1px;
+  --tracking-input: 0.1px;
+  --tracking-caption: 0.2px;
+  --tracking-label: 0.2px;
+  --tracking-overline: 1.5px;
+}

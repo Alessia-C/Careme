@@ -32,12 +32,29 @@ describe('routes', () => {
     expect(screen.getByText('Careme')).toBeInTheDocument();
   });
 
+  it('shows the app header on protected pages', () => {
+    vi.mocked(isAuthenticated).mockReturnValue(true);
+    renderAt('/');
+
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+  });
+
   it.each([
     ['/login', 'Accedi'],
-    ['/signup', 'Registrati'],
+    ['/signup', 'Sign up'],
   ])('serves %s without authentication', (path, heading) => {
     renderAt(path);
 
     expect(screen.getByText(heading)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['/login', 'Login – Careme'],
+    ['/signup', 'Sign up – Careme'],
+  ])('sets the document title on %s', (path, title) => {
+    renderAt(path);
+
+    expect(document.title).toBe(title);
   });
 });

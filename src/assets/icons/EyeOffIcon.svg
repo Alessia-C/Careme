@@ -1,0 +1,8 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="stroke0_74_248" fill="white">
+<path d="M17 10C17 12.7614 13.866 15 10 15C6.13401 15 3 12.7614 3 10C3 7.23858 6.13401 5 10 5C13.866 5 17 7.23858 17 10Z"/>
+</mask>
+<path d="M17 10C17 12.7614 13.866 15 10 15C6.13401 15 3 12.7614 3 10C3 7.23858 6.13401 5 10 5C13.866 5 17 7.23858 17 10Z" stroke-width="3" stroke="#090C09" stroke-opacity="0.6" mask="url(#stroke0_74_248)"/>
+<circle cx="10" cy="10" r="3" fill="#090C09" fill-opacity="0.6"/>
+<path d="M3 3L17 17" stroke-width="1.5" stroke-linecap="round" stroke="#090C09" stroke-opacity="0.6"/>
+</svg>

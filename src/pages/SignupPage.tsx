@@ -1,5 +1,10 @@
 function SignupPage() {
-  return <h1>Registrati</h1>;
+  return (
+    <>
+      <title>Sign up – Careme</title>
+      <h1>Sign up</h1>
+    </>
+  );
 }
 
 export default SignupPage;
