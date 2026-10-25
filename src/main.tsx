@@ -5,6 +5,7 @@ import App from './App';
 import { initSentry, maybeThrowTestError } from './lib/sentry';
 import 'normalize.css';
 import './styles/tokens.css';
+import './styles/base.css';
 
 initSentry();
 maybeThrowTestError();

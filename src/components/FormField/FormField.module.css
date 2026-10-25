@@ -28,6 +28,8 @@
 
   &:focus-within {
     border-color: var(--color-black-40);
+    outline: 2px solid var(--color-primary-900);
+    outline-offset: 2px;
   }
 }
 
