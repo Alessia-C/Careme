@@ -6,3 +6,20 @@
   outline: 2px solid var(--color-primary-900);
   outline-offset: 2px;
 }
+
+/* Default font for the whole app (Open Sans is loaded in index.html). */
+body {
+  font-family: var(--font-family-base);
+}
+
+/* Form controls do not inherit the font from body by default. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+h1 {
+  margin: 0;
+}

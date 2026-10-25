@@ -30,37 +30,33 @@
   object-fit: cover;
 }
 
-.caption {
-  position: absolute;
-  right: var(--space-48);
-  bottom: var(--space-48);
-  left: var(--space-48);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  padding-top: var(--space-64);
-  color: var(--color-white-100);
-  background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.4));
-}
-
-.captionTitle {
-  margin: 0;
-  font: var(--text-overline);
-  letter-spacing: 0.28px;
-}
-
-.captionText {
-  margin: 0;
-  font: var(--text-body);
-  opacity: 0.9;
-}
-
+/* Mobile: the photo becomes a backdrop and the content a frosted card. */
 @media (max-width: 900px) {
+  .page {
+    position: relative;
+    flex-direction: column;
+    isolation: isolate;
+  }
+
   .imagePanel {
-    display: none;
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: -1;
+    height: 560px;
+    flex: none;
   }
 
   .formPanel {
+    flex: 1 1 auto;
+    gap: var(--space-24);
+    justify-content: flex-start;
+    margin-top: 243px;
     padding: var(--space-32) var(--space-24);
+    border: 1.5px solid rgb(255 255 255 / 0.5);
+    border-bottom: none;
+    border-radius: 36px 36px 0 0;
+    background: rgb(255 255 255 / 0.88);
+    box-shadow: 0 12px 24px rgb(9 12 9 / 0.13);
+    backdrop-filter: blur(16px);
   }
 }

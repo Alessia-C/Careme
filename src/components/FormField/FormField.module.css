@@ -52,6 +52,12 @@
   letter-spacing: inherit;
   outline: none;
 
+  /* Beats the global :focus-visible ring in base.css: the focus ring is
+     drawn once, on the surrounding .box (see :focus-within). */
+  &:focus-visible {
+    outline: none;
+  }
+
   &::placeholder {
     color: var(--color-black-40);
   }
