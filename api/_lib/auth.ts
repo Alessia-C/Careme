@@ -25,6 +25,23 @@ export function getBearerToken(req: VercelRequest): string | undefined {
   return token;
 }
 
+// The browser keeps the session in an HttpOnly cookie, so scripts (and any XSS)
+// cannot read the token. SameSite=Strict is the CSRF protection: the cookie is
+// never sent on cross-site requests.
+export const ACCESS_TOKEN_COOKIE = 'sb-access-token';
+
+export function buildSessionCookie(token: string, maxAgeSeconds: number) {
+  // `vercel dev` serves plain http, where Safari drops Secure cookies.
+  const secure = process.env.VERCEL_ENV === 'development' ? '' : '; Secure';
+  return `${ACCESS_TOKEN_COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAgeSeconds}${secure}`;
+}
+
+// Browsers send the cookie; API clients (curl, tests) can still use the
+// Authorization header, which wins when both are present.
+export function getAccessToken(req: VercelRequest): string | undefined {
+  return getBearerToken(req) ?? (req.cookies[ACCESS_TOKEN_COOKIE] || undefined);
+}
+
 export type AuthContext = { id: string; role: Role };
 
 type AuthHandler = (
@@ -51,7 +68,7 @@ function isInvalidSessionError(error: unknown): boolean {
 // controls everything it sends.
 export function withAuth(handler: AuthHandler): Handler {
   return async (req, res) => {
-    const token = getBearerToken(req);
+    const token = getAccessToken(req);
     if (!token) {
       return res
         .status(401)

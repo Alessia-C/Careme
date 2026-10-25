@@ -21,6 +21,7 @@ const validBody = { email: 'test@example.com', password: 'Valid123!' };
 const session = {
   access_token: 'access-jwt',
   refresh_token: 'refresh-token',
+  expires_in: 3600,
   expires_at: 1790000000,
 };
 
@@ -98,15 +99,34 @@ describe('POST /api/auth/login - validation', () => {
 });
 
 describe('POST /api/auth/login - successful login', () => {
-  it('should return 200 with the session and a reduced user', async () => {
+  it('should return 200 with a reduced user and no tokens in the body', async () => {
     const res = await callHandler('POST', validBody);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Login successful',
-      session,
       user: { id: 'user-1', email: 'test@example.com', role: 'user' },
     });
+  });
+
+  it('should set the access token in an HttpOnly SameSite=Strict cookie', async () => {
+    const res = await callHandler('POST', validBody);
+
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      expect.stringMatching(
+        /^sb-access-token=access-jwt; HttpOnly; SameSite=Strict; Path=\/; Max-Age=3600/,
+      ),
+    );
+  });
+
+  it('should never expose the refresh token', async () => {
+    const res = await callHandler('POST', validBody);
+
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain('refresh-token');
+    expect(JSON.stringify(res.setHeader.mock.calls)).not.toContain(
+      'refresh-token',
+    );
   });
 
   it('should return the admin role for an admin profile', async () => {
@@ -171,6 +191,7 @@ describe('POST /api/auth/login - blocked account', () => {
     const res = await callHandler('POST', validBody);
 
     expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.setHeader).not.toHaveBeenCalled();
   });
 
   it.each(['user_banned', 'email_not_confirmed'])(
@@ -203,6 +224,7 @@ describe('POST /api/auth/login - failed credentials', () => {
       message: 'Invalid email or password',
     });
     expect(rpc).not.toHaveBeenCalled();
+    expect(res.setHeader).not.toHaveBeenCalled();
   });
 
   it.each(['over_request_rate_limit', 'over_email_send_rate_limit'])(

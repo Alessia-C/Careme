@@ -7,8 +7,9 @@ export function makeReq(
   method: string,
   body?: unknown,
   headers: Record<string, string> = {},
+  cookies: Record<string, string> = {},
 ): VercelRequest {
-  return { method, body, headers } as unknown as VercelRequest;
+  return { method, body, headers, cookies } as unknown as VercelRequest;
 }
 
 // Fake Supabase env vars so the client factories do not throw. Pair it with
@@ -19,6 +20,10 @@ export function stubSupabaseEnv() {
 }
 
 export function makeRes() {
-  const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+  const res = {
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn(),
+    setHeader: vi.fn(),
+  };
   return { res, asVercel: res as unknown as VercelResponse };
 }

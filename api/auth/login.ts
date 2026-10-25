@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { buildSessionCookie } from '../_lib/auth.js';
 import { withSentry } from '../_lib/sentry.js';
 import {
   sendTooManyRequests,
@@ -83,13 +84,15 @@ async function handleLogin(
     throw new Error('Unexpected profile role');
   }
 
+  // The tokens never reach the page's JavaScript: the access token travels in
+  // an HttpOnly cookie. The refresh token is not stored for now.
+  res.setHeader(
+    'Set-Cookie',
+    buildSessionCookie(data.session.access_token, data.session.expires_in),
+  );
+
   return res.status(200).json({
     message: 'Login successful',
-    session: {
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-      expires_at: data.session.expires_at,
-    },
     user: { id: data.user.id, email: data.user.email, role },
   });
 }
