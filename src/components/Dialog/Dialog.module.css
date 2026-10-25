@@ -1,0 +1,30 @@
+.dialog {
+  /* Padding lives on .content so clicks on the dialog box itself reach the backdrop check. */
+  padding: 0;
+  border: 1px solid var(--color-grey-200);
+  border-radius: var(--radius-12);
+  background: var(--color-white-100);
+  color: var(--color-black-100);
+  box-shadow: 0 4px 16px rgb(9 12 9 / 0.12);
+}
+
+.dialog::backdrop {
+  background: var(--color-black-60);
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-24);
+}
+
+.title {
+  margin: 0;
+  font: var(--text-h6);
+  text-align: center;
+}

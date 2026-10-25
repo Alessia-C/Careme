@@ -1,0 +1,19 @@
+.modal {
+  width: min(100vw - 2 * var(--space-16), 440px);
+}
+
+.description {
+  margin: 0;
+  font: var(--text-body-small);
+  color: var(--color-grey-600);
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-16);
+}
+
+.actions > * {
+  flex: 1;
+}
