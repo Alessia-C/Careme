@@ -1,5 +1,10 @@
 function LoginPage() {
-  return <h1>Accedi</h1>;
+  return (
+    <>
+      <title>Login – Careme</title>
+      <h1>Accedi</h1>
+    </>
+  );
 }
 
 export default LoginPage;

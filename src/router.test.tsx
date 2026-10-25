@@ -48,4 +48,13 @@ describe('routes', () => {
 
     expect(screen.getByText(heading)).toBeInTheDocument();
   });
+
+  it.each([
+    ['/login', 'Login – Careme'],
+    ['/signup', 'Sign up – Careme'],
+  ])('sets the document title on %s', (path, title) => {
+    renderAt(path);
+
+    expect(document.title).toBe(title);
+  });
 });

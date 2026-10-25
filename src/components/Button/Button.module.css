@@ -26,7 +26,7 @@
 }
 
 .secondary {
-  --btn-base: var(--color-grey-600);
+  --btn-base: var(--color-grey-900);
   --btn-hover: var(--color-grey-900);
   --btn-press: var(--color-grey-900);
   --btn-focus: var(--color-grey-900);
