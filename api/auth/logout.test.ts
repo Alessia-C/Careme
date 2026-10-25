@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthSessionMissingError } from '@supabase/supabase-js';
 import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
+import { buildClearedSessionCookie } from '../_lib/auth.js';
 import handler from './logout.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
@@ -22,9 +23,10 @@ const validHeaders = { authorization: 'Bearer valid-token' };
 async function callHandler(
   method: string,
   headers: Record<string, string> = {},
+  cookies: Record<string, string> = {},
 ) {
   const { res, asVercel } = makeRes();
-  await handler(makeReq(method, undefined, headers), asVercel);
+  await handler(makeReq(method, undefined, headers, cookies), asVercel);
   return res;
 }
 
@@ -61,6 +63,10 @@ describe('POST /api/auth/logout - request shape', () => {
         message: 'Missing or invalid authorization header',
       });
       expect(signOut).not.toHaveBeenCalled();
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        buildClearedSessionCookie(),
+      );
     },
   );
 });
@@ -73,6 +79,43 @@ describe('POST /api/auth/logout - sign out', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Logged out successfully',
     });
+    expect(signOut).toHaveBeenCalledWith('valid-token', 'local');
+  });
+
+  it('should clear the session cookie on success', async () => {
+    const res = await callHandler('POST', validHeaders);
+
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      buildClearedSessionCookie(),
+    );
+  });
+
+  it('should read the token from the session cookie when there is no header', async () => {
+    const res = await callHandler(
+      'POST',
+      {},
+      { '__Host-sb-access-token': 'cookie-token' },
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(signOut).toHaveBeenCalledWith('cookie-token', 'local');
+  });
+
+  it('should not check the profile status, so a blocked user can log out', async () => {
+    // The fake client only has auth.admin: any rpc/from call (as withAuth
+    // does to reject blocked users) would throw and give a 500.
+    const res = await callHandler('POST', validHeaders);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(createClient).toHaveBeenCalledTimes(1);
+  });
+
+  it('should prefer the Authorization header over the cookie', async () => {
+    await callHandler('POST', validHeaders, {
+      '__Host-sb-access-token': 'cookie-token',
+    });
+
     expect(signOut).toHaveBeenCalledWith('valid-token', 'local');
   });
 
@@ -96,6 +139,10 @@ describe('POST /api/auth/logout - sign out', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Session expired or invalid',
     });
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      buildClearedSessionCookie(),
+    );
   });
 
   it.each(['over_request_rate_limit', 'over_email_send_rate_limit'])(
@@ -109,6 +156,8 @@ describe('POST /api/auth/logout - sign out', () => {
       expect(res.json).toHaveBeenCalledWith({
         message: 'Too many requests, please try again later',
       });
+      // The session is still alive: keep the cookie so the user can retry.
+      expect(res.setHeader).not.toHaveBeenCalled();
     },
   );
 });
@@ -127,6 +176,7 @@ describe('POST /api/auth/logout - unexpected failures', () => {
       status: 'error',
       message: 'Internal server error',
     });
+    expect(res.setHeader).not.toHaveBeenCalled();
   });
 
   it('should return a generic 500 when the Supabase env vars are missing', async () => {

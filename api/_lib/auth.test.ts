@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthSessionMissingError } from '@supabase/supabase-js';
 import {
+  buildClearedSessionCookie,
   buildSessionCookie,
   getAccessToken,
   getBearerToken,
@@ -142,6 +143,21 @@ describe('buildSessionCookie', () => {
     vi.stubEnv('VERCEL_ENV', 'development');
     const req = makeReq('GET', undefined, {}, { 'sb-access-token': 'jwt' });
     expect(getAccessToken(req)).toBe('jwt');
+  });
+});
+
+describe('buildClearedSessionCookie', () => {
+  it('expires the cookie with the same attributes as the session cookie', () => {
+    expect(buildClearedSessionCookie()).toBe(
+      '__Host-sb-access-token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0; Secure',
+    );
+  });
+
+  it('uses the plain cookie name under vercel dev (plain http)', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    expect(buildClearedSessionCookie()).toBe(
+      'sb-access-token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0',
+    );
   });
 });
 

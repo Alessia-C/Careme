@@ -63,7 +63,7 @@ The access token is stored by the browser in the `__Host-sb-access-token` cookie
 
 ## Open decisions
 
-- Out of scope, planned for later issues: logout (deleting the cookie; today `/api/auth/logout` accepts only the `Authorization: Bearer` header), session restore after a reload, refresh token handling and handling of `401` responses in the client.
+- Out of scope, planned for later issues: session restore after a reload, refresh token handling and handling of `401` responses in the client.
 - Password recovery does not exist: the "Forgot password?" button stays disabled until it is defined.
 - Whether the user should get a specific message for an unconfirmed email (today the `403` is shown as the generic invalid-credentials message) is not defined in the code.
 

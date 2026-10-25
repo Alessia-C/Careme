@@ -2,13 +2,13 @@
 
 A shared shell (skip link, header with logo and Logout button, main content area) that wraps every protected page, so all logged-in pages look and behave the same and are easy to navigate with a keyboard.
 
-|               |                                                      |
-| ------------- | ---------------------------------------------------- |
-| **Status**    | In progress                                          |
-| **Issue**     | [#56](https://github.com/Alessia-C/Careme/issues/56) |
-| **Users**     | Logged-in user                                       |
-| **Pages**     | `/` (see [`src/router.tsx`](../../src/router.tsx))   |
-| **Endpoints** | None                                                 |
+|               |                                                                           |
+| ------------- | ------------------------------------------------------------------------- |
+| **Status**    | In progress                                                               |
+| **Issue**     | [#56](https://github.com/Alessia-C/Careme/issues/56)                      |
+| **Users**     | Logged-in user                                                            |
+| **Pages**     | `/` (see [`src/router.tsx`](../../src/router.tsx))                        |
+| **Endpoints** | None (the Logout button uses [`/api/auth/logout`](../api/auth-logout.md)) |
 
 ## Behavior
 
@@ -19,7 +19,7 @@ A shared shell (skip link, header with logo and Logout button, main content area
   3. `<main id="main" tabindex="-1">` containing the current page (`<Outlet />`). The `tabindex="-1"` lets the skip link move focus into `main` in every browser.
 - `AppHeader` shows:
   - The "Careme" logo on the left. It is the SVG [`src/assets/icons/logo.svg`](../../src/assets/icons/logo.svg) used as a CSS mask, colored with `--color-primary-800`. It has `role="img"` and `aria-label="Careme"`.
-  - A "Logout" button on the right (`Button`, secondary variant, text appearance) with a log-out icon. The button has no action yet: the logout logic is not implemented and will be added in another issue.
+  - A "Logout" button on the right (`Button`, secondary variant, text appearance) with a log-out icon. It logs the user out, see [Logout](logout.md).
 - Responsive behavior (breakpoint 768px):
   - Desktop (>= 768px): header side padding is 61px; the icon and the "Logout" text are both visible.
   - Mobile (< 768px): header side padding is 16px (`--space-16`); only the icon is shown. The "Logout" label is visually hidden but still the accessible name of the button. The button area is at least 44x44px.
@@ -36,7 +36,7 @@ A shared shell (skip link, header with logo and Logout button, main content area
 - `Button` accepts an optional `icon` prop (a decorative `ReactNode`) rendered before the label. The label is always rendered inside a `<span>`.
 - The `secondary` variant of `Button` uses `--color-grey-900` as its base color (it was `--color-grey-600`, which failed the 4.5:1 contrast minimum for 14px text). This changes every secondary button in the app, not only the Logout button.
 - Each page sets its own document title: `/login` "Login – Careme", `/signup` "Sign up – Careme", `/` "Careme".
-- Logout behavior: not yet implemented.
+- Logout behavior is documented in [Logout](logout.md). `AppLayout` also mounts `useLogoutSync`, which ends this tab's session when another tab logs out.
 
 ## Data
 
@@ -55,15 +55,16 @@ None. The feature does not read or write any table.
   - [`src/routes/AppHeader.test.tsx`](../../src/routes/AppHeader.test.tsx): logo exposed as image "Careme", Logout button with its label as accessible name, header in the banner landmark.
   - [`src/components/Button/Button.test.tsx`](../../src/components/Button/Button.test.tsx): `Button` with the new `icon` prop and label in a `<span>`.
   - [`src/router.test.tsx`](../../src/router.test.tsx): the app header is shown on protected pages; the document title is set on `/login` and `/signup`.
-- E2E tests: None
+- E2E tests: [`e2e/logout.spec.ts`](../../e2e/logout.spec.ts) covers the Logout button and tab sync (see [Logout](logout.md))
 
 ## Open decisions
 
-- Logout behavior (call to the API, session cleanup, redirect) is not implemented and belongs to another issue.
+- None for logout: it is implemented, see [Logout](logout.md).
 - Visual/responsive behavior (breakpoint, hidden label, 44x44px target) is defined only in CSS and is not covered by automated tests.
 
 ## Changelog
 
-| Date       | Change                 | PR  |
-| ---------- | ---------------------- | --- |
-| 2026-10-25 | Initial implementation | TBD |
+| Date       | Change                                       | PR  |
+| ---------- | -------------------------------------------- | --- |
+| 2026-10-25 | Initial implementation                       | TBD |
+| 2026-10-25 | Logout button wired, `useLogoutSync` mounted | TBD |

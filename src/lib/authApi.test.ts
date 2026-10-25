@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { login, signup } from './authApi';
+import { login, logout, signup } from './authApi';
 
 const input = {
   firstName: 'Jane',
@@ -129,5 +129,36 @@ describe('login', () => {
   it('returns failed when the network is down', async () => {
     mockFetch(new TypeError('Failed to fetch'));
     expect(await login(credentials)).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('logout', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts to the logout endpoint without a body or token', async () => {
+    const fetchMock = mockFetch(new Response(null, { status: 200 }));
+
+    await logout();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST',
+    });
+  });
+
+  it.each([200, 401])('returns ok on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await logout()).toEqual({ ok: true });
+  });
+
+  it.each([429, 500])('returns failed on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await logout()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await logout()).toEqual({ ok: false, reason: 'failed' });
   });
 });

@@ -6,7 +6,7 @@ import {
 import { sendTooManyRequests, withMethod } from '../_lib/http.js';
 import { withSentry } from '../_lib/sentry.js';
 import { createAnonClient, isRateLimitError } from '../_lib/supabase.js';
-import { getBearerToken } from '../_lib/auth.js';
+import { buildClearedSessionCookie, getAccessToken } from '../_lib/auth.js';
 
 // Same statuses supabase-js itself ignores on sign out: the JWT is invalid or
 // expired (401), forbidden (403) or the user no longer exists (404). An
@@ -14,10 +14,18 @@ import { getBearerToken } from '../_lib/auth.js';
 // AuthSessionMissingError instead of an AuthApiError.
 const SESSION_INVALID_STATUSES = [401, 403, 404];
 
+// The session cookie must go away whenever the session is over, even if it was
+// already invalid: a dead cookie left in the browser helps nobody.
+function clearSessionCookie(res: VercelResponse) {
+  res.setHeader('Set-Cookie', buildClearedSessionCookie());
+}
+
 async function handleLogout(req: VercelRequest, res: VercelResponse) {
-  const token = getBearerToken(req);
+  // Not withAuth on purpose: a blocked user must still be able to log out.
+  const token = getAccessToken(req);
 
   if (!token) {
+    clearSessionCookie(res);
     return res
       .status(401)
       .json({ message: 'Missing or invalid authorization header' });
@@ -41,6 +49,7 @@ async function handleLogout(req: VercelRequest, res: VercelResponse) {
     isAuthSessionMissingError(error) ||
     (isAuthApiError(error) && SESSION_INVALID_STATUSES.includes(error.status))
   ) {
+    clearSessionCookie(res);
     return res.status(401).json({ message: 'Session expired or invalid' });
   }
 
@@ -48,6 +57,7 @@ async function handleLogout(req: VercelRequest, res: VercelResponse) {
     throw error;
   }
 
+  clearSessionCookie(res);
   return res.status(200).json({ message: 'Logged out successfully' });
 }
 
