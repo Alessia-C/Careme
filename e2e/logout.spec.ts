@@ -34,8 +34,10 @@ test('logout leads to the login and back does not reopen the app', async ({
   await page.getByRole('button', { name: 'Logout' }).click();
   await expect(page).toHaveURL(/\/login$/);
 
+  // The redirect replaces the protected page in the history, so going back
+  // leaves the app instead of reopening it.
   await page.goBack();
-  await expect(page).toHaveURL(/\/login/);
+  await expect(page).toHaveURL('about:blank');
   await expect(page.getByRole('button', { name: 'Logout' })).toHaveCount(0);
 });
 

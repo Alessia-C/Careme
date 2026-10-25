@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
@@ -12,6 +12,11 @@ const loginResponse = () =>
     user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
   });
 
+function StateProbe() {
+  const { state } = useLocation();
+  return <p>{`router state: ${JSON.stringify(state)}`}</p>;
+}
+
 function CurrentPath() {
   const { pathname, search } = useLocation();
   return <p>{`at ${pathname}${search}`}</p>;
@@ -22,7 +27,15 @@ const renderPage = (initialEntry: string | object = '/login') =>
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/login"
+            element={
+              <>
+                <StateProbe />
+                <LoginPage />
+              </>
+            }
+          />
           <Route path="*" element={<CurrentPath />} />
         </Routes>
       </MemoryRouter>
@@ -50,6 +63,30 @@ describe('LoginPage - after a logout', () => {
     expect(
       screen.getByRole('heading', { name: 'Sign in to your account' }),
     ).toHaveFocus();
+  });
+
+  it('clears the navigation state but keeps the message visible', async () => {
+    renderPage({ pathname: '/login', state: { signedOut: true } });
+
+    expect(await screen.findByText('router state: null')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'You have been signed out',
+    );
+  });
+
+  it('removes the message after 5 seconds', () => {
+    vi.useFakeTimers();
+    try {
+      renderPage({ pathname: '/login', state: { signedOut: true } });
+
+      act(() => vi.advanceTimersByTime(4999));
+      expect(screen.getByRole('status')).toBeInTheDocument();
+
+      act(() => vi.advanceTimersByTime(1));
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows no message and keeps the focus where it is on a normal visit', () => {

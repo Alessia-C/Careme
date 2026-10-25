@@ -28,7 +28,7 @@ Lets an existing user sign in to Careme with email and password. The session is 
    - `429`: "Too many attempts. Please wait a moment and try again."
    - any other non-2xx status, a network error, or a `200` whose body does not contain a valid user and role: "We couldn’t complete your request. Please try again."
 8. If the auth store already holds a session when `/login` renders, the user is redirected to `/` (history entry replaced) without seeing the form.
-9. After a [logout](logout.md) (also one done in another tab) the user arrives with the navigation state `{ signedOut: true }`. The page then shows an info `Feedback` above the form titled "You have been signed out" with the text "Sign in again to continue.", and moves the keyboard focus to the `h1`. Without that state (direct visit, redirect from a protected page) nothing is shown and the focus is not moved. The state lives in the history entry, so it is not kept in the URL.
+9. After a [logout](logout.md) (also one done in another tab) the user arrives with the navigation state `{ signedOut: true }`. The page then shows an info `Feedback` above the form titled "You have been signed out" (no description), and moves the keyboard focus to the `h1`. The message disappears after 5 seconds. Without that state (direct visit, redirect from a protected page) nothing is shown and the focus is not moved. The state lives in the history entry, not in the URL; the page clears it through the router right after the first render, so a reload does not show the message again.
 
 ## Business rules
 
