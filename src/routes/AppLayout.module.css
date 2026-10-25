@@ -1,0 +1,27 @@
+.skipLink {
+  position: absolute;
+  top: var(--space-8);
+  left: var(--space-8);
+  z-index: 1;
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-md);
+  background: var(--color-white-100);
+  font: var(--text-body-small);
+  transform: translateY(-200%);
+
+  &:focus {
+    transform: none;
+  }
+}
+
+.main {
+  box-sizing: border-box;
+  min-height: calc(100vh - 64px);
+  padding: var(--space-16);
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding: var(--space-24) 61px;
+  }
+}
