@@ -1,0 +1,66 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-grey-100);
+}
+
+.formPanel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--space-48);
+  justify-content: center;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--space-48) var(--space-96);
+}
+
+.imagePanel {
+  position: relative;
+  flex: 0 0 min(753px, 52%);
+  overflow: hidden;
+  background: var(--color-grey-300);
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.caption {
+  position: absolute;
+  right: var(--space-48);
+  bottom: var(--space-48);
+  left: var(--space-48);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding-top: var(--space-64);
+  color: var(--color-white-100);
+  background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.4));
+}
+
+.captionTitle {
+  margin: 0;
+  font: var(--text-overline);
+  letter-spacing: 0.28px;
+}
+
+.captionText {
+  margin: 0;
+  font: var(--text-body);
+  opacity: 0.9;
+}
+
+@media (max-width: 900px) {
+  .imagePanel {
+    display: none;
+  }
+
+  .formPanel {
+    padding: var(--space-32) var(--space-24);
+  }
+}
