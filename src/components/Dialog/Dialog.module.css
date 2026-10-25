@@ -28,3 +28,10 @@ body:has(dialog[open]) {
   font: var(--text-h6);
   text-align: center;
 }
+
+.description {
+  margin: 0;
+  font: var(--text-body-small);
+  color: var(--color-grey-600);
+  text-align: center;
+}

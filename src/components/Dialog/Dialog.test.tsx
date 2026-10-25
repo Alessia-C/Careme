@@ -6,16 +6,19 @@ interface DialogElementOptions {
   open: boolean;
   onClose?: () => void;
   closeOnBackdropClick?: boolean;
+  description?: string;
 }
 
 const dialogElement = ({
   open,
   onClose = vi.fn(),
   closeOnBackdropClick,
+  description,
 }: DialogElementOptions) => (
   <Dialog
     open={open}
     title="Remove product"
+    description={description}
     onClose={onClose}
     closeOnBackdropClick={closeOnBackdropClick}
   >
@@ -49,6 +52,18 @@ describe('Dialog', () => {
     expect(
       screen.getByRole('dialog', { name: 'Remove product' }),
     ).toBeInTheDocument();
+  });
+
+  it('describes the dialog with the description when provided', () => {
+    render(
+      dialogElement({ open: true, description: 'This cannot be undone.' }),
+    );
+    expect(getDialog()).toHaveAccessibleDescription('This cannot be undone.');
+  });
+
+  it('has no accessible description when no description is provided', () => {
+    render(dialogElement({ open: true }));
+    expect(getDialog()).not.toHaveAccessibleDescription();
   });
 
   it('closes when open becomes false, without calling onClose', () => {

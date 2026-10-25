@@ -20,7 +20,7 @@ const renderModal = (overrides: Partial<ComponentProps<typeof Modal>> = {}) => {
 // A closed <dialog> is hidden from the accessibility tree, hence hidden: true.
 // getByRole returns HTMLElement, so we narrow to HTMLDialogElement to use close().
 const getDialog = () => {
-  const dialog = screen.getByRole('dialog', { hidden: true });
+  const dialog = screen.getByRole('alertdialog', { hidden: true });
   if (!(dialog instanceof HTMLDialogElement)) {
     throw new Error('Expected a <dialog> element');
   }
@@ -32,13 +32,21 @@ describe('Modal', () => {
     renderModal();
 
     expect(
-      screen.getByRole('dialog', { name: 'Remove product' }),
+      screen.getByRole('alertdialog', { name: 'Remove product' }),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Are you sure you want to remove this product?'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
+  });
+
+  it('describes the dialog with the description text', () => {
+    renderModal();
+
+    expect(getDialog()).toHaveAccessibleDescription(
+      'Are you sure you want to remove this product?',
+    );
   });
 
   it('uses the custom cancel label when provided', () => {

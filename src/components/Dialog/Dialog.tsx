@@ -5,6 +5,8 @@ import styles from './Dialog.module.css';
 interface DialogProps {
   open: boolean;
   title: string;
+  description?: string;
+  role?: 'dialog' | 'alertdialog';
   onClose: () => void;
   children: ReactNode;
   className?: string;
@@ -14,6 +16,8 @@ interface DialogProps {
 const Dialog = ({
   open,
   title,
+  description,
+  role = 'dialog',
   onClose,
   children,
   className,
@@ -21,6 +25,7 @@ const Dialog = ({
 }: DialogProps) => {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const descriptionId = useId();
   // The native 'close' event also fires when we call dialog.close() ourselves.
   // This flag tells handleClose to ignore that event, so onClose only reports
   // closes the user caused (Esc or backdrop click).
@@ -57,7 +62,9 @@ const Dialog = ({
   return (
     <dialog
       ref={ref}
+      role={role}
       aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
       onClose={handleClose}
       onClick={handleClick}
       className={[styles.dialog, className].filter(Boolean).join(' ')}
@@ -66,6 +73,11 @@ const Dialog = ({
         <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
+        {description && (
+          <p id={descriptionId} className={styles.description}>
+            {description}
+          </p>
+        )}
         {children}
       </div>
     </dialog>

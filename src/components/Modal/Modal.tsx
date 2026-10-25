@@ -28,11 +28,12 @@ const Modal = ({
   <Dialog
     open={open}
     title={title}
+    description={description}
+    role="alertdialog"
     onClose={onCancel}
     closeOnBackdropClick={false}
     className={styles.modal}
   >
-    <p className={styles.description}>{description}</p>
     <div className={styles.actions}>
       <Button
         label={cancelLabel}
