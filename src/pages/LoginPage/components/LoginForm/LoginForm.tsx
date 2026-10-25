@@ -1,20 +1,20 @@
-import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import Button from '../../../../components/Button/Button';
 import Feedback from '../../../../components/Feedback/Feedback';
 import PasswordInput from '../../../../components/PasswordInput/PasswordInput';
 import ValidatedInput from '../../../../components/ValidatedInput/ValidatedInput';
 import { useForm } from '../../../../hooks/useForm';
+import { useSubmit } from '../../../../hooks/useSubmit';
 import { login } from '../../../../lib/authApi';
+import { COMMON_AUTH_ERROR_DESCRIPTIONS } from '../../../../lib/authErrors';
 import { getSafeNextPath } from '../../../../lib/redirect';
 import useAuthStore from '../../../../stores/authStore';
 import { validateEmail } from '../../../../../shared/validation';
 import styles from './LoginForm.module.css';
 
 const LOGIN_ERROR_DESCRIPTIONS = {
+  ...COMMON_AUTH_ERROR_DESCRIPTIONS,
   'invalid-credentials': 'Invalid email or password.',
-  failed: 'We couldn’t complete your request. Please try again.',
-  'rate-limited': 'Too many attempts. Please wait a moment and try again.',
 };
 
 const LoginForm = () => {
@@ -22,38 +22,18 @@ const LoginForm = () => {
     email: { validate: validateEmail, error: 'Enter a valid email address' },
     password: { validate: (password) => password.length > 0 },
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorReason, setErrorReason] = useState<
-    keyof typeof LOGIN_ERROR_DESCRIPTIONS | null
-  >(null);
   const setSession = useAuthStore((state) => state.setSession);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const passwordField = field('password');
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!isValid || isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorReason(null);
-
-    const result = await login({
-      email: values.email,
-      password: values.password,
-    });
-
-    setIsSubmitting(false);
-
-    if (result.ok) {
+  const { isSubmitting, errorReason, handleSubmit } = useSubmit({
+    isValid,
+    action: () => login({ email: values.email, password: values.password }),
+    onSuccess: (result) => {
       setSession(result.user, result.role);
       navigate(getSafeNextPath(searchParams.get('next')), { replace: true });
-    } else {
-      setErrorReason(result.reason);
-    }
-  };
+    },
+  });
 
   return (
     <>

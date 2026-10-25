@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,12 +19,14 @@ function CurrentPath() {
 
 const renderPage = (initialEntry = '/login') =>
   render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<CurrentPath />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<CurrentPath />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 const submitButton = () => screen.getByRole('button', { name: /sign in/i });

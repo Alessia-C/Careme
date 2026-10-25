@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import Button from '../../../../components/Button/Button';
 import Feedback from '../../../../components/Feedback/Feedback';
 import ValidatedInput from '../../../../components/ValidatedInput/ValidatedInput';
 import { useForm } from '../../../../hooks/useForm';
+import { useSubmit } from '../../../../hooks/useSubmit';
 import { signup } from '../../../../lib/authApi';
+import { COMMON_AUTH_ERROR_DESCRIPTIONS } from '../../../../lib/authErrors';
 import {
   validateEmail,
   validateInput,
@@ -12,11 +13,6 @@ import {
 } from '../../../../../shared/validation';
 import PasswordFields from '../PasswordFields/PasswordFields';
 import styles from './SignupForm.module.css';
-
-const SIGNUP_ERROR_DESCRIPTIONS = {
-  failed: 'We couldn’t complete your request. Please try again.',
-  'rate-limited': 'Too many attempts. Please wait a moment and try again.',
-};
 
 interface SignupFormProps {
   onSuccess: () => void;
@@ -32,35 +28,17 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
       validate: (confirm, current) => confirm === current.password,
     },
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorReason, setErrorReason] = useState<
-    keyof typeof SIGNUP_ERROR_DESCRIPTIONS | null
-  >(null);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!isValid || isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorReason(null);
-
-    const result = await signup({
-      firstName: values.firstName,
-      lastName: values.lastName,
-      email: values.email,
-      password: values.password,
-    });
-
-    setIsSubmitting(false);
-
-    if (result.ok) {
-      onSuccess();
-    } else {
-      setErrorReason(result.reason);
-    }
-  };
+  const { isSubmitting, errorReason, handleSubmit } = useSubmit({
+    isValid,
+    action: () =>
+      signup({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
+      }),
+    onSuccess,
+  });
 
   return (
     <>
@@ -68,7 +46,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
         <Feedback
           status="error"
           title="Something went wrong"
-          description={SIGNUP_ERROR_DESCRIPTIONS[errorReason]}
+          description={COMMON_AUTH_ERROR_DESCRIPTIONS[errorReason]}
         />
       )}
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
