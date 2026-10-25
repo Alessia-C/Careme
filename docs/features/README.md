@@ -11,6 +11,6 @@ Each user-facing feature has one document in this folder. It describes the behav
 
 ## Features
 
-| Feature    | Status | Description |
-| ---------- | ------ | ----------- |
-| _None yet_ | —      | —           |
+| Feature                     | Status      | Description                                                                                    |
+| --------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| [App layout](app-layout.md) | In progress | Shell for protected pages: skip link, header with logo and Logout button (UI only), main area. |
