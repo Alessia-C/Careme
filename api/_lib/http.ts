@@ -28,10 +28,19 @@ export function withMethod(method: string, handler: Handler): Handler {
   };
 }
 
-// Rejects a missing or non-object body with 400. The handler receives the body
-// already narrowed, so it does not need to re-check it.
+// Rejects anything but a JSON body with 415, then a missing or non-object body
+// with 400. The handler receives the body already narrowed.
+// The content type check is a CSRF defence: a cross-site <form> can only send
+// form-encoded or text/plain bodies without a CORS preflight, and Vercel
+// parses the form-encoded one into an object too. SameSite does not stop a
+// cross-site request from *setting* a cookie, so login would accept it.
 export function withObjectBody(handler: BodyHandler): Handler {
   return (req, res) => {
+    if (!req.headers['content-type']?.startsWith('application/json')) {
+      return res
+        .status(415)
+        .json({ message: 'Content-Type must be application/json' });
+    }
     if (!isObject(req.body)) {
       return res
         .status(400)

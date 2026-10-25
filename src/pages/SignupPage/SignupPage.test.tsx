@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,9 +9,11 @@ const VALID_PASSWORD = 'Str0ng!pass';
 
 const renderPage = () =>
   render(
-    <MemoryRouter>
-      <SignupPage />
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <SignupPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 const submitButton = () =>

@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthSessionMissingError } from '@supabase/supabase-js';
-import { getBearerToken, withAuth } from './auth.js';
+import {
+  buildSessionCookie,
+  getAccessToken,
+  getBearerToken,
+  getSessionCookieName,
+  withAuth,
+} from './auth.js';
 import { withSentry } from './sentry.js';
 import { makeReq, makeRes, stubSupabaseEnv } from './test-helpers.js';
 
@@ -24,12 +30,15 @@ vi.mock('@supabase/supabase-js', async (importOriginal) => ({
 const handler = vi.fn();
 const validHeaders = { authorization: 'Bearer valid-token' };
 
-async function callWithAuth(headers: Record<string, string> = validHeaders) {
+async function callWithAuth(
+  headers: Record<string, string> = validHeaders,
+  cookies: Record<string, string> = {},
+) {
   const { res, asVercel } = makeRes();
   // Wrapped like a real route: withSentry turns the errors that withAuth
   // rethrows into a generic 500.
   await withSentry(withAuth(handler))(
-    makeReq('GET', undefined, headers),
+    makeReq('GET', undefined, headers, cookies),
     asVercel,
   );
   return res;
@@ -84,6 +93,55 @@ describe('auth', () => {
     });
     const token = getBearerToken(req);
     expect(token).toBe('AbC.dEf.GhI');
+  });
+});
+
+describe('getAccessToken', () => {
+  it('reads the token from the session cookie', () => {
+    const req = makeReq(
+      'GET',
+      undefined,
+      {},
+      { [getSessionCookieName()]: 'jwt' },
+    );
+    expect(getAccessToken(req)).toBe('jwt');
+  });
+
+  it('prefers the Authorization header over the cookie', () => {
+    const req = makeReq('GET', undefined, validHeaders, {
+      [getSessionCookieName()]: 'cookie-jwt',
+    });
+    expect(getAccessToken(req)).toBe('valid-token');
+  });
+
+  it('returns undefined when neither header nor cookie are present', () => {
+    expect(getAccessToken(makeReq('GET'))).toBeUndefined();
+  });
+
+  it('ignores an empty cookie', () => {
+    const req = makeReq('GET', undefined, {}, { [getSessionCookieName()]: '' });
+    expect(getAccessToken(req)).toBeUndefined();
+  });
+});
+
+describe('buildSessionCookie', () => {
+  it('is HttpOnly, SameSite=Strict and Secure with the given lifetime', () => {
+    expect(buildSessionCookie('jwt', 3600)).toBe(
+      '__Host-sb-access-token=jwt; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600; Secure',
+    );
+  });
+
+  it('drops Secure and the __Host- prefix under vercel dev (plain http)', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    const cookie = buildSessionCookie('jwt', 3600);
+    expect(cookie).not.toContain('Secure');
+    expect(cookie.startsWith('sb-access-token=jwt;')).toBe(true);
+  });
+
+  it('reads the cookie under the same name it sets', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    const req = makeReq('GET', undefined, {}, { 'sb-access-token': 'jwt' });
+    expect(getAccessToken(req)).toBe('jwt');
   });
 });
 
@@ -145,6 +203,13 @@ describe('withAuth - token', () => {
     await callWithAuth();
 
     expect(getUser).toHaveBeenCalledWith('valid-token');
+  });
+
+  it('should accept the token from the session cookie', async () => {
+    await callWithAuth({}, { [getSessionCookieName()]: 'cookie-jwt' });
+
+    expect(getUser).toHaveBeenCalledWith('cookie-jwt');
+    expect(handler).toHaveBeenCalled();
   });
 });
 
