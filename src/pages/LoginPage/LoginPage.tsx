@@ -5,6 +5,7 @@ import Feedback from '../../components/Feedback/Feedback';
 import { isAuthenticated } from '../../lib/auth';
 import { isSignedOutState } from '../../lib/signedOut';
 import LoginForm from './components/LoginForm/LoginForm';
+import styles from './LoginPage.module.css';
 
 const PAGE_INFO = {
   title: 'Login – Careme',
@@ -36,7 +37,7 @@ function LoginPage() {
         <Feedback
           status="info"
           title="You have been signed out"
-          description="Sign in again to continue."
+          customClassName={styles.loginFeedback}
         />
       )}
       <LoginForm />

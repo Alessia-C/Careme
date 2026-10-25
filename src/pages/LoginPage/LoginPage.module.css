@@ -1,0 +1,6 @@
+/* Placed by the login page only: the shared Feedback stays unpositioned. */
+.loginFeedback {
+  position: absolute;
+  bottom: var(--space-16);
+  left: var(--space-24);
+}
