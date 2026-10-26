@@ -28,7 +28,11 @@ Lets an existing user sign in to Careme with email and password. The session is 
    - `429`: "Too many attempts. Please wait a moment and try again."
    - any other non-2xx status, a network error, or a `200` whose body does not contain a valid user and role: "We couldn’t complete your request. Please try again."
 8. If the auth store already holds a session when `/login` renders, the user is redirected to `/` (history entry replaced) without seeing the form.
-9. After a [logout](logout.md) (also one done in another tab) the user arrives with the navigation state `{ signedOut: true }`. The page then shows an info `Feedback` above the form titled "You have been signed out" (no description), and moves the keyboard focus to the `h1`. The message disappears after 5 seconds. Without that state (direct visit, redirect from a protected page) nothing is shown and the focus is not moved. The state lives in the history entry, not in the URL; the page clears it through the router right after the first render, so a reload does not show the message again.
+9. After a [logout](logout.md) (also one done in another tab) the user arrives with a navigation state `{ signedOut: true, confirmed: boolean }`. The page moves the keyboard focus to the `h1` and shows a `Feedback` above the form, read together with the title through `aria-describedby` on the `h1`:
+   - `confirmed: true` (or missing): info "You have been signed out", which disappears after 5 seconds;
+   - `confirmed: false` (the request did not reach the server): error (role alert) "We couldn't confirm the sign out", with the description "Your session may still be active on this device. Close this browser window, or sign in and sign out again.", with no timer.
+
+   Both have a close button (`aria-label="Close message"`). Closing a message moves the focus to the `h1`; the message comes after the form in the DOM so the tab order matches the visual order. Without that state (direct visit, redirect from a protected page) nothing is shown, the focus is not moved and the `h1` has no `aria-describedby`. The state lives in the history entry, not in the URL; the page clears it through the router right after the first render, so a reload does not show the message again. See [Logout](logout.md).
 
 ## Business rules
 
@@ -55,7 +59,7 @@ The access token is stored by the browser in the `__Host-sb-access-token` cookie
 ## Tests
 
 - Unit tests:
-  - [`src/pages/LoginPage/LoginPage.test.tsx`](../../src/pages/LoginPage/LoginPage.test.tsx): form and signup link, disabled "Forgot password?", button disabled/enabled, no signup password policy, inline errors after blur, request and session stored, `next` honored, external `next` ignored, redirect when already authenticated, signed-out message and focus after a logout (and none on a normal visit), progress state, rate-limit message, network failure and retry.
+  - [`src/pages/LoginPage/LoginPage.test.tsx`](../../src/pages/LoginPage/LoginPage.test.tsx): form and signup link, disabled "Forgot password?", button disabled/enabled, no signup password policy, inline errors after blur, request and session stored, `next` honored, external `next` ignored, redirect when already authenticated, signed-out message and focus after a logout (and none on a normal visit), close button, `aria-describedby`, unconfirmed alert without timer, progress state, rate-limit message, network failure and retry.
   - [`src/lib/redirect.test.ts`](../../src/lib/redirect.test.ts): `getSafeNextPath` with internal and unsafe paths.
   - [`src/lib/authApi.test.ts`](../../src/lib/authApi.test.ts): `login()` status mapping and response validation.
   - [`src/router.test.tsx`](../../src/router.test.tsx): unauthenticated access to a protected page redirects to `/login?next=...`.

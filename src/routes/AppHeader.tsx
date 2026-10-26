@@ -11,12 +11,15 @@ import styles from './AppHeader.module.css';
 function AppHeader() {
   const endSession = useEndSession();
   // onSettled, not onSuccess: even if the request failed the user asked to
-  // leave, so the local session is dropped anyway (shared devices).
+  // leave, so the local session is dropped anyway (shared devices). The login
+  // page is told whether the server confirmed it, because if not the HttpOnly
+  // cookie (which scripts cannot delete) may still be in the browser.
   const { mutate, isPending } = useMutation({
     mutationFn: logout,
-    onSettled: () => {
-      endSession();
-      broadcastLogout();
+    onSettled: (result) => {
+      const confirmed = result?.ok === true;
+      endSession(confirmed);
+      broadcastLogout(confirmed);
     },
   });
 
@@ -34,8 +37,14 @@ function AppHeader() {
           variant="secondary"
           appearance="text"
           icon={<span aria-hidden="true" className={styles.icon} />}
-          disabled={isPending}
-          onClick={() => mutate()}
+          // aria-disabled, not disabled: a disabled button that has focus
+          // loses it, and keyboard and screen reader users would start over.
+          aria-disabled={isPending}
+          onClick={() => {
+            if (!isPending) {
+              mutate();
+            }
+          }}
         />
       </div>
     </header>

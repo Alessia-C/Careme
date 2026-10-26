@@ -5,6 +5,9 @@
 }
 
 .formPanel {
+  /* Reference for absolutely positioned messages (e.g. the login notice), so
+     they stay inside the form panel and never slide under the image. */
+  position: relative;
   display: flex;
   flex: 1 1 0;
   flex-direction: column;

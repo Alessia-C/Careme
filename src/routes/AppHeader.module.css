@@ -42,9 +42,18 @@
 }
 
 /* The label is the last span: the icon span comes first and must stay visible. */
-.actions button:not(:disabled):hover,
-.actions button:not(:disabled):focus-visible {
+.actions button:not([aria-disabled='true']):hover,
+.actions button:not([aria-disabled='true']):focus-visible {
   border: 1px solid currentColor;
+  text-decoration: none;
+}
+
+/* aria-disabled has no built-in styling: look disabled while logging out. */
+.actions button[aria-disabled='true'],
+.actions button[aria-disabled='true']:hover,
+.actions button[aria-disabled='true']:active {
+  color: var(--color-grey-400);
+  cursor: not-allowed;
   text-decoration: none;
 }
 

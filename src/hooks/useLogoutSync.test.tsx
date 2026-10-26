@@ -47,7 +47,7 @@ function renderTab(queryClient = new QueryClient()) {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return { ...view, queryClient };
+  return { ...view, queryClient, router };
 }
 
 beforeEach(() => {
@@ -73,6 +73,31 @@ describe('useLogoutSync', () => {
     expect(await screen.findByText('Login page')).toBeInTheDocument();
     expect(useAuthStore.getState().user).toBeNull();
     expect(queryClient.getQueryData(['products'])).toBeUndefined();
+  });
+
+  it('tells the login page the logout was confirmed', async () => {
+    const { router } = renderTab();
+
+    act(() => broadcastLogout());
+
+    await screen.findByText('Login page');
+    expect(router.state.location.state).toEqual({
+      signedOut: true,
+      confirmed: true,
+    });
+  });
+
+  it('tells the login page when the other tab could not confirm it', async () => {
+    const { router } = renderTab();
+
+    act(() => broadcastLogout(false));
+
+    await screen.findByText('Login page');
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(router.state.location.state).toEqual({
+      signedOut: true,
+      confirmed: false,
+    });
   });
 
   it('ignores messages other than logout', () => {

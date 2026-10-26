@@ -89,6 +89,131 @@ describe('LoginPage - after a logout', () => {
     }
   });
 
+  it('closes the message with its close button', async () => {
+    renderPage({ pathname: '/login', state: { signedOut: true } });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close message' }),
+    );
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('moves the focus to the heading when the message is closed', async () => {
+    renderPage({ pathname: '/login', state: { signedOut: true } });
+
+    screen.getByRole('button', { name: 'Close message' }).focus();
+    await userEvent.keyboard('{Enter}');
+
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveFocus();
+  });
+
+  it('moves the focus to the heading when the timer closes a focused message', () => {
+    vi.useFakeTimers();
+    try {
+      renderPage({ pathname: '/login', state: { signedOut: true } });
+      screen.getByRole('button', { name: 'Close message' }).focus();
+
+      act(() => vi.advanceTimersByTime(5000));
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: 'Sign in to your account' }),
+      ).toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('leaves the focus alone when the timer closes a message that is not focused', () => {
+    vi.useFakeTimers();
+    try {
+      renderPage({ pathname: '/login', state: { signedOut: true } });
+      screen.getByLabelText('Email*').focus();
+
+      act(() => vi.advanceTimersByTime(5000));
+
+      expect(screen.getByLabelText('Email*')).toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('puts the message after the form, in the order it is shown', () => {
+    renderPage({ pathname: '/login', state: { signedOut: true } });
+
+    const form = screen.getByLabelText('Email*');
+    const message = screen.getByRole('status');
+    expect(
+      form.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('reads the message together with the heading it focuses', () => {
+    renderPage({ pathname: '/login', state: { signedOut: true } });
+
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveAccessibleDescription('You have been signed out');
+  });
+
+  it('does not describe the heading when there is no message', () => {
+    renderPage();
+
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('warns with an alert when the logout was not confirmed', () => {
+    renderPage({
+      pathname: '/login',
+      state: { signedOut: true, confirmed: false },
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "We couldn't confirm the sign out",
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'may still be active on this device',
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveFocus();
+  });
+
+  it('keeps the unconfirmed warning until it is closed, with no timer', async () => {
+    vi.useFakeTimers();
+    try {
+      renderPage({
+        pathname: '/login',
+        state: { signedOut: true, confirmed: false },
+      });
+
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close message' }),
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('clears the navigation state also for the unconfirmed warning', async () => {
+    renderPage({
+      pathname: '/login',
+      state: { signedOut: true, confirmed: false },
+    });
+
+    expect(await screen.findByText('router state: null')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
   it('shows no message and keeps the focus where it is on a normal visit', () => {
     renderPage();
 

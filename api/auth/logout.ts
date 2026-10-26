@@ -19,11 +19,13 @@ import { buildClearedSessionCookie, getAccessToken } from '../_lib/auth.js';
 const SESSION_INVALID_STATUSES = [401, 403, 404];
 
 async function handleLogout(req: VercelRequest, res: VercelResponse) {
-  // The cookie is cleared first, on every outcome: the client drops its local
-  // session whatever happens (shared devices), so the browser must not keep a
-  // cookie that could still authenticate the next person. If Supabase then
-  // fails, the token is not revoked but it is no longer in the browser. The
-  // header survives the generic 500 sent by withSentry.
+  // The cookie is cleared first, on every outcome of this handler. The client
+  // drops its local session whatever happens (shared devices), so the browser
+  // must not keep a cookie that could still authenticate the next person. If
+  // Supabase then fails, the token is not revoked but it is no longer in the
+  // browser. The header survives the generic 500 sent by withSentry. It is not
+  // sent on 405/415/400, rejected before this handler: that is what stops a
+  // cross-site form from forcing a logout.
   res.setHeader('Set-Cookie', buildClearedSessionCookie());
 
   // Not withAuth on purpose: a blocked user must still be able to log out.

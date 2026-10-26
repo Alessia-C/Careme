@@ -11,9 +11,9 @@ Each user-facing feature has one document in this folder. It describes the behav
 
 ## Features
 
-| Feature                     | Status      | Description                                                                                                    |
-| --------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
-| [App layout](app-layout.md) | In progress | Shell for protected pages: skip link, header with logo and Logout button, main area.                           |
-| [Login](login.md)           | In progress | Public `/login` form: generic errors, session in an HttpOnly cookie, safe redirect to `next`.                  |
-| [Signup](signup.md)         | In progress | Public `/signup` form: validation, generic errors, "check your email" screen after a 201.                      |
-| [Logout](logout.md)         | In progress | Header Logout button: revokes the session, cookie deleted by the API, redirect to `/login`, other tabs follow. |
+| Feature                     | Status      | Description                                                                                                                              |
+| --------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [App layout](app-layout.md) | In progress | Shell for protected pages: skip link, header with logo and Logout button, main area.                                                     |
+| [Login](login.md)           | In progress | Public `/login` form: generic errors, session in an HttpOnly cookie, safe redirect to `next`.                                            |
+| [Signup](signup.md)         | In progress | Public `/signup` form: validation, generic errors, "check your email" screen after a 201.                                                |
+| [Logout](logout.md)         | In progress | Header Logout button: revokes the session, cookie deleted by the API, redirect to `/login`, other tabs follow, warning if not confirmed. |

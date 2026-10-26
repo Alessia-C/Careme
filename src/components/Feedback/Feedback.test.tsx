@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi } from 'vitest';
 import Feedback, { type FeedbackStatus } from './Feedback';
 
 describe('Feedback', () => {
@@ -28,4 +29,36 @@ describe('Feedback', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     },
   );
+
+  it('has no close button unless onClose is given', () => {
+    render(<Feedback title="Note" status="info" />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('calls onClose when the close button is activated', async () => {
+    const onClose = vi.fn();
+    render(<Feedback title="Note" status="info" onClose={onClose} />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close message' }),
+    );
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('can be closed with the keyboard', async () => {
+    const onClose = vi.fn();
+    render(<Feedback title="Note" status="info" onClose={onClose} />);
+
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Close message' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('puts the given id on the message so it can be referenced', () => {
+    render(<Feedback title="Note" status="info" id="note" />);
+    expect(screen.getByRole('status')).toHaveAttribute('id', 'note');
+  });
 });

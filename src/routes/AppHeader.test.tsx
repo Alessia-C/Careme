@@ -81,7 +81,10 @@ describe('AppHeader - logout', () => {
     expect(logout).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Login page')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/login');
-    expect(router.state.location.state).toEqual({ signedOut: true });
+    expect(router.state.location.state).toEqual({
+      signedOut: true,
+      confirmed: true,
+    });
     expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().role).toBeNull();
   });
@@ -107,7 +110,7 @@ describe('AppHeader - logout', () => {
     expect(close).toHaveBeenCalled();
   });
 
-  it('disables the button while the request is in flight', async () => {
+  it('keeps the button focusable but inert while the request is in flight', async () => {
     let finish: () => void = () => {};
     vi.mocked(logout).mockReturnValue(
       new Promise((resolve) => {
@@ -118,24 +121,55 @@ describe('AppHeader - logout', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
 
-    expect(screen.getByRole('button', { name: 'Logout' })).toBeDisabled();
+    const button = screen.getByRole('button', { name: 'Logout' });
+    // aria-disabled, not disabled: the button keeps its keyboard focus.
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveFocus();
     expect(screen.getByRole('status')).toHaveTextContent('Logging out…');
     expect(useAuthStore.getState().user).not.toBeNull();
+
+    await userEvent.click(button);
+    expect(logout).toHaveBeenCalledTimes(1);
 
     finish();
     await screen.findByText('Login page');
   });
 
-  it.each([
-    ['the request fails', { ok: false, reason: 'failed' } as const],
-    ['the session was already over', { ok: true } as const],
-  ])('empties the store and redirects when %s', async (_label, result) => {
-    vi.mocked(logout).mockResolvedValue(result);
+  it('is not aria-disabled when idle', () => {
     renderHeader();
+    expect(screen.getByRole('button', { name: 'Logout' })).toHaveAttribute(
+      'aria-disabled',
+      'false',
+    );
+  });
+
+  it('empties the store and redirects when the session was already over', async () => {
+    vi.mocked(logout).mockResolvedValue({ ok: true });
+    const { router } = renderHeader();
 
     await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
 
     await waitFor(() => expect(useAuthStore.getState().user).toBeNull());
     expect(await screen.findByText('Login page')).toBeInTheDocument();
+    expect(router.state.location.state).toEqual({
+      signedOut: true,
+      confirmed: true,
+    });
+  });
+
+  it('still empties the store but flags the logout as unconfirmed when the request fails', async () => {
+    vi.mocked(logout).mockResolvedValue({ ok: false, reason: 'failed' });
+    const { router } = renderHeader();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+    await waitFor(() => expect(useAuthStore.getState().user).toBeNull());
+    expect(await screen.findByText('Login page')).toBeInTheDocument();
+    expect(router.state.location.state).toEqual({
+      signedOut: true,
+      confirmed: false,
+    });
+    expect(postMessage).toHaveBeenCalledWith('logout-unconfirmed');
   });
 });

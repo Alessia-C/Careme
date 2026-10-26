@@ -7,6 +7,8 @@ interface FeedbackProps {
   description?: string;
   status: FeedbackStatus;
   customClassName?: string;
+  id?: string;
+  onClose?: () => void;
 }
 
 // Errors are announced right away (role="alert"); success and info are
@@ -16,6 +18,8 @@ const Feedback = ({
   description,
   status,
   customClassName,
+  id,
+  onClose,
 }: FeedbackProps) => {
   const role = status === 'error' ? 'alert' : 'status';
 
@@ -24,9 +28,22 @@ const Feedback = ({
       className={`${styles.feedback} ${customClassName || ''}`}
       data-status={status}
       role={role}
+      id={id}
     >
-      <p className={styles.title}>{title}</p>
-      {description && <p className={styles.description}>{description}</p>}
+      <div className={styles.content}>
+        <p className={styles.title}>{title}</p>
+        {description && <p className={styles.description}>{description}</p>}
+      </div>
+      {onClose && (
+        <button
+          type="button"
+          aria-label="Close message"
+          className={styles.close}
+          onClick={onClose}
+        >
+          <span aria-hidden="true" className={styles.closeIcon} />
+        </button>
+      )}
     </div>
   );
 };
