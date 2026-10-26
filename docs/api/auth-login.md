@@ -56,12 +56,12 @@ None.
 
 The body contains no `session` and no tokens. Both tokens are sent only in one `Set-Cookie` header (an array of two cookies):
 
-| Cookie                                                                              | Attributes                                                          |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `__Host-sb-access-token=<access_token>` (`sb-access-token` under `vercel dev`)      | `HttpOnly; SameSite=Strict; Path=/; Max-Age=<expires_in>; Secure`   |
-| `__Secure-sb-refresh-token=<refresh_token>` (`sb-refresh-token` under `vercel dev`) | `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800; Secure` |
+| Cookie                                                                              | Attributes                                                        |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `__Host-sb-access-token=<access_token>` (`sb-access-token` under `vercel dev`)      | `HttpOnly; SameSite=Strict; Path=/; Max-Age=<expires_in>; Secure` |
+| `__Secure-sb-refresh-token=<refresh_token>` (`sb-refresh-token` under `vercel dev`) | `HttpOnly; SameSite=Strict; Path=/api/auth; Secure`               |
 
-The access token `Max-Age` is its lifetime in seconds (`expires_in`); the refresh cookie lasts 7 days. `Secure` is omitted when `VERCEL_ENV` is `development` (`vercel dev` serves plain http).
+The access token `Max-Age` is its lifetime in seconds (`expires_in`); the refresh cookie has no `Max-Age`: it is a session cookie that disappears when the browser is closed. `Secure` is omitted when `VERCEL_ENV` is `development` (`vercel dev` serves plain http).
 
 ```json
 {
@@ -104,7 +104,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 ## Notes
 
 - **Session cookies:** the access token is set as the `__Host-sb-access-token` cookie (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, `Max-Age` = `expires_in`), built by `buildSessionCookie()` in [`api/_lib/auth.ts`](../../api/_lib/auth.ts). Scripts on the page cannot read it, which limits the impact of XSS. The refresh token is set as a second cookie, see below. No cookie is set on any error response.
-- **Refresh token:** set as the `__Secure-sb-refresh-token` cookie (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/auth`, `Max-Age` 7 days; `sb-refresh-token` under `vercel dev`) and never returned in the body. It is sent only to `/api/auth/*` and is used by [`/api/auth/refresh`](auth-refresh.md) to renew the session.
+- **Refresh token:** set as the `__Secure-sb-refresh-token` cookie (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/auth`, no `Max-Age`; `sb-refresh-token` under `vercel dev`) and never returned in the body. It is sent only to `/api/auth/*` and is used by [`/api/auth/refresh`](auth-refresh.md) to renew the session.
 - **Protected endpoints:** `withAuth` accepts the token from the `Authorization: Bearer` header (which has priority) or from this cookie. API clients such as curl can keep using the header, but they now have to take the token from the `Set-Cookie` header, since it is no longer in the body.
 - **CSRF:** because the browser now sends credentials automatically, cross-site request forgery is mitigated by `SameSite=Strict`: the cookie is not sent on cross-site requests. There is no CSRF token. Requests must stay same-site, and state-changing endpoints must not use `GET`.
 - **Logout:** [`/api/auth/logout`](auth-logout.md) reads the token from this cookie (or the header), revokes the session and deletes both cookies with `Max-Age=0`.

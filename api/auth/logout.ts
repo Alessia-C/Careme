@@ -14,6 +14,31 @@ import {
   isRefreshTokenInvalid,
 } from '../_lib/auth.js';
 
+type AnonClient = ReturnType<typeof createAnonClient>;
+
+// The refresh cookie outlives the access token, and Supabase would keep
+// honouring it, so it is swapped for a fresh access token that can be revoked.
+// Returns the Supabase error (if any) of whichever step failed.
+async function revokeWithRefreshToken(
+  supabase: AnonClient,
+  refreshToken: string,
+) {
+  const { data, error } = await supabase.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+  if (error) {
+    return error;
+  }
+  if (!data.session) {
+    throw new Error('Unexpected refresh without session');
+  }
+  const { error: signOutError } = await supabase.auth.admin.signOut(
+    data.session.access_token,
+    'local',
+  );
+  return signOutError;
+}
+
 async function handleLogout(req: VercelRequest, res: VercelResponse) {
   // Both cookies are cleared first, on every outcome of this handler. The
   // client drops its local session whatever happens (shared devices), so the
@@ -25,44 +50,31 @@ async function handleLogout(req: VercelRequest, res: VercelResponse) {
   clearSessionCookies(res);
 
   // Not withAuth on purpose: a blocked user must still be able to log out.
-  const supabase = createAnonClient();
-  let token = getAccessToken(req);
-
-  if (!token) {
-    // The access cookie lives as long as the access token, so it is usually
-    // gone by the time the user logs out after a period of inactivity. The
-    // refresh cookie is still there and Supabase would keep honouring it, so
-    // it is swapped for a fresh access token that can be revoked.
-    const refreshToken = getRefreshToken(req);
-    if (!refreshToken) {
-      return res
-        .status(401)
-        .json({ message: 'Missing or invalid authorization header' });
-    }
-
-    const { data, error: refreshError } = await supabase.auth.refreshSession({
-      refresh_token: refreshToken,
-    });
-    if (isRateLimitError(refreshError)) {
-      return sendTooManyRequests(res);
-    }
-    if (isRefreshTokenInvalid(refreshError)) {
-      return res.status(401).json({ message: 'Session expired or invalid' });
-    }
-    if (refreshError) {
-      throw refreshError;
-    }
-    if (!data.session) {
-      throw new Error('Unexpected refresh without session');
-    }
-    token = data.session.access_token;
+  const accessToken = getAccessToken(req);
+  const refreshToken = getRefreshToken(req);
+  if (!accessToken && !refreshToken) {
+    return res
+      .status(401)
+      .json({ message: 'Missing or invalid authorization header' });
   }
+
+  const supabase = createAnonClient();
 
   // The server keeps no session, so Supabase must be told which token to
   // revoke. Despite the "admin" namespace this only sends the caller's own JWT:
   // the anon client is enough and the service role key is not needed.
   // 'local' revokes only this session, not the user's other devices.
-  const { error } = await supabase.auth.admin.signOut(token, 'local');
+  let error = null;
+  if (accessToken) {
+    ({ error } = await supabase.auth.admin.signOut(accessToken, 'local'));
+  }
+
+  // The access cookie lives as long as the access token, so after a period of
+  // inactivity it is gone, or it is still there a moment after the JWT expired
+  // and Supabase rejects it. Either way the refresh cookie can still revoke.
+  if ((!accessToken || isInvalidSessionError(error)) && refreshToken) {
+    error = await revokeWithRefreshToken(supabase, refreshToken);
+  }
 
   if (isRateLimitError(error)) {
     return sendTooManyRequests(res);
@@ -71,7 +83,7 @@ async function handleLogout(req: VercelRequest, res: VercelResponse) {
   // An expired, invalid or already revoked session is an expected case, not a
   // server fault: answer 401 (no Sentry noise) so the client drops its local
   // session and redirects to the login.
-  if (isInvalidSessionError(error)) {
+  if (isInvalidSessionError(error) || isRefreshTokenInvalid(error)) {
     return res.status(401).json({ message: 'Session expired or invalid' });
   }
 

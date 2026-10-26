@@ -47,10 +47,10 @@ A JSON object is required, but its content is ignored. Send `{}`. A missing body
 
 The body contains no token. Both tokens travel in a single `Set-Cookie` header (an array of two cookies), which replaces the previous ones:
 
-| Cookie                                                                              | Attributes                                                                   |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `__Host-sb-access-token=<access_token>` (`sb-access-token` under `vercel dev`)      | `HttpOnly; SameSite=Strict; Path=/; Max-Age=<expires_in>; Secure`            |
-| `__Secure-sb-refresh-token=<refresh_token>` (`sb-refresh-token` under `vercel dev`) | `HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800; Secure` (7 days) |
+| Cookie                                                                              | Attributes                                                           |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `__Host-sb-access-token=<access_token>` (`sb-access-token` under `vercel dev`)      | `HttpOnly; SameSite=Strict; Path=/; Max-Age=<expires_in>; Secure`    |
+| `__Secure-sb-refresh-token=<refresh_token>` (`sb-refresh-token` under `vercel dev`) | `HttpOnly; SameSite=Strict; Path=/api/auth; Secure` (session cookie) |
 
 `Secure` is omitted when `VERCEL_ENV` is `development`. The response is sent with `Cache-Control: no-store`.
 
@@ -62,7 +62,7 @@ Errors return JSON shaped `{ "message": string }`, except the `500` responses, w
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------ |
 | `401 Unauthorized`           | The refresh cookie is missing or empty                                                                                                                                                                                 | Both cleared | `{ "message": "Missing refresh token" }`                     |
 | `401 Unauthorized`           | Supabase rejects the refresh token as unknown, already used or revoked (auth error status 401, 403 or 404, or status 400 with the code `refresh_token_not_found`, `refresh_token_already_used` or `session_not_found`) | Both cleared | `{ "message": "Session expired or invalid" }`                |
-| `403 Forbidden`              | The refresh succeeded but the profile is `blocked`. The new session is discarded                                                                                                                                       | Both cleared | `{ "message": "Account blocked" }`                           |
+| `403 Forbidden`              | The refresh succeeded but the profile is `blocked`. The new session is discarded and revoked on Supabase (best effort)                                                                                                 | Both cleared | `{ "message": "Account blocked" }`                           |
 | `405 Method Not Allowed`     | The method is not `POST`                                                                                                                                                                                               | Untouched    | `{ "message": "Method not allowed" }`                        |
 | `415 Unsupported Media Type` | The `Content-Type` is missing or does not start with `application/json`                                                                                                                                                | Untouched    | `{ "message": "Content-Type must be application/json" }`     |
 | `400 Bad Request`            | The body is missing or is not a JSON object                                                                                                                                                                            | Untouched    | `{ "message": "Missing or invalid request body" }`           |
@@ -83,7 +83,7 @@ curl -X POST http://localhost:3000/api/auth/refresh \
 ## Notes
 
 - **Rotation:** Supabase invalidates the refresh token as soon as the call succeeds, so the new one must reach the browser. Both cookies are set in one `Set-Cookie` header with an array value, because a second `setHeader` call with the same name would replace the first (`setSessionCookies()` in [`api/_lib/auth.ts`](../../api/_lib/auth.ts)). A refresh token reused by a second request (for example from two tabs at once) is refused by Supabase and answered with `401`.
-- **Refresh cookie:** `HttpOnly`, `SameSite=Strict`, `Path=/api/auth`, `Max-Age` 7 days. Supabase refresh tokens do not expire by themselves, so the `Max-Age` caps how long an idle browser stays signed in. The `__Host-` prefix needs `Path=/`, so the refresh cookie uses `__Secure-` (production); under `vercel dev` (plain http) it is `sb-refresh-token` without `Secure`. The narrow `Path` means it is never sent to other endpoints.
+- **Refresh cookie:** `HttpOnly`, `SameSite=Strict`, `Path=/api/auth`, no `Max-Age` (a session cookie). Supabase refresh tokens do not expire by themselves, so a cookie that outlived the browser would leave a usable session on a shared device. The `__Host-` prefix needs `Path=/`, so the refresh cookie uses `__Secure-` (production); under `vercel dev` (plain http) it is `sb-refresh-token` without `Secure`. The narrow `Path` means it is never sent to other endpoints.
 - **Blocked users:** the endpoint calls `is_active()` with the new JWT (RLS applies) before setting any cookie. A blocked user therefore never receives a new session and loses the cookies. Anything but an explicit `true` counts as blocked.
 - **CSRF:** the endpoint is wrapped in `withObjectBody`, which requires a JSON `Content-Type` and an object body (the body is then ignored). A cross-site `<form>` cannot send `application/json` without a CORS preflight. `SameSite=Strict` also keeps the cookie out of cross-site requests.
 - **No `withAuth`:** the access token may already have expired when the page renews late, so the endpoint authenticates with the refresh token only.

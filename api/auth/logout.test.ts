@@ -212,6 +212,39 @@ describe('POST /api/auth/logout - access cookie already expired', () => {
     expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', clearedCookies);
   });
 
+  it('should fall back to the refresh cookie when the access token is already expired', async () => {
+    signOut
+      .mockResolvedValueOnce({
+        data: null,
+        error: new AuthApiError('invalid JWT', 401, 'bad_jwt'),
+      })
+      .mockResolvedValueOnce({ data: null, error: null });
+
+    const res = await callHandler('POST', validHeaders, refreshCookie);
+
+    expect(signOut).toHaveBeenNthCalledWith(1, 'valid-token', 'local');
+    expect(refreshSession).toHaveBeenCalledWith({
+      refresh_token: 'refresh-token',
+    });
+    expect(signOut).toHaveBeenNthCalledWith(2, 'renewed-access-jwt', 'local');
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('should return 401 when the fallback finds the refresh token dead too', async () => {
+    signOut.mockResolvedValue({
+      data: null,
+      error: new AuthApiError('invalid JWT', 401, 'bad_jwt'),
+    });
+    refreshSession.mockResolvedValue({
+      data: { session: null },
+      error: new AuthApiError('gone', 400, 'refresh_token_not_found'),
+    });
+
+    const res = await callHandler('POST', validHeaders, refreshCookie);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
   it('should not use the refresh cookie when an access token is present', async () => {
     await callHandler('POST', validHeaders, refreshCookie);
 

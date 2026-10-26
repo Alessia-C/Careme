@@ -41,7 +41,8 @@ async function handleRefresh(req: VercelRequest, res: VercelResponse) {
 
   // Supabase rotates the refresh token: the old one stops working as soon as
   // this call succeeds, so the new one must reach the browser.
-  const { data, error } = await createAnonClient().auth.refreshSession({
+  const supabase = createAnonClient();
+  const { data, error } = await supabase.auth.refreshSession({
     refresh_token: refreshToken,
   });
 
@@ -62,6 +63,10 @@ async function handleRefresh(req: VercelRequest, res: VercelResponse) {
   // applies) before the cookies are set, and drop the old ones.
   const userClient = createUserClient(data.session.access_token);
   if (!(await isAccountActive(userClient))) {
+    // The rotation already happened: revoke the new session too, so no valid
+    // token is left on Supabase. Best effort: the user is refused either way
+    // and RLS blocks the token, so a failure here is not worth a 500.
+    await supabase.auth.admin.signOut(data.session.access_token, 'local');
     return sendSessionEnded(res, 403, 'Account blocked');
   }
 

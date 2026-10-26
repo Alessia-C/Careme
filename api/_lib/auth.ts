@@ -40,14 +40,18 @@ const isLocalDev = () => process.env.VERCEL_ENV === 'development';
 export const getSessionCookieName = () =>
   isLocalDev() ? 'sb-access-token' : '__Host-sb-access-token';
 
+// Without maxAgeSeconds the cookie is a browser-session cookie: it disappears
+// when the browser is closed.
 function buildCookie(
   name: string,
   value: string,
   path: string,
-  maxAgeSeconds: number,
+  maxAgeSeconds?: number,
 ) {
   const secure = isLocalDev() ? '' : '; Secure';
-  return `${name}=${value}; HttpOnly; SameSite=Strict; Path=${path}; Max-Age=${maxAgeSeconds}${secure}`;
+  const maxAge =
+    maxAgeSeconds === undefined ? '' : `; Max-Age=${maxAgeSeconds}`;
+  return `${name}=${value}; HttpOnly; SameSite=Strict; Path=${path}${maxAge}${secure}`;
 }
 
 export function buildSessionCookie(token: string, maxAgeSeconds: number) {
@@ -68,17 +72,13 @@ export const getRefreshCookieName = () =>
   isLocalDev() ? 'sb-refresh-token' : '__Secure-sb-refresh-token';
 
 const REFRESH_COOKIE_PATH = '/api/auth';
-// Supabase refresh tokens do not expire by themselves: this caps how long an
-// idle browser stays signed in.
-const REFRESH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
+// No Max-Age on purpose: Supabase refresh tokens do not expire by themselves,
+// so a cookie that outlived the browser would leave a usable session on a
+// shared device. The page never uses it after a restart (it restores the
+// session from the access cookie only), so nothing is lost.
 export function buildRefreshCookie(token: string) {
-  return buildCookie(
-    getRefreshCookieName(),
-    token,
-    REFRESH_COOKIE_PATH,
-    REFRESH_COOKIE_MAX_AGE_SECONDS,
-  );
+  return buildCookie(getRefreshCookieName(), token, REFRESH_COOKIE_PATH);
 }
 
 export function buildClearedRefreshCookie() {

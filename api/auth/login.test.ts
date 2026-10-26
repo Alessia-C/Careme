@@ -127,7 +127,7 @@ describe('POST /api/auth/login - successful login', () => {
         /^__Host-sb-access-token=access-jwt; HttpOnly; SameSite=Strict; Path=\/; Max-Age=3600/,
       ),
       expect.stringMatching(
-        /^__Secure-sb-refresh-token=refresh-token; HttpOnly; SameSite=Strict; Path=\/api\/auth; Max-Age=\d+/,
+        /^__Secure-sb-refresh-token=refresh-token; HttpOnly; SameSite=Strict; Path=\/api\/auth; Secure$/,
       ),
     ]);
   });

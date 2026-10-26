@@ -10,8 +10,9 @@ import handler from './refresh.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
-const { refreshSession, rpc, createClient } = vi.hoisted(() => ({
+const { refreshSession, signOut, rpc, createClient } = vi.hoisted(() => ({
   refreshSession: vi.fn(),
+  signOut: vi.fn(),
   rpc: vi.fn(),
   createClient: vi.fn(),
 }));
@@ -48,7 +49,11 @@ async function callHandler(
 
 beforeEach(() => {
   stubSupabaseEnv();
-  createClient.mockReturnValue({ auth: { refreshSession }, rpc });
+  createClient.mockReturnValue({
+    auth: { refreshSession, admin: { signOut } },
+    rpc,
+  });
+  signOut.mockResolvedValue({ error: null });
   refreshSession.mockResolvedValue({
     data: { user: { id: 'user-1' }, session },
     error: null,
@@ -171,6 +176,30 @@ describe('POST /api/auth/refresh - session ended', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Account blocked' });
     expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', clearedCookies);
     expect(JSON.stringify(res.setHeader.mock.calls)).not.toContain('new-');
+  });
+
+  it('should revoke the session it just created for a blocked account', async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await callHandler('POST');
+
+    expect(signOut).toHaveBeenCalledWith('new-access-jwt', 'local');
+  });
+
+  it('should still return 403 when revoking the blocked account session fails', async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+    signOut.mockResolvedValue({ error: new Error('revoke failed') });
+
+    const res = await callHandler('POST');
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', clearedCookies);
+  });
+
+  it('should not revoke anything for an active account', async () => {
+    await callHandler('POST');
+
+    expect(signOut).not.toHaveBeenCalled();
   });
 
   it('should treat a null status as blocked', async () => {

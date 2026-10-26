@@ -27,7 +27,7 @@ Keeps an active user signed in beyond the 60 minutes of the access token, by ren
 ## Business rules
 
 - The access token expires after 60 minutes. It is renewed 60 seconds before that, and only if the user was active since the last renewal.
-- The refresh cookie lives at most 7 days (`Max-Age`), so an idle browser is signed out after that.
+- The refresh cookie has no `Max-Age`: it is removed when the browser is closed, so a shared device does not keep a usable session. (Browsers set to restore the previous session on start may keep session cookies.)
 - A blocked user cannot renew: the API answers `403` and the user returns to the login.
 - Refresh tokens are single use: each renewal rotates both cookies.
 - A network or server failure never logs the user out by itself.
@@ -56,7 +56,7 @@ None. The feature reads and writes no table, except that the API reads the profi
 
 ## Open decisions
 
-- Whether the 60-minute inactivity policy and the 7-day refresh cookie lifetime are final: not stated in the code, which only implements them.
+- Whether the 60-minute inactivity policy is final: not stated in the code, which only implements it.
 
 ## Changelog
 

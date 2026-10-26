@@ -173,10 +173,14 @@ describe('buildClearedSessionCookie', () => {
 });
 
 describe('refresh cookie', () => {
-  it('is scoped to /api/auth and uses the __Secure- prefix', () => {
+  it('is a session cookie scoped to /api/auth with the __Secure- prefix', () => {
     expect(buildRefreshCookie('refresh')).toBe(
-      '__Secure-sb-refresh-token=refresh; HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800; Secure',
+      '__Secure-sb-refresh-token=refresh; HttpOnly; SameSite=Strict; Path=/api/auth; Secure',
     );
+  });
+
+  it('has no Max-Age, so it disappears when the browser closes', () => {
+    expect(buildRefreshCookie('refresh')).not.toContain('Max-Age');
   });
 
   it('drops Secure and the prefix under vercel dev (plain http)', () => {
