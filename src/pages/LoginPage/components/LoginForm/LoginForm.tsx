@@ -30,7 +30,7 @@ const LoginForm = () => {
     isValid,
     action: () => login({ email: values.email, password: values.password }),
     onSuccess: (result) => {
-      setSession(result.user, result.role);
+      setSession(result.user, result.role, result.expiresAt);
       navigate(getSafeNextPath(searchParams.get('next')), { replace: true });
     },
   });

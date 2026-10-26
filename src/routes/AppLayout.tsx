@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router';
 import { useLogoutSync } from '../hooks/useLogoutSync';
+import { useSessionRefresh } from '../hooks/useSessionRefresh';
 import AppHeader from './AppHeader';
 import styles from './AppLayout.module.css';
 
@@ -7,6 +8,7 @@ import styles from './AppLayout.module.css';
 // element, so keyboard users can jump straight to the page content.
 function AppLayout() {
   useLogoutSync();
+  useSessionRefresh();
 
   return (
     <>

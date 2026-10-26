@@ -8,6 +8,8 @@ async function mockApi(page: Page) {
       status: 200,
       json: {
         user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
+        // Far in the future, so the renewal timer never fires during the test.
+        expires_at: 4102444800,
       },
     }),
   );

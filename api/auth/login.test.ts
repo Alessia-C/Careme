@@ -106,27 +106,37 @@ describe('POST /api/auth/login - successful login', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Login successful',
       user: { id: 'user-1', email: 'test@example.com', role: 'user' },
+      expires_at: 1790000000,
     });
   });
 
-  it('should set the access token in an HttpOnly SameSite=Strict cookie', async () => {
+  it('should return the session expiry so the page can renew in time', async () => {
     const res = await callHandler('POST', validBody);
 
-    expect(res.setHeader).toHaveBeenCalledWith(
-      'Set-Cookie',
-      expect.stringMatching(
-        /^__Host-sb-access-token=access-jwt; HttpOnly; SameSite=Strict; Path=\/; Max-Age=3600/,
-      ),
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ expires_at: 1790000000 }),
     );
   });
 
-  it('should never expose the refresh token', async () => {
+  it('should set both tokens in HttpOnly SameSite=Strict cookies', async () => {
+    const res = await callHandler('POST', validBody);
+
+    expect(res.setHeader).toHaveBeenCalledTimes(1);
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', [
+      expect.stringMatching(
+        /^__Host-sb-access-token=access-jwt; HttpOnly; SameSite=Strict; Path=\/; Max-Age=3600/,
+      ),
+      expect.stringMatching(
+        /^__Secure-sb-refresh-token=refresh-token; HttpOnly; SameSite=Strict; Path=\/api\/auth; Max-Age=\d+/,
+      ),
+    ]);
+  });
+
+  it('should never expose the refresh token outside the cookie', async () => {
     const res = await callHandler('POST', validBody);
 
     expect(JSON.stringify(res.json.mock.calls)).not.toContain('refresh-token');
-    expect(JSON.stringify(res.setHeader.mock.calls)).not.toContain(
-      'refresh-token',
-    );
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
   });
 
   it('should return the admin role for an admin profile', async () => {

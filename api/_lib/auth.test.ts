@@ -1,11 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthSessionMissingError } from '@supabase/supabase-js';
 import {
+  buildClearedRefreshCookie,
   buildClearedSessionCookie,
+  buildRefreshCookie,
   buildSessionCookie,
+  clearSessionCookies,
   getAccessToken,
   getBearerToken,
+  getRefreshCookieName,
+  getRefreshToken,
   getSessionCookieName,
+  getSessionExpiry,
+  getTokenExpiry,
+  setSessionCookies,
   withAuth,
 } from './auth.js';
 import { withSentry } from './sentry.js';
@@ -161,6 +169,101 @@ describe('buildClearedSessionCookie', () => {
     expect(buildClearedSessionCookie()).toBe(
       'sb-access-token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0',
     );
+  });
+});
+
+describe('refresh cookie', () => {
+  it('is scoped to /api/auth and uses the __Secure- prefix', () => {
+    expect(buildRefreshCookie('refresh')).toBe(
+      '__Secure-sb-refresh-token=refresh; HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=604800; Secure',
+    );
+  });
+
+  it('drops Secure and the prefix under vercel dev (plain http)', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    const cookie = buildRefreshCookie('refresh');
+    expect(cookie).not.toContain('Secure');
+    expect(cookie.startsWith('sb-refresh-token=refresh;')).toBe(true);
+  });
+
+  it('is cleared with the same attributes as the original', () => {
+    expect(buildClearedRefreshCookie()).toBe(
+      '__Secure-sb-refresh-token=; HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=0; Secure',
+    );
+  });
+
+  it('is read from the request under the name it is set with', () => {
+    const req = makeReq(
+      'POST',
+      {},
+      {},
+      { [getRefreshCookieName()]: 'refresh' },
+    );
+    expect(getRefreshToken(req)).toBe('refresh');
+    expect(getRefreshToken(makeReq('POST', {}))).toBeUndefined();
+  });
+});
+
+describe('setSessionCookies / clearSessionCookies', () => {
+  it('sets both cookies in a single Set-Cookie header', () => {
+    const { res, asVercel } = makeRes();
+
+    setSessionCookies(asVercel, {
+      access_token: 'access',
+      refresh_token: 'refresh',
+      expires_in: 3600,
+    });
+
+    expect(res.setHeader).toHaveBeenCalledTimes(1);
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', [
+      buildSessionCookie('access', 3600),
+      buildRefreshCookie('refresh'),
+    ]);
+  });
+
+  it('clears both cookies in a single Set-Cookie header', () => {
+    const { res, asVercel } = makeRes();
+
+    clearSessionCookies(asVercel);
+
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', [
+      buildClearedSessionCookie(),
+      buildClearedRefreshCookie(),
+    ]);
+  });
+});
+
+describe('getSessionExpiry', () => {
+  it('prefers the expires_at given by Supabase', () => {
+    expect(getSessionExpiry({ expires_in: 3600, expires_at: 1790000000 })).toBe(
+      1790000000,
+    );
+  });
+
+  it('falls back to now + expires_in', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-26T10:00:00Z'));
+
+    const nowSeconds = Date.parse('2026-10-26T10:00:00Z') / 1000;
+    expect(getSessionExpiry({ expires_in: 3600 })).toBe(nowSeconds + 3600);
+
+    vi.useRealTimers();
+  });
+});
+
+describe('getTokenExpiry', () => {
+  const makeToken = (payload: object) =>
+    `header.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.sig`;
+
+  it('reads the exp claim', () => {
+    expect(getTokenExpiry(makeToken({ exp: 1790000000 }))).toBe(1790000000);
+  });
+
+  it.each([
+    ['without exp', makeToken({})],
+    ['with a non-numeric exp', makeToken({ exp: 'soon' })],
+  ])('should throw for a token %s', (_label, token) => {
+    expect(() => getTokenExpiry(token)).toThrow();
   });
 });
 

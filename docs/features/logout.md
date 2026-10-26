@@ -1,6 +1,6 @@
 # Logout
 
-Lets a logged-in user end their session from the header of any protected page. The session is revoked on the server, the session cookie is deleted and every other tab of the same browser leaves the app too.
+Lets a logged-in user end their session from the header of any protected page. The session is revoked on the server, both session cookies (access and refresh) are deleted and every other tab of the same browser leaves the app too.
 
 |               |                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------- |
@@ -33,13 +33,14 @@ Lets a logged-in user end their session from the header of any protected page. T
 
 - The client treats `200` and `401` as a successful logout (`401` means the session was already over). Any other status or a network error is a failure, but the local session is dropped anyway: the user asked to leave, and the device may be shared. The failure is reported on the login page as an unconfirmed logout.
 - A failed request can leave the token unrevoked on Supabase until it expires. If the request reached the API (`429`, `500`) the API still deletes the cookie. If it never reached the server (network failure) the HttpOnly cookie cannot be deleted by JavaScript and may still be in the browser: this is why the user is warned and told to close the browser window or to sign in and out again.
+- The same logout runs by itself when an idle session lapses (see [Session renewal](session-renewal.md)): the hook calls `logout()`, then ends the session and tells the other tabs. By then the access token cookie has expired, so the API revokes the session through the refresh cookie (see [`docs/api/auth-logout.md`](../api/auth-logout.md)).
 - Only the current session is revoked, not the user's sessions on other devices (the API uses scope `local`).
 - Tab synchronization is best effort: where `BroadcastChannel` does not exist nothing happens, and the other tabs find out on their next request. It works only inside one browser profile, not across browsers or devices.
 - After a page reload the session is restored by [Session restore](session-restore.md); logging out never triggers a new restore.
 
 ## Data
 
-None. The feature reads and writes no table. The API revokes the session in Supabase Auth and deletes the cookie `__Host-sb-access-token` (`sb-access-token` under `vercel dev`) by sending it again with `Max-Age=0`; see [`docs/api/auth-logout.md`](../api/auth-logout.md). The frontend goes through `logout()` in [`src/lib/authApi.ts`](../../src/lib/authApi.ts), which never throws and returns `{ ok: true }` or `{ ok: false, reason: 'failed' }`.
+None. The feature reads and writes no table. The API revokes the session in Supabase Auth and deletes the cookies `__Host-sb-access-token` and `__Secure-sb-refresh-token` (`sb-access-token` and `sb-refresh-token` under `vercel dev`) by sending them again with `Max-Age=0`; see [`docs/api/auth-logout.md`](../api/auth-logout.md). The frontend goes through `logout()` in [`src/lib/authApi.ts`](../../src/lib/authApi.ts), which never throws and returns `{ ok: true }` or `{ ok: false, reason: 'failed' }`.
 
 ## Security and access
 

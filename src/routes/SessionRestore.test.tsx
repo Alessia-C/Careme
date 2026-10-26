@@ -8,6 +8,8 @@ import useAuthStore from '../stores/authStore';
 const meResponse = () =>
   Response.json({
     user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
+    // Far in the future, so the renewal timer never fires during the test.
+    expires_at: 4102444800,
   });
 
 function renderAt(path: string) {
