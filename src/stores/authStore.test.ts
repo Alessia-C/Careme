@@ -2,7 +2,7 @@ import useAuthStore, { selectIsAuthenticated } from './authStore';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 beforeEach(() => {
-  useAuthStore.setState({ user: null, role: null });
+  useAuthStore.setState({ user: null, role: null, restoreStatus: 'pending' });
 });
 
 describe('authStore', () => {
@@ -38,5 +38,17 @@ describe('authStore', () => {
     useAuthStore.getState().clearSession();
 
     expect(selectIsAuthenticated(useAuthStore.getState())).toBe(false);
+  });
+
+  it('should start with the session restore pending', () => {
+    expect(useAuthStore.getState().restoreStatus).toBe('pending');
+  });
+
+  it('should not go back to pending when the session is cleared', () => {
+    useAuthStore.getState().setRestoreStatus('restored');
+
+    useAuthStore.getState().clearSession();
+
+    expect(useAuthStore.getState().restoreStatus).toBe('restored');
   });
 });

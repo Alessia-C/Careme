@@ -35,7 +35,7 @@ Lets a logged-in user end their session from the header of any protected page. T
 - A failed request can leave the token unrevoked on Supabase until it expires. If the request reached the API (`429`, `500`) the API still deletes the cookie. If it never reached the server (network failure) the HttpOnly cookie cannot be deleted by JavaScript and may still be in the browser: this is why the user is warned and told to close the browser window or to sign in and out again.
 - Only the current session is revoked, not the user's sessions on other devices (the API uses scope `local`).
 - Tab synchronization is best effort: where `BroadcastChannel` does not exist nothing happens, and the other tabs find out on their next request. It works only inside one browser profile, not across browsers or devices.
-- Restoring the session after a page reload is out of scope (separate issue): the auth store is in memory only.
+- After a page reload the session is restored by [Session restore](session-restore.md); logging out never triggers a new restore.
 
 ## Data
 
@@ -68,7 +68,7 @@ None. The feature reads and writes no table. The API revokes the session in Supa
 
 ## Open decisions
 
-- Session restore after a page reload and handling of `401` from other endpoints: separate issue.
+- Handling of `401` from other endpoints: separate issue.
 
 ## Changelog
 

@@ -105,3 +105,42 @@ export async function logout(): Promise<LogoutResult> {
     return { ok: false, reason: 'failed' };
   }
 }
+
+// 401 and 403 (expired, revoked or blocked) all mean "no session": the user
+// has to sign in. Anything else (network error, 5xx, malformed body) says
+// nothing about the session, so it is reported apart and the UI can warn
+// instead of silently logging the user out.
+export type SessionResult =
+  | { ok: true; user: { id: string; email: string }; role: Role }
+  | { ok: false; reason: 'no-session' | 'failed' };
+
+// Reads the HttpOnly cookie through the API: the token never reaches this code.
+export async function fetchSession(): Promise<SessionResult> {
+  try {
+    const response = await fetch('/api/auth/me');
+
+    if (response.status === 401 || response.status === 403) {
+      return { ok: false, reason: 'no-session' };
+    }
+    if (!response.ok) {
+      return { ok: false, reason: 'failed' };
+    }
+
+    const { user } = await response.json();
+    if (
+      typeof user?.id !== 'string' ||
+      typeof user?.email !== 'string' ||
+      !isRole(user?.role)
+    ) {
+      return { ok: false, reason: 'failed' };
+    }
+    return {
+      ok: true,
+      user: { id: user.id, email: user.email },
+      role: user.role,
+    };
+  } catch {
+    // fetch rejects on network errors, json() on a malformed body.
+    return { ok: false, reason: 'failed' };
+  }
+}

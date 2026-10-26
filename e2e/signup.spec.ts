@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { mockNoSession } from './helpers';
 
 const PASSWORD = 'Str0ng!pass';
 
@@ -13,6 +14,7 @@ async function fillValidForm(page: Page) {
 test('signup shows the check-email message after a successful request', async ({
   page,
 }) => {
+  await mockNoSession(page);
   await page.route('**/api/auth/signup', (route) =>
     route.fulfill({ status: 201, json: { message: 'Signup successful' } }),
   );
@@ -31,6 +33,7 @@ test('signup shows the check-email message after a successful request', async ({
 });
 
 test('signup shows a generic error when the API fails', async ({ page }) => {
+  await mockNoSession(page);
   await page.route('**/api/auth/signup', (route) =>
     route.fulfill({
       status: 400,
