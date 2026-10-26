@@ -4,17 +4,32 @@ import handler from './login.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
-const { signInWithPassword, rpc, single, from, createClient } = vi.hoisted(
-  () => ({
-    signInWithPassword: vi.fn(),
-    rpc: vi.fn(),
-    single: vi.fn(),
-    from: vi.fn(),
-    createClient: vi.fn(),
-  }),
-);
+const {
+  signInWithPassword,
+  signOut,
+  rpc,
+  single,
+  from,
+  createClient,
+  captureException,
+} = vi.hoisted(() => ({
+  signOut: vi.fn(),
+  captureException: vi.fn(),
+  signInWithPassword: vi.fn(),
+  rpc: vi.fn(),
+  single: vi.fn(),
+  from: vi.fn(),
+  createClient: vi.fn(),
+}));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
+
+// Sentry is faked to check what is reported without sending anything.
+vi.mock('@sentry/node', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sentry/node')>()),
+  captureException,
+  flush: vi.fn(),
+}));
 
 const validBody = { email: 'test@example.com', password: 'Valid123!' };
 
@@ -46,7 +61,12 @@ beforeEach(() => {
   query.select.mockReturnValue(query);
   query.eq.mockReturnValue(query);
   from.mockReturnValue(query);
-  createClient.mockReturnValue({ auth: { signInWithPassword }, rpc, from });
+  createClient.mockReturnValue({
+    auth: { signInWithPassword, admin: { signOut } },
+    rpc,
+    from,
+  });
+  signOut.mockResolvedValue({ error: null });
   signInWithPassword.mockResolvedValue(signedIn);
   rpc.mockResolvedValue({ data: true, error: null });
   single.mockResolvedValue({ data: { role: 'user' }, error: null });
@@ -193,6 +213,31 @@ describe('POST /api/auth/login - blocked account', () => {
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ message: 'Account blocked' });
     expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
+  });
+
+  it('should revoke the session Supabase just created for a blocked user', async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await callHandler('POST', validBody);
+
+    expect(signOut).toHaveBeenCalledWith('access-jwt', 'local');
+  });
+
+  it('should still return 403 and report to Sentry when the revoke fails', async () => {
+    const failure = new Error('revoke failed');
+    rpc.mockResolvedValue({ data: false, error: null });
+    signOut.mockResolvedValue({ error: failure });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(captureException).toHaveBeenCalledWith(failure, expect.anything());
+  });
+
+  it('should not revoke anything for an active account', async () => {
+    await callHandler('POST', validBody);
+
+    expect(signOut).not.toHaveBeenCalled();
   });
 
   it('should treat a null status as blocked', async () => {

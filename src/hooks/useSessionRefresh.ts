@@ -63,9 +63,9 @@ export function useSessionRefresh() {
       }
     }
 
-    // A plain redirect would leave the refresh cookie in the browser (valid for
-    // days) for whoever uses the device next: logging out clears it and revokes
-    // the session, like the Logout button does.
+    // A plain redirect would leave the refresh cookie in the browser (and the
+    // session valid on Supabase) for whoever uses the device next: logging out
+    // clears it and revokes the session, like the Logout button does.
     async function endIdleSession() {
       const { ok: confirmed } = await logout();
       endSession(confirmed);

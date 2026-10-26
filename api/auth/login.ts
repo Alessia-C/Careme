@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   getSessionExpiry,
   isAccountActive,
+  revokeSessionBestEffort,
   setSessionCookies,
 } from '../_lib/auth.js';
 import { withSentry } from '../_lib/sentry.js';
@@ -63,6 +64,7 @@ async function handleLogin(
   // return the tokens for a blocked user.
   const userClient = createUserClient(data.session.access_token);
   if (!(await isAccountActive(userClient))) {
+    await revokeSessionBestEffort(supabase, data.session.access_token);
     return res.status(403).json({ message: 'Account blocked' });
   }
 

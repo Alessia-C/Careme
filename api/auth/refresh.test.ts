@@ -5,16 +5,26 @@ import {
   buildClearedRefreshCookie,
   buildClearedSessionCookie,
   getRefreshCookieName,
+  getSessionCookieName,
 } from '../_lib/auth.js';
 import handler from './refresh.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
-const { refreshSession, signOut, rpc, createClient } = vi.hoisted(() => ({
-  refreshSession: vi.fn(),
-  signOut: vi.fn(),
-  rpc: vi.fn(),
-  createClient: vi.fn(),
+const { refreshSession, signOut, rpc, createClient, captureException } =
+  vi.hoisted(() => ({
+    captureException: vi.fn(),
+    refreshSession: vi.fn(),
+    signOut: vi.fn(),
+    rpc: vi.fn(),
+    createClient: vi.fn(),
+  }));
+
+// Sentry is faked to check what is reported without sending anything.
+vi.mock('@sentry/node', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sentry/node')>()),
+  captureException,
+  flush: vi.fn(),
 }));
 
 // Only createClient is faked: the handler also needs the real isAuthApiError
@@ -31,7 +41,10 @@ const session = {
   expires_at: 1790000000,
 };
 
-const validCookies = { [getRefreshCookieName()]: 'old-refresh-token' };
+const validCookies = {
+  [getRefreshCookieName()]: 'old-refresh-token',
+  [getSessionCookieName()]: 'old-access-jwt',
+};
 
 const clearedCookies = [
   buildClearedSessionCookie(),
@@ -145,6 +158,18 @@ describe('POST /api/auth/refresh - session ended', () => {
     expect(refreshSession).not.toHaveBeenCalled();
   });
 
+  it('should return 401 and clear both cookies when the access cookie is gone', async () => {
+    // The refresh cookie may outlive the browser; the access cookie expires
+    // with the access token, which ends the inactivity window.
+    const res = await callHandler('POST', {
+      [getRefreshCookieName()]: 'old-refresh-token',
+    });
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', clearedCookies);
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['unknown', new AuthApiError('not found', 400, 'refresh_token_not_found')],
     [
@@ -194,6 +219,16 @@ describe('POST /api/auth/refresh - session ended', () => {
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', clearedCookies);
+  });
+
+  it('should report a failed revoke to Sentry', async () => {
+    const failure = new Error('revoke failed');
+    rpc.mockResolvedValue({ data: false, error: null });
+    signOut.mockResolvedValue({ error: failure });
+
+    await callHandler('POST');
+
+    expect(captureException).toHaveBeenCalledWith(failure, expect.anything());
   });
 
   it('should not revoke anything for an active account', async () => {

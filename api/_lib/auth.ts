@@ -3,6 +3,7 @@ import {
   isAuthApiError,
   isAuthSessionMissingError,
 } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/node';
 import { isRole, type Role } from '../../shared/validation.js';
 import { sendTooManyRequests, type Handler } from './http.js';
 import {
@@ -75,8 +76,9 @@ const REFRESH_COOKIE_PATH = '/api/auth';
 
 // No Max-Age on purpose: Supabase refresh tokens do not expire by themselves,
 // so a cookie that outlived the browser would leave a usable session on a
-// shared device. The page never uses it after a restart (it restores the
-// session from the access cookie only), so nothing is lost.
+// shared device. Browsers may still restore session cookies on restart, which
+// is why /api/auth/refresh also requires the access cookie (it expires with
+// the access token, so it enforces the inactivity limit on the server too).
 export function buildRefreshCookie(token: string) {
   return buildCookie(getRefreshCookieName(), token, REFRESH_COOKIE_PATH);
 }
@@ -174,6 +176,24 @@ export function isInvalidSessionError(error: unknown): boolean {
     isAuthSessionMissingError(error) ||
     (isAuthApiError(error) && SESSION_INVALID_STATUSES.includes(error.status))
   );
+}
+
+// Supabase creates the session before the profile can be checked, so a blocked
+// user still gets one. It is revoked so no valid token is left on Supabase.
+// Best effort: the user is refused either way and RLS blocks the token, so a
+// failure is reported to Sentry (supabase-js returns errors instead of
+// throwing, nobody would see it otherwise) and not turned into a 500.
+export async function revokeSessionBestEffort(
+  supabase: ReturnType<typeof createAnonClient>,
+  accessToken: string,
+) {
+  const { error } = await supabase.auth.admin.signOut(accessToken, 'local');
+  if (error) {
+    Sentry.captureException(error, {
+      tags: { context: 'revoke-blocked-user-session' },
+    });
+    await Sentry.flush(2000);
+  }
 }
 
 // Supabase answers 400 for an unknown or already used refresh token, but also

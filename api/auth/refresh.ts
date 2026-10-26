@@ -1,10 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   clearSessionCookies,
+  getAccessToken,
   getRefreshToken,
   getSessionExpiry,
   isAccountActive,
   isRefreshTokenInvalid,
+  revokeSessionBestEffort,
   setSessionCookies,
 } from '../_lib/auth.js';
 import {
@@ -38,6 +40,13 @@ async function handleRefresh(req: VercelRequest, res: VercelResponse) {
   if (!refreshToken) {
     return sendSessionEnded(res, 401, 'Missing refresh token');
   }
+  // The refresh cookie may survive a browser restart, but the access cookie
+  // expires with the access token: without it the inactivity limit has passed
+  // and whoever holds the refresh cookie must sign in again. Only its presence
+  // is checked, the refresh token is what Supabase validates.
+  if (!getAccessToken(req)) {
+    return sendSessionEnded(res, 401, 'Session expired or invalid');
+  }
 
   // Supabase rotates the refresh token: the old one stops working as soon as
   // this call succeeds, so the new one must reach the browser.
@@ -63,10 +72,8 @@ async function handleRefresh(req: VercelRequest, res: VercelResponse) {
   // applies) before the cookies are set, and drop the old ones.
   const userClient = createUserClient(data.session.access_token);
   if (!(await isAccountActive(userClient))) {
-    // The rotation already happened: revoke the new session too, so no valid
-    // token is left on Supabase. Best effort: the user is refused either way
-    // and RLS blocks the token, so a failure here is not worth a 500.
-    await supabase.auth.admin.signOut(data.session.access_token, 'local');
+    // The rotation already happened: revoke the new session too.
+    await revokeSessionBestEffort(supabase, data.session.access_token);
     return sendSessionEnded(res, 403, 'Account blocked');
   }
 
