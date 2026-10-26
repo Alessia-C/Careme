@@ -7,6 +7,8 @@ interface AuthLayoutProps {
   children?: ReactNode;
   // Lets a page move focus to the heading when its content changes.
   headingRef?: Ref<HTMLHeadingElement>;
+  // Id of a message to read together with the heading when it gets focus.
+  headingDescribedBy?: string;
   info?: {
     title: string;
     description?: string;
@@ -15,14 +17,24 @@ interface AuthLayoutProps {
 }
 
 // Shared frame of the public auth pages
-const AuthLayout = ({ info, headingRef, children }: AuthLayoutProps) => (
+const AuthLayout = ({
+  info,
+  headingRef,
+  headingDescribedBy,
+  children,
+}: AuthLayoutProps) => (
   <main className={styles.page}>
     {info?.title && <title>{info.title}</title>}
     <div className={styles.formPanel}>
       {info && (
         <div className={styles.brand}>
           <img src={logo} alt="Careme" className={styles.logo} />
-          <h1 ref={headingRef} tabIndex={-1} className={styles.heading}>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            aria-describedby={headingDescribedBy}
+            className={styles.heading}
+          >
             {info.heading}
           </h1>
           <p className={styles.description}>{info.description}</p>

@@ -83,3 +83,25 @@ export async function login(input: LoginInput): Promise<LoginResult> {
     return { ok: false, reason: 'failed' };
   }
 }
+
+export type LogoutResult = { ok: true } | { ok: false; reason: 'failed' };
+
+// 401 means the session was already over: for the user that is a successful
+// logout. The API clears the session cookie itself, the client only has to
+// drop its own state afterwards, whatever the outcome.
+export async function logout(): Promise<LogoutResult> {
+  try {
+    // The API ignores the body but requires JSON: it is a CSRF defence.
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    return response.ok || response.status === 401
+      ? { ok: true }
+      : { ok: false, reason: 'failed' };
+  } catch {
+    // fetch rejects only on network errors (offline, DNS, CORS).
+    return { ok: false, reason: 'failed' };
+  }
+}

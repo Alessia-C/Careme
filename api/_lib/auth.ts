@@ -45,6 +45,12 @@ export function buildSessionCookie(token: string, maxAgeSeconds: number) {
   return `${getSessionCookieName()}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAgeSeconds}${secure}`;
 }
 
+// A cookie is deleted by setting it again with Max-Age=0. The browser matches
+// it by name, Path and Domain, so every attribute must equal the original one.
+export function buildClearedSessionCookie() {
+  return buildSessionCookie('', 0);
+}
+
 // Browsers send the cookie; API clients (curl, tests) can still use the
 // Authorization header, which wins when both are present.
 export function getAccessToken(req: VercelRequest): string | undefined {
