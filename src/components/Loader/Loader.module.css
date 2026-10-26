@@ -1,0 +1,67 @@
+/* 62px outer size and 6px stroke, as in the Figma "Loader" (size Giant): a
+   ring with a 59deg gap and rounded ends. */
+.loader {
+  --loader-size: 62px;
+  --loader-stroke: 6px;
+  --loader-color: var(--color-primary-600);
+
+  position: relative;
+  display: inline-block;
+  width: var(--loader-size);
+  height: var(--loader-size);
+  animation: spin 1s linear infinite;
+}
+
+/* The arc starts on the left (270deg) and runs clockwise for 301deg. The mask
+   keeps only the outer stroke of the disc. */
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 270deg,
+    var(--loader-color) 0deg 301deg,
+    transparent 301deg
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--loader-stroke)),
+    #000 calc(100% - var(--loader-stroke))
+  );
+}
+
+/* Round caps: a dot at each end of the arc, centered on the stroke. */
+.loader::before,
+.loader::after {
+  content: '';
+  position: absolute;
+  width: var(--loader-stroke);
+  height: var(--loader-stroke);
+  border-radius: 50%;
+  background: var(--loader-color);
+}
+
+.loader::before {
+  top: calc(50% - var(--loader-stroke) / 2);
+  left: 0;
+}
+
+/* End of the arc: 211deg clockwise from the top, on the stroke's center line
+   (radius 28px). */
+.loader::after {
+  top: 51.96px;
+  left: 13.5px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A rotating shape can trigger vestibular symptoms: show it still instead. */
+@media (prefers-reduced-motion: reduce) {
+  .loader {
+    animation: none;
+  }
+}

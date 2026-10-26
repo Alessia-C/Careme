@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { mockNoSession } from './helpers';
 
 test('la homepage si carica', async ({ page }) => {
+  await mockNoSession(page);
   const errors: string[] = [];
   page.on('pageerror', (err) => errors.push(err.message));
 

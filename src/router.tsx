@@ -1,19 +1,27 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import ProtectedRoute from './routes/ProtectedRoute';
+import SessionRestore from './routes/SessionRestore';
 import AppLayout from './routes/AppLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage/LoginPage';
 import SignupPage from './pages/SignupPage/SignupPage';
 
 export const routes: RouteObject[] = [
-  { path: '/login', element: <LoginPage /> },
+  // Signup needs no session check: it stays outside SessionRestore, which
+  // runs the first time the user reaches any other route.
   { path: '/signup', element: <SignupPage /> },
   {
-    element: <ProtectedRoute />,
+    element: <SessionRestore />,
     children: [
+      { path: '/login', element: <LoginPage /> },
       {
-        element: <AppLayout />,
-        children: [{ path: '/', element: <HomePage /> }],
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [{ path: '/', element: <HomePage /> }],
+          },
+        ],
       },
     ],
   },

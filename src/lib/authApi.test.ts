@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { login, logout, signup } from './authApi';
+import { fetchSession, login, logout, signup } from './authApi';
 
 const input = {
   firstName: 'Jane',
@@ -162,5 +162,57 @@ describe('logout', () => {
   it('returns failed on a network error', async () => {
     mockFetch(new TypeError('Failed to fetch'));
     expect(await logout()).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('fetchSession', () => {
+  it('reads the session with a plain GET, without any token', async () => {
+    const fetchMock = mockFetch(Response.json({}));
+
+    await fetchSession();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/me');
+  });
+
+  it('returns the user and role on 200', async () => {
+    mockFetch(
+      Response.json({
+        user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+      }),
+    );
+
+    expect(await fetchSession()).toEqual({
+      ok: true,
+      user: { id: 'user-1', email: 'jane@example.com' },
+      role: 'admin',
+    });
+  });
+
+  it.each([401, 403])('returns no-session on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'no-session' });
+  });
+
+  it.each([429, 500])('returns failed on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it.each([
+    ['an unknown role', { id: 'u', email: 'a@b.c', role: 'superuser' }],
+    ['a missing email', { id: 'u', role: 'user' }],
+  ])('returns failed when the body has %s', async (_label, user) => {
+    mockFetch(Response.json({ user }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the body is not JSON', async () => {
+    mockFetch(new Response('<html>', { status: 200 }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
   });
 });

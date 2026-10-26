@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { isAuthenticated } from './lib/auth';
+import useAuthStore from './stores/authStore';
 import { routes } from './router';
 
 vi.mock('./lib/auth', () => ({ isAuthenticated: vi.fn() }));
@@ -20,6 +21,8 @@ function renderAt(path: string) {
 describe('routes', () => {
   beforeEach(() => {
     vi.mocked(isAuthenticated).mockReturnValue(false);
+    // The session restore has its own tests (SessionRestore.test.tsx).
+    useAuthStore.setState({ restoreStatus: 'restored' });
   });
 
   it('redirects to /login keeping the destination when unauthenticated', () => {

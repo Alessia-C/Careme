@@ -40,7 +40,7 @@ Lets an existing user sign in to Careme with email and password. The session is 
 - The only errors with their own message are the rate limit (`429`) and the generic "try again" message for network or server failures.
 - After login the user is sent to `next` only if it is an internal path: it must start with `/` and must not start with `//` or `/\`. Anything else (another origin, protocol-relative URL) is ignored and the user goes to `/`. This avoids an open redirect. The rule lives in [`src/lib/redirect.ts`](../../src/lib/redirect.ts) (`getSafeNextPath`).
 - The role returned by the API is only a hint for the UI. Authorization is always enforced by the API and RLS.
-- The session is not restored after a page reload yet: the auth store is in memory only, so after a reload a protected page redirects to `/login` again even though the cookie may still be valid.
+- After a page reload the session is restored from the cookie before the page renders: see [Session restore](session-restore.md). If that check fails, `/login` shows an error message.
 
 ## Data
 
@@ -68,7 +68,7 @@ The access token is stored by the browser in the `__Host-sb-access-token` cookie
 
 ## Open decisions
 
-- Out of scope, planned for later issues: session restore after a reload, refresh token handling and handling of `401` responses in the client.
+- Out of scope, planned for later issues: refresh token handling and handling of `401` responses in the client.
 - Password recovery does not exist: the "Forgot password?" button stays disabled until it is defined.
 - Whether the user should get a specific message for an unconfirmed email (today the `403` is shown as the generic invalid-credentials message) is not defined in the code.
 

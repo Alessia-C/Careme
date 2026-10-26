@@ -53,7 +53,10 @@ beforeEach(() => {
   query.eq.mockReturnValue(query);
   from.mockReturnValue(query);
   createClient.mockReturnValue({ auth: { getUser }, rpc, from });
-  getUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+  getUser.mockResolvedValue({
+    data: { user: { id: 'user-1', email: 'jane@example.com' } },
+    error: null,
+  });
   rpc.mockResolvedValue({ data: true, error: null });
   single.mockResolvedValue({ data: { role: 'user' }, error: null });
 });
@@ -240,13 +243,14 @@ describe('withAuth - account and role', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it('should pass the id and the role read from the database to the handler', async () => {
+  it('should pass the id, the email and the role read from the database to the handler', async () => {
     single.mockResolvedValue({ data: { role: 'admin' }, error: null });
 
     await callWithAuth();
 
     expect(handler).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
       id: 'user-1',
+      email: 'jane@example.com',
       role: 'admin',
     });
   });
@@ -256,12 +260,25 @@ describe('withAuth - account and role', () => {
 
     expect(handler).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
       id: 'user-1',
+      email: 'jane@example.com',
       role: 'user',
     });
   });
 });
 
 describe('withAuth - unexpected failures', () => {
+  it('should return a generic 500 when the user has no email', async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+
+    const res = await callWithAuth();
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it('should return a generic 500 when Supabase fails unexpectedly', async () => {
     getUser.mockResolvedValue({
       data: { user: null },

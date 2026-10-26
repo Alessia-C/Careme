@@ -59,7 +59,7 @@ export function getAccessToken(req: VercelRequest): string | undefined {
   );
 }
 
-export type AuthContext = { id: string; role: Role };
+export type AuthContext = { id: string; email: string; role: Role };
 
 type AuthHandler = (
   req: VercelRequest,
@@ -80,7 +80,7 @@ function isInvalidSessionError(error: unknown): boolean {
 }
 
 // Single point of enforcement for authentication: rejects the request unless
-// the JWT is valid, then passes the caller's id and role to the handler. The
+// the JWT is valid, then passes the caller's id, email and role to the handler. The
 // role is read from the database, never from the request, because the client
 // controls everything it sends.
 export function withAuth(handler: AuthHandler): Handler {
@@ -105,6 +105,12 @@ export function withAuth(handler: AuthHandler): Handler {
     }
     if (error) {
       throw error;
+    }
+
+    // Password accounts always have an email: anything else is a broken user.
+    const { email } = data.user;
+    if (typeof email !== 'string') {
+      throw new Error('Unexpected user without email');
     }
 
     // Supabase Auth ignores profiles.status, so a blocked user still has a
@@ -135,6 +141,6 @@ export function withAuth(handler: AuthHandler): Handler {
       throw new Error('Unexpected profile role');
     }
 
-    return handler(req, res, { id: data.user.id, role });
+    return handler(req, res, { id: data.user.id, email, role });
   };
 }
