@@ -92,7 +92,16 @@ describe('GET /api/auth/me', () => {
     const res = await callHandler('GET', validHeaders);
 
     expect(JSON.stringify(res.json.mock.calls)).not.toContain('valid-token');
-    expect(res.setHeader).not.toHaveBeenCalled();
+    expect(res.setHeader).not.toHaveBeenCalledWith(
+      'Set-Cookie',
+      expect.anything(),
+    );
+  });
+
+  it('should forbid caching the response', async () => {
+    const res = await callHandler('GET', validHeaders);
+
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store');
   });
 
   it('should return 401 when the token is expired or revoked', async () => {

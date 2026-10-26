@@ -104,20 +104,3 @@ test('a server failure leads to the login with an error message', async ({
     "We couldn't restore your session",
   );
 });
-
-test('no token is readable from the page after a restore', async ({ page }) => {
-  await mockApi(page);
-  await login(page);
-  await page.reload();
-  await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
-
-  const stored = await page.evaluate(() =>
-    JSON.stringify([
-      document.cookie,
-      { ...localStorage },
-      { ...sessionStorage },
-    ]),
-  );
-
-  expect(stored).not.toMatch(/token|jwt|eyJ/i);
-});

@@ -106,6 +106,25 @@ describe('SessionRestore', () => {
     expect(useAuthStore.getState().restoreStatus).toBe('restored');
   });
 
+  it('does not check the session on /signup', () => {
+    renderAt('/signup');
+
+    expect(screen.getByText('Create your account')).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('checks the session when the user moves from /signup to /login', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
+    const router = renderAt('/signup');
+
+    await router.navigate('/login');
+
+    expect(
+      await screen.findByText('Sign in to your account'),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('does not ask again once the first check is done', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
     renderAt('/login');

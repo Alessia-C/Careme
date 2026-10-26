@@ -34,6 +34,20 @@ export async function signup(input: SignupInput): Promise<SignupResult> {
   }
 }
 
+// Shape shared by the login and /me responses. The body is parsed as unknown
+// and checked field by field: the server is trusted, but not blindly.
+function parseSession(body: unknown) {
+  const user = (body as { user?: Record<string, unknown> } | null)?.user;
+  if (
+    typeof user?.id !== 'string' ||
+    typeof user.email !== 'string' ||
+    !isRole(user.role)
+  ) {
+    return null;
+  }
+  return { user: { id: user.id, email: user.email }, role: user.role };
+}
+
 export interface LoginInput {
   email: string;
   password: string;
@@ -65,19 +79,8 @@ export async function login(input: LoginInput): Promise<LoginResult> {
       return { ok: false, reason: 'failed' };
     }
 
-    const { user } = await response.json();
-    if (
-      typeof user?.id !== 'string' ||
-      typeof user?.email !== 'string' ||
-      !isRole(user?.role)
-    ) {
-      return { ok: false, reason: 'failed' };
-    }
-    return {
-      ok: true,
-      user: { id: user.id, email: user.email },
-      role: user.role,
-    };
+    const session = parseSession(await response.json());
+    return session ? { ok: true, ...session } : { ok: false, reason: 'failed' };
   } catch {
     // fetch rejects on network errors, json() on a malformed body.
     return { ok: false, reason: 'failed' };
@@ -126,19 +129,8 @@ export async function fetchSession(): Promise<SessionResult> {
       return { ok: false, reason: 'failed' };
     }
 
-    const { user } = await response.json();
-    if (
-      typeof user?.id !== 'string' ||
-      typeof user?.email !== 'string' ||
-      !isRole(user?.role)
-    ) {
-      return { ok: false, reason: 'failed' };
-    }
-    return {
-      ok: true,
-      user: { id: user.id, email: user.email },
-      role: user.role,
-    };
+    const session = parseSession(await response.json());
+    return session ? { ok: true, ...session } : { ok: false, reason: 'failed' };
   } catch {
     // fetch rejects on network errors, json() on a malformed body.
     return { ok: false, reason: 'failed' };

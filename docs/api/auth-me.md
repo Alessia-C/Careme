@@ -47,7 +47,7 @@ None.
 }
 ```
 
-Same `user` shape as the [login](auth-login.md) response. The response contains no token and sets no cookie.
+Same `user` shape as the [login](auth-login.md) response. The response contains no token and sets no cookie. It is sent with `Cache-Control: no-store`.
 
 ## Error cases
 

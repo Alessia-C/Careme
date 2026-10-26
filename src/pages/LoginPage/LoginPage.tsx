@@ -3,14 +3,14 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import AuthLayout from '../../components/AuthLayout/AuthLayout';
 import Feedback from '../../components/Feedback/Feedback';
 import { isAuthenticated } from '../../lib/auth';
-import useAuthStore from '../../stores/authStore';
 import { getSignOutNotice, type SignOutNotice } from '../../lib/signedOut';
+import useAuthStore from '../../stores/authStore';
 import LoginForm from './components/LoginForm/LoginForm';
 import styles from './LoginPage.module.css';
 
-const SIGNED_OUT_MESSAGE_MS = 5000;
 type LoginNotice = SignOutNotice | 'restore-failed';
 
+const SIGNED_OUT_MESSAGE_MS = 5000;
 const NOTICE_ID = 'login-notice';
 
 const PAGE_INFO = {

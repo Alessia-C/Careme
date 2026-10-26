@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Outlet } from 'react-router';
+import Loader from '../components/Loader/Loader';
 import { fetchSession } from '../lib/authApi';
 import useAuthStore from '../stores/authStore';
 import styles from './SessionRestore.module.css';
@@ -40,10 +41,14 @@ function SessionRestore() {
   }, [data, setSession, setRestoreStatus]);
 
   if (restoreStatus === 'pending') {
+    // The status text is visually hidden: the spinner is the visible cue.
     return (
-      <p role="status" className={styles.loading}>
-        Loading…
-      </p>
+      <main className={styles.loading}>
+        <Loader />
+        <p role="status" className={styles.status}>
+          Loading
+        </p>
+      </main>
     );
   }
 

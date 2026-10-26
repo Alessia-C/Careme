@@ -396,3 +396,62 @@ describe('LoginPage', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('LoginPage - after a failed session restore', () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      user: null,
+      role: null,
+      restoreStatus: 'failed',
+    });
+  });
+
+  it('shows an error alert and focuses the heading', () => {
+    renderPage();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "We couldn't restore your session",
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveFocus();
+  });
+
+  it('describes the heading with the message', () => {
+    renderPage();
+
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveAccessibleDescription(/couldn't restore your session/);
+  });
+
+  it('shows the message only once', () => {
+    renderPage();
+
+    expect(useAuthStore.getState().restoreStatus).toBe('restored');
+  });
+
+  it('keeps the message until it is closed', async () => {
+    vi.useFakeTimers();
+    try {
+      renderPage();
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close message' }),
+    );
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('shows nothing when the restore went fine', () => {
+    useAuthStore.setState({ restoreStatus: 'restored' });
+    renderPage();
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});

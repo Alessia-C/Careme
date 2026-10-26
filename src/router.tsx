@@ -7,11 +7,13 @@ import LoginPage from './pages/LoginPage/LoginPage';
 import SignupPage from './pages/SignupPage/SignupPage';
 
 export const routes: RouteObject[] = [
+  // Signup needs no session check: it stays outside SessionRestore, which
+  // runs the first time the user reaches any other route.
+  { path: '/signup', element: <SignupPage /> },
   {
     element: <SessionRestore />,
     children: [
       { path: '/login', element: <LoginPage /> },
-      { path: '/signup', element: <SignupPage /> },
       {
         element: <ProtectedRoute />,
         children: [
