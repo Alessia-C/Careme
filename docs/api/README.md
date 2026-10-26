@@ -7,15 +7,16 @@ The backend is a set of Vercel serverless functions in [`api/`](../../api/). Eac
 
 ## Endpoints
 
-| Method | Path                                     | Auth | Description                                              |
-| ------ | ---------------------------------------- | ---- | -------------------------------------------------------- |
-| `GET`  | [`/api/health`](health.md)               | None | Liveness check for the serverless runtime                |
-| `GET`  | [`/api/supabase-ping`](supabase-ping.md) | None | Checks the connection to Supabase                        |
-| `GET`  | [`/api/sentry-test`](sentry-test.md)     | None | Throws a deliberate error to verify Sentry error capture |
-| `POST` | [`/api/auth/signup`](auth-signup.md)     | None | Registers a new user via Supabase Auth                   |
-| `POST` | [`/api/auth/login`](auth-login.md)       | None | Authenticates a user and sets the session cookie         |
-| `POST` | [`/api/auth/logout`](auth-logout.md)     | JWT  | Revokes the caller's current session                     |
-| `GET`  | [`/api/auth/me`](auth-me.md)             | JWT  | Returns the current user, to restore the session on load |
+| Method | Path                                     | Auth           | Description                                              |
+| ------ | ---------------------------------------- | -------------- | -------------------------------------------------------- |
+| `GET`  | [`/api/health`](health.md)               | None           | Liveness check for the serverless runtime                |
+| `GET`  | [`/api/supabase-ping`](supabase-ping.md) | None           | Checks the connection to Supabase                        |
+| `GET`  | [`/api/sentry-test`](sentry-test.md)     | None           | Throws a deliberate error to verify Sentry error capture |
+| `POST` | [`/api/auth/signup`](auth-signup.md)     | None           | Registers a new user via Supabase Auth                   |
+| `POST` | [`/api/auth/login`](auth-login.md)       | None           | Authenticates a user and sets the session cookies        |
+| `POST` | [`/api/auth/refresh`](auth-refresh.md)   | Refresh cookie | Renews the session and rotates both cookies              |
+| `POST` | [`/api/auth/logout`](auth-logout.md)     | JWT            | Revokes the caller's current session                     |
+| `GET`  | [`/api/auth/me`](auth-me.md)             | JWT            | Returns the current user, to restore the session on load |
 
 ## Conventions
 

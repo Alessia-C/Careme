@@ -28,6 +28,18 @@ describe('authStore', () => {
     expect(state.role).toBeNull();
   });
 
+  it('should keep the session expiry and drop it on clear', () => {
+    const user = { id: 'user-1', email: 'test@example.com' };
+    useAuthStore.getState().setSession(user, 'user', 1790000000);
+    expect(useAuthStore.getState().expiresAt).toBe(1790000000);
+
+    useAuthStore.getState().setExpiresAt(1790003600);
+    expect(useAuthStore.getState().expiresAt).toBe(1790003600);
+
+    useAuthStore.getState().clearSession();
+    expect(useAuthStore.getState().expiresAt).toBeNull();
+  });
+
   it('should derive isAuthenticated from the user in the store', () => {
     const user = { id: 'user-1', email: 'test@example.com' };
     const role = 'user';

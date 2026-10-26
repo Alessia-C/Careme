@@ -15,7 +15,7 @@ Keeps the user logged in across a page reload. The auth store lives in memory an
 1. On every page load of `/login` and of the protected pages `SessionRestore` calls `GET /api/auth/me` through `fetchSession()` in [`src/lib/authApi.ts`](../../src/lib/authApi.ts), using React Query (`useQuery`, no retries). The browser sends the HttpOnly cookie by itself.
 2. While it waits, the page shows only the spinner ([`Loader`](../../src/components/Loader/Loader.tsx), from the Figma "Loader" component, size Giant, drawn with HTML and CSS only, no image) inside a `<main>`. The spinner is decorative (`aria-hidden`) and stops rotating with `prefers-reduced-motion`; a visually hidden `role="status"` text "Loading" announces the state. Nothing else is rendered, so `ProtectedRoute` does not redirect a logged-in user to `/login`.
 3. Outcome:
-   - **`200`**: user and role go into the store and the requested page is rendered. A logged-in user opening `/login` is sent to `/`.
+   - **`200`**: user, role and `expires_at` go into the store and the requested page is rendered. A logged-in user opening `/login` is sent to `/`.
    - **`401` / `403`** (no cookie, expired or revoked session, blocked user): no session. Protected pages redirect to `/login?next=...` as usual, with no message and no `signedOut` state.
    - **Network error, `429`, `5xx` or malformed body**: the outcome is unknown. The app goes to `/login` (protected pages redirect there; on `/login` the form stays) and the login page shows an error `Feedback` (`role="alert"`): "We couldn't restore your session", "Check your connection and sign in again.". It stays until closed, can be closed with the close button and is shown once.
 4. `/signup` does not run the check: it is outside `SessionRestore` in [`src/router.tsx`](../../src/router.tsx), so the form shows at once and a logged-in user opening it is not redirected. The check runs the first time the user reaches `/login` or a protected page (for example from the signup page).
@@ -48,7 +48,7 @@ None. It reads `profiles.role` through `withAuth`. Nothing is written.
 
 ## Open decisions
 
-- Refresh of the access token (it expires after 60 minutes) and handling of `401` from other endpoints: separate issues.
+- Handling of `401` from other endpoints: a separate issue. The renewal of the access token is in [Session renewal](session-renewal.md).
 
 ## Changelog
 

@@ -19,7 +19,13 @@ vi.mock('@supabase/supabase-js', async (importOriginal) => ({
   createClient,
 }));
 
-const validHeaders = { authorization: 'Bearer valid-token' };
+// withAuth verifies the token with Supabase (faked here), but the handler
+// still reads the exp claim, so the token must have a real payload.
+const EXPIRES_AT = 1790000000;
+const makeJwt = (exp: number) =>
+  `header.${Buffer.from(JSON.stringify({ exp })).toString('base64url')}.sig`;
+const validToken = makeJwt(EXPIRES_AT);
+const validHeaders = { authorization: `Bearer ${validToken}` };
 
 async function callHandler(
   method: string,
@@ -74,6 +80,7 @@ describe('GET /api/auth/me', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+      expires_at: EXPIRES_AT,
     });
   });
 
@@ -81,17 +88,17 @@ describe('GET /api/auth/me', () => {
     const res = await callHandler(
       'GET',
       {},
-      { [getSessionCookieName()]: 'cookie-jwt' },
+      { [getSessionCookieName()]: makeJwt(1790003600) },
     );
 
-    expect(getUser).toHaveBeenCalledWith('cookie-jwt');
+    expect(getUser).toHaveBeenCalledWith(makeJwt(1790003600));
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
   it('should not put any token in the response', async () => {
     const res = await callHandler('GET', validHeaders);
 
-    expect(JSON.stringify(res.json.mock.calls)).not.toContain('valid-token');
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain(validToken);
     expect(res.setHeader).not.toHaveBeenCalledWith(
       'Set-Cookie',
       expect.anything(),

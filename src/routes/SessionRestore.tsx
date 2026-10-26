@@ -31,7 +31,7 @@ function SessionRestore() {
       return;
     }
     if (data.ok) {
-      setSession(data.user, data.role);
+      setSession(data.user, data.role, data.expiresAt);
       setRestoreStatus('restored');
     } else {
       // Without a session ProtectedRoute redirects to /login, which shows the

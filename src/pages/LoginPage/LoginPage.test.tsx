@@ -10,6 +10,7 @@ const loginResponse = () =>
   Response.json({
     message: 'Login successful',
     user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+    expires_at: 1790000000,
   });
 
 function StateProbe() {

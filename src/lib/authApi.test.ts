@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchSession, login, logout, signup } from './authApi';
+import { fetchSession, login, logout, refreshSession, signup } from './authApi';
 
 const input = {
   firstName: 'Jane',
@@ -61,6 +61,7 @@ describe('login', () => {
   const loginBody = {
     message: 'Login successful',
     user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
+    expires_at: 1790000000,
   };
 
   afterEach(() => {
@@ -86,6 +87,7 @@ describe('login', () => {
       ok: true,
       user: { id: 'user-1', email: 'jane@example.com' },
       role: 'user',
+      expiresAt: 1790000000,
     });
   });
 
@@ -178,6 +180,7 @@ describe('fetchSession', () => {
     mockFetch(
       Response.json({
         user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+        expires_at: 1790000000,
       }),
     );
 
@@ -185,6 +188,7 @@ describe('fetchSession', () => {
       ok: true,
       user: { id: 'user-1', email: 'jane@example.com' },
       role: 'admin',
+      expiresAt: 1790000000,
     });
   });
 
@@ -202,7 +206,14 @@ describe('fetchSession', () => {
     ['an unknown role', { id: 'u', email: 'a@b.c', role: 'superuser' }],
     ['a missing email', { id: 'u', role: 'user' }],
   ])('returns failed when the body has %s', async (_label, user) => {
-    mockFetch(Response.json({ user }));
+    mockFetch(Response.json({ user, expires_at: 1790000000 }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the expiry is missing', async () => {
+    mockFetch(
+      Response.json({ user: { id: 'u', email: 'a@b.c', role: 'user' } }),
+    );
     expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
   });
 
@@ -214,5 +225,54 @@ describe('fetchSession', () => {
   it('returns failed on a network error', async () => {
     mockFetch(new TypeError('Failed to fetch'));
     expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('refreshSession', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts an empty JSON body, without any token', async () => {
+    const fetchMock = mockFetch(Response.json({ expires_at: 1790000000 }));
+
+    await refreshSession();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  });
+
+  it('returns the new expiry on 200', async () => {
+    mockFetch(Response.json({ expires_at: 1790003600 }));
+
+    expect(await refreshSession()).toEqual({ ok: true, expiresAt: 1790003600 });
+  });
+
+  it.each([401, 403])('returns no-session on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'no-session' });
+  });
+
+  it.each([429, 500])('returns failed on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the expiry is missing', async () => {
+    mockFetch(Response.json({}));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the body is not JSON', async () => {
+    mockFetch(new Response('<html>', { status: 200 }));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
   });
 });
