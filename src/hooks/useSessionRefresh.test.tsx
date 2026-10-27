@@ -46,11 +46,12 @@ function renderTab() {
     ],
     { initialEntries: ['/'] },
   );
-  return render(
+  const view = render(
     <QueryClientProvider client={new QueryClient()}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+  return { ...view, router };
 }
 
 const advance = (ms: number) =>
@@ -165,7 +166,7 @@ describe('useSessionRefresh - idle user', () => {
     await advance(HOUR_MS);
 
     expect(logout).toHaveBeenCalledTimes(1);
-    expect(broadcastLogout).toHaveBeenCalledWith(true);
+    expect(broadcastLogout).toHaveBeenCalledWith('expired');
   });
 
   it('tells the login page when the server could not confirm the logout', async () => {
@@ -175,7 +176,7 @@ describe('useSessionRefresh - idle user', () => {
     await advance(HOUR_MS);
 
     expect(screen.getByText('Login page')).toBeInTheDocument();
-    expect(broadcastLogout).toHaveBeenCalledWith(false);
+    expect(broadcastLogout).toHaveBeenCalledWith('unconfirmed');
   });
 
   it('does not log out before the session expires', async () => {
@@ -215,13 +216,17 @@ describe('useSessionRefresh - idle user', () => {
 describe('useSessionRefresh - failures', () => {
   it('takes the user to the login when the session is gone', async () => {
     refreshSession.mockResolvedValue({ ok: false, reason: 'no-session' });
-    renderTab();
+    const { router } = renderTab();
     userIsActive();
 
     await advance(RENEWAL_MS);
 
     expect(screen.getByText('Login page')).toBeInTheDocument();
     expect(useAuthStore.getState().user).toBeNull();
+    expect(router.state.location.state).toEqual({
+      signedOut: true,
+      expired: true,
+    });
   });
 
   it('keeps the session and tries again after a network error', async () => {

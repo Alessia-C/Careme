@@ -3,11 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
-import { logout } from '../lib/authApi';
-import useAuthStore from '../stores/authStore';
+import { logout } from '../../../../lib/authApi';
+import useAuthStore from '../../../../stores/authStore';
 import AppHeader from './AppHeader';
 
-vi.mock('../lib/authApi', () => ({ logout: vi.fn() }));
+vi.mock('../../../../lib/authApi', () => ({ logout: vi.fn() }));
 
 const postMessage = vi.fn();
 const close = vi.fn();

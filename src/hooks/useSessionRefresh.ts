@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { logout, refreshSession } from '../lib/authApi';
-import { broadcastLogout } from '../lib/logoutChannel';
+import { refreshSession } from '../lib/authApi';
 import { broadcastRefresh, listenForRefresh } from '../lib/sessionChannel';
 import useAuthStore from '../stores/authStore';
 import { useEndSession } from './useEndSession';
+import { useExpireSession } from './useExpireSession';
 
 // Renew this long before the access token expires, so a slow request does not
 // let it lapse.
@@ -24,6 +24,7 @@ export function useSessionRefresh() {
   const expiresAt = useAuthStore((state) => state.expiresAt);
   const setExpiresAt = useAuthStore((state) => state.setExpiresAt);
   const endSession = useEndSession();
+  const expireSession = useExpireSession();
 
   useEffect(() => listenForRefresh(setExpiresAt), [setExpiresAt]);
 
@@ -57,19 +58,10 @@ export function useSessionRefresh() {
         setExpiresAt(result.expiresAt);
         broadcastRefresh(result.expiresAt);
       } else if (result.reason === 'no-session') {
-        endSession();
+        endSession('expired');
       } else {
         timer = setTimeout(refresh, RETRY_DELAY_MS);
       }
-    }
-
-    // A plain redirect would leave the refresh cookie in the browser (and the
-    // session valid on Supabase) for whoever uses the device next: logging out
-    // clears it and revokes the session, like the Logout button does.
-    async function endIdleSession() {
-      const { ok: confirmed } = await logout();
-      endSession(confirmed);
-      broadcastLogout(confirmed);
     }
 
     function onRenewalDue() {
@@ -78,7 +70,7 @@ export function useSessionRefresh() {
         return;
       }
       isWaitingForActivity = true;
-      timer = setTimeout(endIdleSession, Math.max(expiresAtMs - Date.now(), 0));
+      timer = setTimeout(expireSession, Math.max(expiresAtMs - Date.now(), 0));
     }
 
     function waitForRenewal() {
@@ -110,5 +102,5 @@ export function useSessionRefresh() {
         window.removeEventListener(name, onActivity, LISTENER_OPTIONS),
       );
     };
-  }, [expiresAt, setExpiresAt, endSession]);
+  }, [expiresAt, setExpiresAt, endSession, expireSession]);
 }

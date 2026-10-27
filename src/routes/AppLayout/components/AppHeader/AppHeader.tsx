@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
-import Button from '../components/Button/Button';
-import { useEndSession } from '../hooks/useEndSession';
-import { logout } from '../lib/authApi';
-import { broadcastLogout } from '../lib/logoutChannel';
+import Button from '../../../../components/Button/Button';
+import { useEndSession } from '../../../../hooks/useEndSession';
+import { logout } from '../../../../lib/authApi';
+import { broadcastLogout } from '../../../../lib/logoutChannel';
 import styles from './AppHeader.module.css';
 
 // Logo and logout icon are CSS masks, so they take their color from the
@@ -17,9 +17,9 @@ function AppHeader() {
   const { mutate, isPending } = useMutation({
     mutationFn: logout,
     onSettled: (result) => {
-      const confirmed = result?.ok === true;
-      endSession(confirmed);
-      broadcastLogout(confirmed);
+      const reason = result?.ok === true ? 'signed-out' : 'unconfirmed';
+      endSession(reason);
+      broadcastLogout(reason);
     },
   });
 
