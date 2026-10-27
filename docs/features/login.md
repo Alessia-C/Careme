@@ -12,7 +12,7 @@ Lets an existing user sign in to Careme with email and password. The session is 
 
 ## Behavior
 
-1. The user opens `/login`, directly or because [`ProtectedRoute`](../../src/routes/ProtectedRoute.tsx) redirected them there from a protected page (the URL then carries `?next=<original path>`). The page uses the same layout as the signup page. The document title is "Login – Careme" and the heading is "Sign in to your account".
+1. The user opens `/login`, directly or because [`ProtectedRoute`](../../src/routes/ProtectedRoute/ProtectedRoute.tsx) redirected them there from a protected page (the URL then carries `?next=<original path>`). The page uses the same layout as the signup page. The document title is "Login – Careme" and the heading is "Sign in to your account".
 2. The form has two fields: Email\* and Password\* (with a show/hide toggle). Below them there are:
    - a "Forgot password?" button that is always disabled, because password recovery does not exist yet;
    - the "Sign in" button;
