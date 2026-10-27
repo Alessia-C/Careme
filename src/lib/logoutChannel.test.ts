@@ -40,16 +40,25 @@ describe('broadcastLogout / listenForLogout', () => {
 
     broadcastLogout();
 
-    expect(onLogout).toHaveBeenCalledExactlyOnceWith(true);
+    expect(onLogout).toHaveBeenCalledExactlyOnceWith('signed-out');
   });
 
   it('tells a listener the logout was not confirmed', () => {
     const onLogout = vi.fn();
     listenForLogout(onLogout);
 
-    broadcastLogout(false);
+    broadcastLogout('unconfirmed');
 
-    expect(onLogout).toHaveBeenCalledExactlyOnceWith(false);
+    expect(onLogout).toHaveBeenCalledExactlyOnceWith('unconfirmed');
+  });
+
+  it('tells a listener the session expired', () => {
+    const onLogout = vi.fn();
+    listenForLogout(onLogout);
+
+    broadcastLogout('expired');
+
+    expect(onLogout).toHaveBeenCalledExactlyOnceWith('expired');
   });
 
   it('does not tell the tab that sent the message', () => {

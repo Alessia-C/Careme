@@ -68,7 +68,7 @@ function LoginPage() {
     });
     // An unconfirmed logout is a warning the user must be able to read: it
     // stays until closed.
-    if (notice === 'signed-out') {
+    if (notice === 'signed-out' || notice === 'expired') {
       const timer = setTimeout(() => closeNotice(true), SIGNED_OUT_MESSAGE_MS);
       return () => clearTimeout(timer);
     }
@@ -96,6 +96,15 @@ function LoginPage() {
           id={NOTICE_ID}
           status="info"
           title="You have been signed out"
+          customClassName={styles.loginFeedback}
+          onClose={() => closeNotice()}
+        />
+      )}
+      {notice === 'expired' && (
+        <Feedback
+          id={NOTICE_ID}
+          status="info"
+          title="Your session expired due to inactivity"
           customClassName={styles.loginFeedback}
           onClose={() => closeNotice()}
         />
