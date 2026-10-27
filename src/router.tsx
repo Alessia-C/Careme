@@ -1,7 +1,7 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
-import ProtectedRoute from './routes/ProtectedRoute';
-import SessionRestore from './routes/SessionRestore';
-import AppLayout from './routes/AppLayout';
+import ProtectedRoute from './routes/ProtectedRoute/ProtectedRoute';
+import SessionRestore from './routes/SessionRestore/SessionRestore';
+import AppLayout from './routes/AppLayout/AppLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage/LoginPage';
 import SignupPage from './pages/SignupPage/SignupPage';
