@@ -4,23 +4,39 @@ import handler from './login.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
-const { signInWithPassword, rpc, single, from, createClient } = vi.hoisted(
-  () => ({
-    signInWithPassword: vi.fn(),
-    rpc: vi.fn(),
-    single: vi.fn(),
-    from: vi.fn(),
-    createClient: vi.fn(),
-  }),
-);
+const {
+  signInWithPassword,
+  signOut,
+  rpc,
+  single,
+  from,
+  createClient,
+  captureException,
+} = vi.hoisted(() => ({
+  signOut: vi.fn(),
+  captureException: vi.fn(),
+  signInWithPassword: vi.fn(),
+  rpc: vi.fn(),
+  single: vi.fn(),
+  from: vi.fn(),
+  createClient: vi.fn(),
+}));
 
 vi.mock('@supabase/supabase-js', () => ({ createClient }));
+
+// Sentry is faked to check what is reported without sending anything.
+vi.mock('@sentry/node', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sentry/node')>()),
+  captureException,
+  flush: vi.fn(),
+}));
 
 const validBody = { email: 'test@example.com', password: 'Valid123!' };
 
 const session = {
   access_token: 'access-jwt',
   refresh_token: 'refresh-token',
+  expires_in: 3600,
   expires_at: 1790000000,
 };
 
@@ -45,7 +61,12 @@ beforeEach(() => {
   query.select.mockReturnValue(query);
   query.eq.mockReturnValue(query);
   from.mockReturnValue(query);
-  createClient.mockReturnValue({ auth: { signInWithPassword }, rpc, from });
+  createClient.mockReturnValue({
+    auth: { signInWithPassword, admin: { signOut } },
+    rpc,
+    from,
+  });
+  signOut.mockResolvedValue({ error: null });
   signInWithPassword.mockResolvedValue(signedIn);
   rpc.mockResolvedValue({ data: true, error: null });
   single.mockResolvedValue({ data: { role: 'user' }, error: null });
@@ -98,15 +119,44 @@ describe('POST /api/auth/login - validation', () => {
 });
 
 describe('POST /api/auth/login - successful login', () => {
-  it('should return 200 with the session and a reduced user', async () => {
+  it('should return 200 with a reduced user and no tokens in the body', async () => {
     const res = await callHandler('POST', validBody);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Login successful',
-      session,
       user: { id: 'user-1', email: 'test@example.com', role: 'user' },
+      expires_at: 1790000000,
     });
+  });
+
+  it('should return the session expiry so the page can renew in time', async () => {
+    const res = await callHandler('POST', validBody);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ expires_at: 1790000000 }),
+    );
+  });
+
+  it('should set both tokens in HttpOnly SameSite=Strict cookies', async () => {
+    const res = await callHandler('POST', validBody);
+
+    expect(res.setHeader).toHaveBeenCalledTimes(1);
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', [
+      expect.stringMatching(
+        /^__Host-sb-access-token=access-jwt; HttpOnly; SameSite=Strict; Path=\/; Max-Age=3600/,
+      ),
+      expect.stringMatching(
+        /^__Secure-sb-refresh-token=refresh-token; HttpOnly; SameSite=Strict; Path=\/api\/auth; Secure$/,
+      ),
+    ]);
+  });
+
+  it('should never expose the refresh token outside the cookie', async () => {
+    const res = await callHandler('POST', validBody);
+
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain('refresh-token');
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
   });
 
   it('should return the admin role for an admin profile', async () => {
@@ -165,12 +215,38 @@ describe('POST /api/auth/login - blocked account', () => {
     expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
   });
 
+  it('should revoke the session Supabase just created for a blocked user', async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await callHandler('POST', validBody);
+
+    expect(signOut).toHaveBeenCalledWith('access-jwt', 'local');
+  });
+
+  it('should still return 403 and report to Sentry when the revoke fails', async () => {
+    const failure = new Error('revoke failed');
+    rpc.mockResolvedValue({ data: false, error: null });
+    signOut.mockResolvedValue({ error: failure });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(captureException).toHaveBeenCalledWith(failure, expect.anything());
+  });
+
+  it('should not revoke anything for an active account', async () => {
+    await callHandler('POST', validBody);
+
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
   it('should treat a null status as blocked', async () => {
     rpc.mockResolvedValue({ data: null, error: null });
 
     const res = await callHandler('POST', validBody);
 
     expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.setHeader).not.toHaveBeenCalled();
   });
 
   it.each(['user_banned', 'email_not_confirmed'])(
@@ -203,6 +279,7 @@ describe('POST /api/auth/login - failed credentials', () => {
       message: 'Invalid email or password',
     });
     expect(rpc).not.toHaveBeenCalled();
+    expect(res.setHeader).not.toHaveBeenCalled();
   });
 
   it.each(['over_request_rate_limit', 'over_email_send_rate_limit'])(

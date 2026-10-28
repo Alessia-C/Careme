@@ -1,0 +1,278 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fetchSession, login, logout, refreshSession, signup } from './authApi';
+
+const input = {
+  firstName: 'Jane',
+  lastName: 'Doe',
+  email: 'jane@example.com',
+  password: 'Str0ng!pass',
+};
+
+const mockFetch = (response: Response | Error) => {
+  const fetchMock = vi.fn(() =>
+    response instanceof Error
+      ? Promise.reject(response)
+      : Promise.resolve(response),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+};
+
+describe('signup', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts only the four signup fields as JSON', async () => {
+    const fetchMock = mockFetch(new Response(null, { status: 201 }));
+
+    await signup(input);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+  });
+
+  it('returns ok on 201', async () => {
+    mockFetch(new Response(null, { status: 201 }));
+    expect(await signup(input)).toEqual({ ok: true });
+  });
+
+  it('returns rate-limited on 429', async () => {
+    mockFetch(new Response(null, { status: 429 }));
+    expect(await signup(input)).toEqual({ ok: false, reason: 'rate-limited' });
+  });
+
+  it.each([400, 500])('returns failed on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await signup(input)).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the network is down', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await signup(input)).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('login', () => {
+  const credentials = { email: 'jane@example.com', password: 'secret' };
+  const loginBody = {
+    message: 'Login successful',
+    user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
+    expires_at: 1790000000,
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts only email and password as JSON', async () => {
+    const fetchMock = mockFetch(Response.json(loginBody));
+
+    await login(credentials);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+  });
+
+  it('returns the user and role on 200', async () => {
+    mockFetch(Response.json(loginBody));
+
+    expect(await login(credentials)).toEqual({
+      ok: true,
+      user: { id: 'user-1', email: 'jane@example.com' },
+      role: 'user',
+      expiresAt: 1790000000,
+    });
+  });
+
+  it.each([400, 403])(
+    'returns the same invalid-credentials reason on %i',
+    async (status) => {
+      mockFetch(new Response(null, { status }));
+      expect(await login(credentials)).toEqual({
+        ok: false,
+        reason: 'invalid-credentials',
+      });
+    },
+  );
+
+  it('returns rate-limited on 429', async () => {
+    mockFetch(new Response(null, { status: 429 }));
+    expect(await login(credentials)).toEqual({
+      ok: false,
+      reason: 'rate-limited',
+    });
+  });
+
+  it('returns failed on 500', async () => {
+    mockFetch(new Response(null, { status: 500 }));
+    expect(await login(credentials)).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it.each([
+    ['an unknown role', { user: { id: 'u', email: 'e', role: 'root' } }],
+    ['a missing user', {}],
+  ])('returns failed on 200 with %s', async (_label, body) => {
+    mockFetch(Response.json(body));
+    expect(await login(credentials)).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the body is not JSON', async () => {
+    mockFetch(new Response('oops', { status: 200 }));
+    expect(await login(credentials)).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the network is down', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await login(credentials)).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('logout', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts an empty JSON object, without any token', async () => {
+    const fetchMock = mockFetch(new Response(null, { status: 200 }));
+
+    await logout();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  });
+
+  it.each([200, 401])('returns ok on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await logout()).toEqual({ ok: true });
+  });
+
+  it.each([429, 500])('returns failed on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await logout()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await logout()).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('fetchSession', () => {
+  it('reads the session with a plain GET, without any token', async () => {
+    const fetchMock = mockFetch(Response.json({}));
+
+    await fetchSession();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/me');
+  });
+
+  it('returns the user and role on 200', async () => {
+    mockFetch(
+      Response.json({
+        user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+        expires_at: 1790000000,
+      }),
+    );
+
+    expect(await fetchSession()).toEqual({
+      ok: true,
+      user: { id: 'user-1', email: 'jane@example.com' },
+      role: 'admin',
+      expiresAt: 1790000000,
+    });
+  });
+
+  it.each([401, 403])('returns no-session on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'no-session' });
+  });
+
+  it.each([429, 500])('returns failed on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it.each([
+    ['an unknown role', { id: 'u', email: 'a@b.c', role: 'superuser' }],
+    ['a missing email', { id: 'u', role: 'user' }],
+  ])('returns failed when the body has %s', async (_label, user) => {
+    mockFetch(Response.json({ user, expires_at: 1790000000 }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the expiry is missing', async () => {
+    mockFetch(
+      Response.json({ user: { id: 'u', email: 'a@b.c', role: 'user' } }),
+    );
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the body is not JSON', async () => {
+    mockFetch(new Response('<html>', { status: 200 }));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+});
+
+describe('refreshSession', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts an empty JSON body, without any token', async () => {
+    const fetchMock = mockFetch(Response.json({ expires_at: 1790000000 }));
+
+    await refreshSession();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  });
+
+  it('returns the new expiry on 200', async () => {
+    mockFetch(Response.json({ expires_at: 1790003600 }));
+
+    expect(await refreshSession()).toEqual({ ok: true, expiresAt: 1790003600 });
+  });
+
+  it.each([401, 403])('returns no-session on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'no-session' });
+  });
+
+  it.each([429, 500])('returns failed on %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the expiry is missing', async () => {
+    mockFetch(Response.json({}));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed when the body is not JSON', async () => {
+    mockFetch(new Response('<html>', { status: 200 }));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('returns failed on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await refreshSession()).toEqual({ ok: false, reason: 'failed' });
+  });
+});

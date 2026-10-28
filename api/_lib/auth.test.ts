@@ -1,6 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthSessionMissingError } from '@supabase/supabase-js';
-import { getBearerToken, withAuth } from './auth.js';
+import {
+  buildClearedRefreshCookie,
+  buildClearedSessionCookie,
+  buildRefreshCookie,
+  buildSessionCookie,
+  clearSessionCookies,
+  getAccessToken,
+  getBearerToken,
+  getRefreshCookieName,
+  getRefreshToken,
+  getSessionCookieName,
+  getSessionExpiry,
+  getTokenExpiry,
+  setSessionCookies,
+  withAuth,
+} from './auth.js';
 import { withSentry } from './sentry.js';
 import { makeReq, makeRes, stubSupabaseEnv } from './test-helpers.js';
 
@@ -24,12 +39,15 @@ vi.mock('@supabase/supabase-js', async (importOriginal) => ({
 const handler = vi.fn();
 const validHeaders = { authorization: 'Bearer valid-token' };
 
-async function callWithAuth(headers: Record<string, string> = validHeaders) {
+async function callWithAuth(
+  headers: Record<string, string> = validHeaders,
+  cookies: Record<string, string> = {},
+) {
   const { res, asVercel } = makeRes();
   // Wrapped like a real route: withSentry turns the errors that withAuth
   // rethrows into a generic 500.
   await withSentry(withAuth(handler))(
-    makeReq('GET', undefined, headers),
+    makeReq('GET', undefined, headers, cookies),
     asVercel,
   );
   return res;
@@ -43,7 +61,10 @@ beforeEach(() => {
   query.eq.mockReturnValue(query);
   from.mockReturnValue(query);
   createClient.mockReturnValue({ auth: { getUser }, rpc, from });
-  getUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+  getUser.mockResolvedValue({
+    data: { user: { id: 'user-1', email: 'jane@example.com' } },
+    error: null,
+  });
   rpc.mockResolvedValue({ data: true, error: null });
   single.mockResolvedValue({ data: { role: 'user' }, error: null });
 });
@@ -84,6 +105,169 @@ describe('auth', () => {
     });
     const token = getBearerToken(req);
     expect(token).toBe('AbC.dEf.GhI');
+  });
+});
+
+describe('getAccessToken', () => {
+  it('reads the token from the session cookie', () => {
+    const req = makeReq(
+      'GET',
+      undefined,
+      {},
+      { [getSessionCookieName()]: 'jwt' },
+    );
+    expect(getAccessToken(req)).toBe('jwt');
+  });
+
+  it('prefers the Authorization header over the cookie', () => {
+    const req = makeReq('GET', undefined, validHeaders, {
+      [getSessionCookieName()]: 'cookie-jwt',
+    });
+    expect(getAccessToken(req)).toBe('valid-token');
+  });
+
+  it('returns undefined when neither header nor cookie are present', () => {
+    expect(getAccessToken(makeReq('GET'))).toBeUndefined();
+  });
+
+  it('ignores an empty cookie', () => {
+    const req = makeReq('GET', undefined, {}, { [getSessionCookieName()]: '' });
+    expect(getAccessToken(req)).toBeUndefined();
+  });
+});
+
+describe('buildSessionCookie', () => {
+  it('is HttpOnly, SameSite=Strict and Secure with the given lifetime', () => {
+    expect(buildSessionCookie('jwt', 3600)).toBe(
+      '__Host-sb-access-token=jwt; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600; Secure',
+    );
+  });
+
+  it('drops Secure and the __Host- prefix under vercel dev (plain http)', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    const cookie = buildSessionCookie('jwt', 3600);
+    expect(cookie).not.toContain('Secure');
+    expect(cookie.startsWith('sb-access-token=jwt;')).toBe(true);
+  });
+
+  it('reads the cookie under the same name it sets', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    const req = makeReq('GET', undefined, {}, { 'sb-access-token': 'jwt' });
+    expect(getAccessToken(req)).toBe('jwt');
+  });
+});
+
+describe('buildClearedSessionCookie', () => {
+  it('expires the cookie with the same attributes as the session cookie', () => {
+    expect(buildClearedSessionCookie()).toBe(
+      '__Host-sb-access-token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0; Secure',
+    );
+  });
+
+  it('uses the plain cookie name under vercel dev (plain http)', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    expect(buildClearedSessionCookie()).toBe(
+      'sb-access-token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0',
+    );
+  });
+});
+
+describe('refresh cookie', () => {
+  it('is a session cookie scoped to /api/auth with the __Secure- prefix', () => {
+    expect(buildRefreshCookie('refresh')).toBe(
+      '__Secure-sb-refresh-token=refresh; HttpOnly; SameSite=Strict; Path=/api/auth; Secure',
+    );
+  });
+
+  it('has no Max-Age, so it disappears when the browser closes', () => {
+    expect(buildRefreshCookie('refresh')).not.toContain('Max-Age');
+  });
+
+  it('drops Secure and the prefix under vercel dev (plain http)', () => {
+    vi.stubEnv('VERCEL_ENV', 'development');
+    const cookie = buildRefreshCookie('refresh');
+    expect(cookie).not.toContain('Secure');
+    expect(cookie.startsWith('sb-refresh-token=refresh;')).toBe(true);
+  });
+
+  it('is cleared with the same attributes as the original', () => {
+    expect(buildClearedRefreshCookie()).toBe(
+      '__Secure-sb-refresh-token=; HttpOnly; SameSite=Strict; Path=/api/auth; Max-Age=0; Secure',
+    );
+  });
+
+  it('is read from the request under the name it is set with', () => {
+    const req = makeReq(
+      'POST',
+      {},
+      {},
+      { [getRefreshCookieName()]: 'refresh' },
+    );
+    expect(getRefreshToken(req)).toBe('refresh');
+    expect(getRefreshToken(makeReq('POST', {}))).toBeUndefined();
+  });
+});
+
+describe('setSessionCookies / clearSessionCookies', () => {
+  it('sets both cookies in a single Set-Cookie header', () => {
+    const { res, asVercel } = makeRes();
+
+    setSessionCookies(asVercel, {
+      access_token: 'access',
+      refresh_token: 'refresh',
+      expires_in: 3600,
+    });
+
+    expect(res.setHeader).toHaveBeenCalledTimes(1);
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', [
+      buildSessionCookie('access', 3600),
+      buildRefreshCookie('refresh'),
+    ]);
+  });
+
+  it('clears both cookies in a single Set-Cookie header', () => {
+    const { res, asVercel } = makeRes();
+
+    clearSessionCookies(asVercel);
+
+    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', [
+      buildClearedSessionCookie(),
+      buildClearedRefreshCookie(),
+    ]);
+  });
+});
+
+describe('getSessionExpiry', () => {
+  it('prefers the expires_at given by Supabase', () => {
+    expect(getSessionExpiry({ expires_in: 3600, expires_at: 1790000000 })).toBe(
+      1790000000,
+    );
+  });
+
+  it('falls back to now + expires_in', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-26T10:00:00Z'));
+
+    const nowSeconds = Date.parse('2026-10-26T10:00:00Z') / 1000;
+    expect(getSessionExpiry({ expires_in: 3600 })).toBe(nowSeconds + 3600);
+
+    vi.useRealTimers();
+  });
+});
+
+describe('getTokenExpiry', () => {
+  const makeToken = (payload: object) =>
+    `header.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.sig`;
+
+  it('reads the exp claim', () => {
+    expect(getTokenExpiry(makeToken({ exp: 1790000000 }))).toBe(1790000000);
+  });
+
+  it.each([
+    ['without exp', makeToken({})],
+    ['with a non-numeric exp', makeToken({ exp: 'soon' })],
+  ])('should throw for a token %s', (_label, token) => {
+    expect(() => getTokenExpiry(token)).toThrow();
   });
 });
 
@@ -146,6 +330,13 @@ describe('withAuth - token', () => {
 
     expect(getUser).toHaveBeenCalledWith('valid-token');
   });
+
+  it('should accept the token from the session cookie', async () => {
+    await callWithAuth({}, { [getSessionCookieName()]: 'cookie-jwt' });
+
+    expect(getUser).toHaveBeenCalledWith('cookie-jwt');
+    expect(handler).toHaveBeenCalled();
+  });
 });
 
 describe('withAuth - account and role', () => {
@@ -159,13 +350,14 @@ describe('withAuth - account and role', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it('should pass the id and the role read from the database to the handler', async () => {
+  it('should pass the id, the email and the role read from the database to the handler', async () => {
     single.mockResolvedValue({ data: { role: 'admin' }, error: null });
 
     await callWithAuth();
 
     expect(handler).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
       id: 'user-1',
+      email: 'jane@example.com',
       role: 'admin',
     });
   });
@@ -175,12 +367,25 @@ describe('withAuth - account and role', () => {
 
     expect(handler).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
       id: 'user-1',
+      email: 'jane@example.com',
       role: 'user',
     });
   });
 });
 
 describe('withAuth - unexpected failures', () => {
+  it('should return a generic 500 when the user has no email', async () => {
+    getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+
+    const res = await callWithAuth();
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it('should return a generic 500 when Supabase fails unexpectedly', async () => {
     getUser.mockResolvedValue({
       data: { user: null },

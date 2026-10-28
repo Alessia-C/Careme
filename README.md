@@ -79,11 +79,11 @@ cp .env.example .env.local
 
 Then fill in `.env.local` with the values from the Supabase dashboard, under **Project Settings → API**:
 
-| Supabase dashboard | Variable(s) in `.env.local`                   |
-| ------------------ | --------------------------------------------- |
-| Project URL        | `SUPABASE_URL`, `VITE_SUPABASE_URL`           |
-| `anon` public key  | `SUPABASE_ANON_KEY`, `VITE_SUPABASE_ANON_KEY` |
-| `service_role` key | `SUPABASE_SERVICE_ROLE_KEY`                   |
+| Supabase dashboard | Variable(s) in `.env.local` |
+| ------------------ | --------------------------- |
+| Project URL        | `SUPABASE_URL`              |
+| `anon` public key  | `SUPABASE_ANON_KEY`         |
+| `service_role` key | `SUPABASE_SERVICE_ROLE_KEY` |
 
 If the project is already linked on Vercel, `vercel env pull .env.local` downloads the same values instead.
 
@@ -106,8 +106,6 @@ All variables are listed in [`.env.example`](.env.example). Put local values in 
 | `SUPABASE_URL`              | `api/` functions | Yes, for `/api/supabase-ping` | Supabase project URL: `https://<project-ref>.supabase.co`.                                                                                                                                            |
 | `SUPABASE_ANON_KEY`         | `api/` functions | Yes, for `/api/auth/signup`   | Public anon key. Row Level Security applies to every request made with it.                                                                                                                            |
 | `SUPABASE_SERVICE_ROLE_KEY` | `api/` functions | Yes, for `/api/supabase-ping` | Service role key. **Bypasses RLS: server-side only, never expose it to the browser** (never prefix it with `VITE_`).                                                                                  |
-| `VITE_SUPABASE_URL`         | Frontend (Vite)  | Not yet                       | Supabase API URL for the browser client. Already provided in CI.                                                                                                                                      |
-| `VITE_SUPABASE_ANON_KEY`    | Frontend (Vite)  | Not yet                       | Public anon key for the browser client. Already provided in CI.                                                                                                                                       |
 | `SENTRY_DSN`                | `api/` functions | No                            | Sentry DSN for the serverless functions. Sentry is disabled when empty. Same value as `VITE_SENTRY_DSN`, from Sentry → **Settings → Projects → careme → Client Keys (DSN)**. The DSN is not a secret. |
 | `VITE_SENTRY_DSN`           | Frontend (Vite)  | No                            | Sentry DSN for the browser. Sentry is disabled when empty. Same value as `SENTRY_DSN`.                                                                                                                |
 | `E2E_BASE_URL`              | Playwright       | No                            | Runs E2E tests against an already running URL (for example a Vercel preview) instead of building and serving locally.                                                                                 |
@@ -118,7 +116,7 @@ Only variables prefixed with `VITE_` are exposed to frontend code (`import.meta.
 **Where the values live in other environments:**
 
 - **Vercel (preview/production):** Project → Settings → Environment Variables. `vercel env pull .env.local` downloads them into your local file.
-- **GitHub Actions:** repository secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, used by the E2E workflow.
+- **GitHub Actions:** the E2E workflow needs no secrets.
 
 > **`vercel dev` and Sentry:** `vercel dev` loads the **Development** environment variables of the linked Vercel project, not the root `.env.local`. To capture errors locally, `SENTRY_DSN` must also exist on Vercel for the Development environment. Variables marked **Sensitive** on Vercel are not available in Development.
 

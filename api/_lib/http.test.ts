@@ -58,6 +58,45 @@ describe('withObjectBody', () => {
   );
 });
 
+describe('withObjectBody - content type', () => {
+  it.each([
+    ['application/json', true],
+    ['application/json; charset=utf-8', true],
+    ['application/x-www-form-urlencoded', false],
+    ['multipart/form-data; boundary=x', false],
+    ['text/plain', false],
+  ])('content type %s accepted: %s', async (contentType, accepted) => {
+    const handler = vi.fn();
+    const { res, asVercel } = makeRes();
+    const req = makeReq(
+      'POST',
+      { email: 'a@b.co' },
+      { 'content-type': contentType },
+    );
+
+    await withObjectBody(handler)(req, asVercel);
+
+    if (accepted) {
+      expect(handler).toHaveBeenCalled();
+    } else {
+      expect(res.status).toHaveBeenCalledWith(415);
+      expect(handler).not.toHaveBeenCalled();
+    }
+  });
+
+  it('should return 415 when the content type is missing', async () => {
+    const handler = vi.fn();
+    const { res, asVercel } = makeRes();
+    const req = makeReq('POST', { email: 'a@b.co' });
+    delete req.headers['content-type'];
+
+    await withObjectBody(handler)(req, asVercel);
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(handler).not.toHaveBeenCalled();
+  });
+});
+
 describe('sendTooManyRequests', () => {
   it('should answer 429 with a retry message', () => {
     const { res, asVercel } = makeRes();

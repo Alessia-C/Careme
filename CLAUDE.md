@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Careme: a web app for tracking personal skincare/makeup products (name, brand, category, status). Currently at the foundation milestone: tooling, DB schema, CI and tests exist; the UI (`src/App.tsx`) is a placeholder and `api/` holds only smoke endpoints. Code comments and some UI strings are in Italian.
+Careme: a web app for tracking personal skincare/makeup products (name, brand, category, status). Currently at the foundation milestone: tooling, DB schema, CI and tests exist; the UI (`src/App.tsx`) is a placeholder and `api/` holds only smoke endpoints. Code comments and some older docs are in Italian; UI strings are in English.
 
 Requires Node 22.13+ (`.nvmrc`); ESLint 10 fails on older Node.
 
-Approved stack (from the tech stack decision doc): React 19 + Vite + TypeScript, Zustand (global state), React Query (data fetching), Supabase (Postgres + Auth), Node.js on Vercel serverless functions, Vitest, Playwright, Sentry, UptimeRobot. Routing, styling and form libraries are not chosen yet: ask, do not pick one.
+Approved stack (from the tech stack decision doc): React 19 + Vite + TypeScript, Zustand (global state), React Query (data fetching), Supabase (Postgres + Auth), Node.js on Vercel serverless functions, Vitest, Playwright, Sentry, UptimeRobot. Routing is React Router (`react-router`, Data mode with `createBrowserRouter`). Styling: CSS Modules (`*.module.css`), decided in issue #56; global styles in `src/styles/` (`normalize.css` from npm, `tokens.css` with design tokens from Figma). Form libraries are not chosen yet: ask, do not pick one.
 
 ## Commands
 
@@ -36,7 +36,8 @@ npx playwright test e2e/smoke.spec.ts --project=chromium   # single E2E file/bro
 ## Architecture
 
 - **Frontend** (`src/`): React 19 + Vite. `main.tsx` initializes Sentry, mounts `<App />` inside `Sentry.ErrorBoundary`, and wires React root error hooks to Sentry. Only `VITE_*` env vars reach the browser (`import.meta.env`).
-- **Backend** (`api/`): Vercel serverless functions, one file = one endpoint (`api/foo.ts` → `/api/foo`). Planned domains: `/api/auth`, `/api/users`, `/api/products`. Express will be used inside the serverless functions, but the route structure is still an open decision: do not add Express or restructure `api/` until the user decides how. Files/dirs prefixed with `_` (e.g. `api/_lib/`) are shared helpers, not routes. Wrap handlers with `withSentry()` from `api/_lib/sentry.ts` to capture exceptions and return a generic 500. Compose handlers as `withSentry(withMethod('POST', withObjectBody(handler)))` using the helpers in `api/_lib/http.ts`. Protected endpoints add `withAuth(handler)` from `api/_lib/auth.ts`, the single point of JWT enforcement: it verifies the token with Supabase `getUser`, rejects `blocked` users and passes `{ id, role }` (role read from `profiles`, never from the request) to the handler. `/api/auth/logout` is the exception: it only uses `getBearerToken`, so a blocked user can still revoke their session; create Supabase clients only through `api/_lib/supabase.ts` (`createAnonClient()`, or `createUserClient(accessToken)` to act as the caller). Relative imports in `api/` use the `.js` extension (ESM, `"type": "module"`).
+- **Frontend structure** (by file type): `router.tsx` holds the whole route tree (public `/login`, `/signup`; protected `/`), `App.tsx` only mounts the router. `routes/` has routing logic, one folder per component like `pages/` (`routes/SessionRestore/SessionRestore.tsx`, the root of every route except `/signup`, waits for `GET /api/auth/me` before rendering anything and tracks `restoreStatus` in the auth store; `routes/ProtectedRoute/`; `routes/AppLayout/`, whose header lives in `routes/AppLayout/components/AppHeader/`), `pages/` one folder per route (`pages/XxxPage/XxxPage.tsx` with its `.module.css` and test), `components/` one folder per shared component (e.g. `AuthLayout`, the form + image frame of the public auth pages); a component used by one page stays in that page's folder, inside `pages/XxxPage/components/<Name>/` (one folder per component, same layout as `src/components/`), `hooks/` shared React hooks, one folder per hook like `components/` (`hooks/useForm/useForm.ts` with its test; `useForm` is the project's own form hook: form libraries are still not chosen), `lib/` non-React helpers. Tests sit next to the file they test. New feature page = new `pages/XxxPage/XxxPage.tsx` + one entry in `router.tsx` under the protected route.
+- **Backend** (`api/`): Vercel serverless functions, one file = one endpoint (`api/foo.ts` → `/api/foo`). Planned domains: `/api/auth`, `/api/users`, `/api/products`. Express will be used inside the serverless functions, but the route structure is still an open decision: do not add Express or restructure `api/` until the user decides how. Files/dirs prefixed with `_` (e.g. `api/_lib/`) are shared helpers, not routes. Wrap handlers with `withSentry()` from `api/_lib/sentry.ts` to capture exceptions and return a generic 500. Compose handlers as `withSentry(withMethod('POST', withObjectBody(handler)))` using the helpers in `api/_lib/http.ts`. Protected endpoints add `withAuth(handler)` from `api/_lib/auth.ts`, the single point of JWT enforcement: it verifies the token with Supabase `getUser`, rejects `blocked` users and passes `{ id, email, role }` (role read from `profiles`, never from the request) to the handler. `/api/auth/logout` is the exception: it only uses `getAccessToken` (bearer or session cookie) without `withAuth`, so a blocked user can still revoke their session, and it clears both session cookies. The session is two HttpOnly cookies set by `setSessionCookies` in `api/_lib/auth.ts`: the access token (`Path=/`) and the refresh token (`Path=/api/auth`, `__Secure-` prefix because `__Host-` needs `Path=/`). `POST /api/auth/refresh` exchanges the refresh cookie for a new session and rotates both cookies (any failure or a blocked user clears them and the frontend goes to `/login`); login, refresh and `/me` return `expires_at` in the body and the frontend's `useSessionRefresh` renews shortly before it, only while the user is active (idle users lapse to `/login`); create Supabase clients only through `api/_lib/supabase.ts` (`createAnonClient()`, or `createUserClient(accessToken)` to act as the caller). Relative imports in `api/` use the `.js` extension (ESM, `"type": "module"`).
 - **Data access**: the frontend never talks to Supabase directly (no Supabase client in `src/`, no `VITE_SUPABASE_*` vars). Everything, auth included, goes through `api/`.
 - **Supabase in the API**: create a per-request client with the caller's JWT (`Authorization` header) so RLS always applies. RLS is the last line of defense, API checks are the first: never rely on only one.
 - **Sentry**: disabled when `SENTRY_DSN` / `VITE_SENTRY_DSN` is empty (unit tests, CI). Test hooks: `/?sentry-test=1` (frontend, throws asynchronously) and `/api/sentry-test` (404 in production).
@@ -61,14 +62,26 @@ Security is a top priority: when in doubt, choose the safer option and ask.
 ## Conventions
 
 - When adding or changing an endpoint, copy `docs/api/_TEMPLATE.md` into `docs/api/<endpoint>.md` and add a row to `docs/api/README.md` in the same PR.
+- When adding or changing a user-facing feature, copy `docs/features/_TEMPLATE.md` into `docs/features/<feature-name>.md` and add a row to `docs/features/README.md` in the same PR. Feature docs are in English.
 - New env vars go in `.env.example` and the README env table.
 - Prettier: single quotes, semicolons, trailing commas, 80 cols, LF.
-- Commit style: Conventional Commits (`feat:`, `docs:`, `test(e2e):`, `chore(deps):`); feature branches like `feature/MK-xxx-...` merged via PR to `main` (Vercel deploys `main` to production, previews per PR).
+- Commit style: Conventional Commits (`feat:`, `docs:`, `test(e2e):`, `chore(deps):`); feature branches named `<issue>-mk-xxx-<slug>` (e.g. `54-mk-019-tech-zustand-store-for-session-role`, issue #54) merged via PR to `main` (Vercel deploys `main` to production, previews per PR).
 - Code comments and commit messages in English. Do not translate existing Italian comments unless asked.
-- No i18n: UI strings are hardcoded in Italian. Do not introduce translation libraries.
+- No i18n: UI strings are hardcoded in English. Do not introduce translation libraries.
 - Do not add new dependencies (npm packages, libraries, frameworks) unless explicitly requested by the user. If a task seems to need one, propose it and wait for approval instead of installing it.
 - UptimeRobot pings the backend: keep the health endpoint stable (TODO: specify which endpoint).
 - When an open decision listed in this file is made (libraries, API structure, admin features), update CLAUDE.md in the same PR.
+
+## Workflow issue
+
+Every issue follows these steps, in order. Do not skip the approval step.
+
+1. **Analyze**: run `/issue <number>`, which uses the `issue-planner` agent (`.claude/agents/issue-planner.md`, read-only) on the GitHub issue number.
+2. **Approve**: present the plan and stop. Do not edit or create any file until the user explicitly approves the plan. Open questions in the plan must be answered first.
+3. **Implement**: on a branch `<issue>-mk-xxx-<slug>` from `main`, following the approved plan. If the plan changes during implementation, stop and ask again.
+4. **Document**: run `/docs <number>` (`docs-writer`, writes only under `docs/features/` and `docs/api/`). Review the docs in the PR like any other change.
+5. **Verify**: run `/quality-check` (`code-quality-reviewer`, read-only), then `npm run lint`, `npm run format:check`, `npm run build` and `npm test`. If the change touches `api/`, `supabase/`, auth, RLS, env vars or dependencies, also run `/security-audit` (`security-auditor`, read-only). If the change touches the UI (`src/pages/`, `src/components/`, `src/routes/`), also run `/a11y-audit` (`accessibility-auditor`, read-only).
+6. **Ship**: commit with Conventional Commits and open the PR to `main`. Commit and push only when the user asks.
 
 ## Code quality
 

@@ -1,0 +1,12 @@
+.modal {
+  width: min(100vw - 2 * var(--space-16), 440px);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-16);
+}
+
+.actions > * {
+  flex: 1;
+}
