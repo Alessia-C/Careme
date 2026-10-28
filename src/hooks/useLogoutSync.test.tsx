@@ -90,13 +90,25 @@ describe('useLogoutSync', () => {
   it('tells the login page when the other tab could not confirm it', async () => {
     const { router } = renderTab();
 
-    act(() => broadcastLogout(false));
+    act(() => broadcastLogout('unconfirmed'));
 
     await screen.findByText('Login page');
     expect(useAuthStore.getState().user).toBeNull();
     expect(router.state.location.state).toEqual({
       signedOut: true,
       confirmed: false,
+    });
+  });
+
+  it('tells the login page the session expired in the other tab', async () => {
+    const { router } = renderTab();
+
+    act(() => broadcastLogout('expired'));
+
+    await screen.findByText('Login page');
+    expect(router.state.location.state).toEqual({
+      signedOut: true,
+      expired: true,
     });
   });
 

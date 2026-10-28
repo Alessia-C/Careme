@@ -52,8 +52,8 @@ None. The feature does not read or write any table.
 ## Tests
 
 - Unit tests:
-  - [`src/routes/AppLayout.test.tsx`](../../src/routes/AppLayout.test.tsx): header and page content inside `main`, skip link targets `#main`, `main` is focusable with `tabindex="-1"`, skip link first in tab order, Logout reached right after the skip link.
-  - [`src/routes/AppHeader.test.tsx`](../../src/routes/AppHeader.test.tsx): logo exposed as image "Careme", Logout button with its label as accessible name, header in the banner landmark.
+  - [`src/routes/AppLayout/AppLayout.test.tsx`](../../src/routes/AppLayout/AppLayout.test.tsx): header and page content inside `main`, skip link targets `#main`, `main` is focusable with `tabindex="-1"`, skip link first in tab order, Logout reached right after the skip link.
+  - [`src/routes/AppLayout/components/AppHeader/AppHeader.test.tsx`](../../src/routes/AppLayout/components/AppHeader/AppHeader.test.tsx): logo exposed as image "Careme", Logout button with its label as accessible name, header in the banner landmark.
   - [`src/components/Button/Button.test.tsx`](../../src/components/Button/Button.test.tsx): `Button` with the new `icon` prop and label in a `<span>`.
   - [`src/router.test.tsx`](../../src/router.test.tsx): the app header is shown on protected pages; the document title is set on `/login` and `/signup`.
 - E2E tests: [`e2e/logout.spec.ts`](../../e2e/logout.spec.ts) covers the Logout button and tab sync (see [Logout](logout.md))

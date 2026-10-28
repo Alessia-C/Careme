@@ -50,6 +50,56 @@ async function fillForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Password*'), 'any-password');
 }
 
+describe('LoginPage - after the session expired', () => {
+  beforeEach(() => {
+    useAuthStore.getState().clearSession();
+  });
+
+  const expiredState = { signedOut: true, expired: true };
+
+  it('says the session expired and focuses the heading', () => {
+    renderPage({ pathname: '/login', state: expiredState });
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your session expired due to inactivity',
+    );
+    expect(screen.queryByText('You have been signed out')).toBeNull();
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveFocus();
+  });
+
+  it('clears the navigation state but keeps the message visible', async () => {
+    renderPage({ pathname: '/login', state: expiredState });
+
+    expect(await screen.findByText('router state: null')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('removes the message after 5 seconds, like the signed out one', () => {
+    vi.useFakeTimers();
+    try {
+      renderPage({ pathname: '/login', state: expiredState });
+
+      act(() => vi.advanceTimersByTime(4999));
+      expect(screen.getByRole('status')).toBeInTheDocument();
+
+      act(() => vi.advanceTimersByTime(1));
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reads the message together with the heading it focuses', () => {
+    renderPage({ pathname: '/login', state: expiredState });
+
+    expect(
+      screen.getByRole('heading', { name: 'Sign in to your account' }),
+    ).toHaveAccessibleDescription('Your session expired due to inactivity');
+  });
+});
+
 describe('LoginPage - after a logout', () => {
   beforeEach(() => {
     useAuthStore.getState().clearSession();

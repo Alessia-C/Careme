@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Outlet } from 'react-router';
-import Loader from '../components/Loader/Loader';
-import { fetchSession } from '../lib/authApi';
-import useAuthStore from '../stores/authStore';
+import Loader from '../../components/Loader/Loader';
+import { fetchSession } from '../../lib/authApi';
+import useAuthStore from '../../stores/authStore';
 import styles from './SessionRestore.module.css';
 
 // Root of every route. After a page reload the in-memory store is empty even

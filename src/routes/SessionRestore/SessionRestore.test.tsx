@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { routes } from '../router';
-import useAuthStore from '../stores/authStore';
+import { routes } from '../../router';
+import useAuthStore from '../../stores/authStore';
 
 const meResponse = () =>
   Response.json({

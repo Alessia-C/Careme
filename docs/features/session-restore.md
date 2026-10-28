@@ -2,13 +2,13 @@
 
 Keeps the user logged in across a page reload. The auth store lives in memory and is empty after a reload, while the session cookie may still be valid, so the app asks the API who the user is before showing anything.
 
-|               |                                                                                                                                               |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**    | In progress                                                                                                                                   |
-| **Issue**     | [#55](https://github.com/Alessia-C/Careme/issues/55)                                                                                          |
-| **Users**     | Logged-in user, anonymous                                                                                                                     |
-| **Pages**     | Every page: [`SessionRestore`](../../src/routes/SessionRestore.tsx) is the root of the route tree in [`src/router.tsx`](../../src/router.tsx) |
-| **Endpoints** | [`GET /api/auth/me`](../api/auth-me.md)                                                                                                       |
+a| | |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Status** | In progress |
+| **Issue** | [#55](https://github.com/Alessia-C/Careme/issues/55) |
+| **Users** | Logged-in user, anonymous |
+| **Pages** | Every page: [`SessionRestore`](../../src/routes/SessionRestore/SessionRestore.tsx) is the root of the route tree in [`src/router.tsx`](../../src/router.tsx) |
+| **Endpoints** | [`GET /api/auth/me`](../api/auth-me.md) |
 
 ## Behavior
 
@@ -43,7 +43,7 @@ None. It reads `profiles.role` through `withAuth`. Nothing is written.
 - [`api/_lib/auth.test.ts`](../../api/_lib/auth.test.ts): `withAuth` now passes `email`; `500` when the user has none.
 - [`src/lib/authApi.test.ts`](../../src/lib/authApi.test.ts): `fetchSession()` for `200`, `401`/`403`, `429`/`5xx`, invalid body, network error.
 - [`src/stores/authStore.test.ts`](../../src/stores/authStore.test.ts): `restoreStatus` starts `pending` and survives `clearSession()`.
-- [`src/routes/SessionRestore.test.tsx`](../../src/routes/SessionRestore.test.tsx): loading without redirect, session restored, one request only, redirect without message, `/login` redirects a logged-in user, error message on failure (protected page and `/login`), shown once.
+- [`src/routes/SessionRestore/SessionRestore.test.tsx`](../../src/routes/SessionRestore/SessionRestore.test.tsx): loading without redirect, session restored, one request only, redirect without message, `/login` redirects a logged-in user, error message on failure (protected page and `/login`), shown once.
 - [`e2e/session-restore.spec.ts`](../../e2e/session-restore.spec.ts): reload keeps the session, `/login` redirects a logged-in user, logout then reload shows no message, no session leads to `/login`, server failure shows the error. The other E2E specs mock `/api/auth/me` through [`e2e/helpers.ts`](../../e2e/helpers.ts).
 
 ## Open decisions

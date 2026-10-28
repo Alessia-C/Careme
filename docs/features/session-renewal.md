@@ -1,14 +1,14 @@
 # Session renewal
 
-Keeps an active user signed in beyond the 60 minutes of the access token, by renewing the session shortly before it expires. A user who is idle is not renewed: when the session expires the app logs them out on the server (clearing the cookies and revoking the session) and takes them to the login.
+Keeps an active user signed in beyond the 60 minutes of the access token, by renewing the session shortly before it expires. A user who is idle is not renewed: when the session expires the app logs them out on the server (clearing the cookies and revoking the session) and takes them to the login with an "expired" notice (see [Session expiry](session-expiry.md)).
 
-|               |                                                                                                                                        |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**    | In progress                                                                                                                            |
-| **Issue**     | [#130](https://github.com/Alessia-C/Careme/issues/130)                                                                                 |
-| **Users**     | Logged-in user                                                                                                                         |
-| **Pages**     | Every protected page: the hook runs in [`AppLayout`](../../src/routes/AppLayout.tsx), see [`src/router.tsx`](../../src/router.tsx)     |
-| **Endpoints** | [`POST /api/auth/refresh`](../api/auth-refresh.md), plus `expires_at` in [`login`](../api/auth-login.md) and [`me`](../api/auth-me.md) |
+|               |                                                                                                                                              |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**    | In progress                                                                                                                                  |
+| **Issue**     | [#130](https://github.com/Alessia-C/Careme/issues/130)                                                                                       |
+| **Users**     | Logged-in user                                                                                                                               |
+| **Pages**     | Every protected page: the hook runs in [`AppLayout`](../../src/routes/AppLayout/AppLayout.tsx), see [`src/router.tsx`](../../src/router.tsx) |
+| **Endpoints** | [`POST /api/auth/refresh`](../api/auth-refresh.md), plus `expires_at` in [`login`](../api/auth-login.md) and [`me`](../api/auth-me.md)       |
 
 ## Behavior
 
@@ -51,7 +51,7 @@ None. The feature reads and writes no table, except that the API reads the profi
   - [`api/auth/refresh.test.ts`](../../api/auth/refresh.test.ts): `405`, `415`, success (new session, no tokens in the body, both cookies in one header, `no-store`, status check with the new JWT), `401` with cookies cleared, `403` for a blocked account, generic `500` with Supabase failures.
   - [`api/_lib/auth.test.ts`](../../api/_lib/auth.test.ts), [`api/auth/login.test.ts`](../../api/auth/login.test.ts), [`api/auth/logout.test.ts`](../../api/auth/logout.test.ts), [`api/auth/me.test.ts`](../../api/auth/me.test.ts): cookie helpers and `expires_at`.
   - [`src/hooks/useSessionRefresh.test.tsx`](../../src/hooks/useSessionRefresh.test.tsx): renewal timing, idle user, return before expiry, `401` to login, retry after a network error, tabs, cleanup.
-  - [`src/lib/authApi.test.ts`](../../src/lib/authApi.test.ts), [`src/stores/authStore.test.ts`](../../src/stores/authStore.test.ts), [`src/routes/SessionRestore.test.tsx`](../../src/routes/SessionRestore.test.tsx), [`src/pages/LoginPage/LoginPage.test.tsx`](../../src/pages/LoginPage/LoginPage.test.tsx): `refreshSession()`, `expiresAt` in the store, `expires_at` saved on restore and login.
+  - [`src/lib/authApi.test.ts`](../../src/lib/authApi.test.ts), [`src/stores/authStore.test.ts`](../../src/stores/authStore.test.ts), [`src/routes/SessionRestore/SessionRestore.test.tsx`](../../src/routes/SessionRestore/SessionRestore.test.tsx), [`src/pages/LoginPage/LoginPage.test.tsx`](../../src/pages/LoginPage/LoginPage.test.tsx): `refreshSession()`, `expiresAt` in the store, `expires_at` saved on restore and login.
 - E2E tests: no spec covers the renewal itself; [`e2e/logout.spec.ts`](../../e2e/logout.spec.ts) and [`e2e/session-restore.spec.ts`](../../e2e/session-restore.spec.ts) were adapted to the new `expires_at` field.
 
 ## Open decisions
