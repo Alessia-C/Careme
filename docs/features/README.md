@@ -11,11 +11,12 @@ Each user-facing feature has one document in this folder. It describes the behav
 
 ## Features
 
-| Feature                               | Status      | Description                                                                                                                                         |
-| ------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [App layout](app-layout.md)           | In progress | Shell for protected pages: skip link, header with logo and Logout button, main area.                                                                |
-| [Login](login.md)                     | In progress | Public `/login` form: generic errors, session in an HttpOnly cookie, safe redirect to `next`.                                                       |
-| [Signup](signup.md)                   | In progress | Public `/signup` form: validation, generic errors, "check your email" screen after a 201.                                                           |
-| [Session restore](session-restore.md) | In progress | On every page load the app asks `GET /api/auth/me` to restore the session; loading state, error message if the check fails.                         |
-| [Session renewal](session-renewal.md) | In progress | Renews the session ~60 s before expiry while the user is active; idle users go to `/login`; refresh token in an HttpOnly cookie; tabs stay in sync. |
-| [Logout](logout.md)                   | In progress | Header Logout button: revokes the session, cookie deleted by the API, redirect to `/login`, other tabs follow, warning if not confirmed.            |
+| Feature                               | Status      | Description                                                                                                                                              |
+| ------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [App layout](app-layout.md)           | In progress | Shell for protected pages: skip link, header with logo and Logout button, main area.                                                                     |
+| [Login](login.md)                     | In progress | Public `/login` form: generic errors, session in an HttpOnly cookie, safe redirect to `next`.                                                            |
+| [Signup](signup.md)                   | In progress | Public `/signup` form: validation, generic errors, "check your email" screen after a 201.                                                                |
+| [Session restore](session-restore.md) | In progress | On every page load the app asks `GET /api/auth/me` to restore the session; loading state, error message if the check fails.                              |
+| [Session renewal](session-renewal.md) | In progress | Renews the session ~60 s before expiry while the user is active; idle users go to `/login`; refresh token in an HttpOnly cookie; tabs stay in sync.      |
+| [Session expiry](session-expiry.md)   | In progress | Idle timeout or `401` from a protected endpoint: session revoked, redirect to `/login` with "Your session expired due to inactivity", other tabs follow. |
+| [Logout](logout.md)                   | In progress | Header Logout button: revokes the session, cookie deleted by the API, redirect to `/login`, other tabs follow, warning if not confirmed.                 |
