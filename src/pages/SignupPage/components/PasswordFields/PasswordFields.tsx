@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PasswordInput from '../../../../components/PasswordInput/PasswordInput';
-import type { FieldBinding } from '../../../../hooks/useForm';
+import type { FieldBinding } from '../../../../hooks/useForm/useForm';
 
 interface PasswordFieldsProps {
   password: FieldBinding;

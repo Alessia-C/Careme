@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router';
-import { useLogoutSync } from '../../hooks/useLogoutSync';
-import { useSessionRefresh } from '../../hooks/useSessionRefresh';
-import { useUnauthorizedHandler } from '../../hooks/useUnauthorizedHandler';
+import { useLogoutSync } from '../../hooks/useLogoutSync/useLogoutSync';
+import { useSessionRefresh } from '../../hooks/useSessionRefresh/useSessionRefresh';
+import { useUnauthorizedHandler } from '../../hooks/useUnauthorizedHandler/useUnauthorizedHandler';
 import AppHeader from './components/AppHeader/AppHeader';
 import styles from './AppLayout.module.css';
 

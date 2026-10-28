@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import useAuthStore from '../stores/authStore';
+import useAuthStore from '../../stores/authStore';
 import { useSessionRefresh } from './useSessionRefresh';
 
 const {
@@ -19,9 +19,9 @@ const {
   broadcastLogout: vi.fn(),
 }));
 
-vi.mock('../lib/authApi', () => ({ refreshSession, logout }));
-vi.mock('../lib/logoutChannel', () => ({ broadcastLogout }));
-vi.mock('../lib/sessionChannel', () => ({
+vi.mock('../../lib/authApi', () => ({ refreshSession, logout }));
+vi.mock('../../lib/logoutChannel', () => ({ broadcastLogout }));
+vi.mock('../../lib/sessionChannel', () => ({
   broadcastRefresh,
   listenForRefresh,
 }));

@@ -2,8 +2,8 @@ import { Link } from 'react-router';
 import Button from '../../../../components/Button/Button';
 import Feedback from '../../../../components/Feedback/Feedback';
 import ValidatedInput from '../../../../components/ValidatedInput/ValidatedInput';
-import { useForm } from '../../../../hooks/useForm';
-import { useSubmit } from '../../../../hooks/useSubmit';
+import { useForm } from '../../../../hooks/useForm/useForm';
+import { useSubmit } from '../../../../hooks/useSubmit/useSubmit';
 import { signup } from '../../../../lib/authApi';
 import { COMMON_AUTH_ERROR_DESCRIPTIONS } from '../../../../lib/authErrors';
 import {

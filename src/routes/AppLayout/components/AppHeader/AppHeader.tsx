@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import Button from '../../../../components/Button/Button';
-import { useEndSession } from '../../../../hooks/useEndSession';
+import { useEndSession } from '../../../../hooks/useEndSession/useEndSession';
 import { logout } from '../../../../lib/authApi';
 import { broadcastLogout } from '../../../../lib/logoutChannel';
 import styles from './AppHeader.module.css';

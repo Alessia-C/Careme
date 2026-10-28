@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { FieldBinding } from '../../hooks/useForm';
+import type { FieldBinding } from '../../hooks/useForm/useForm';
 import ValidatedInput from './ValidatedInput';
 
 const makeField = (overrides: Partial<FieldBinding> = {}): FieldBinding => ({

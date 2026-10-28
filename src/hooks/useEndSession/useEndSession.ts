@@ -6,8 +6,8 @@ import {
   SIGN_OUT_UNCONFIRMED_STATE,
   SIGNED_OUT_STATE,
   type SignOutNotice,
-} from '../lib/signedOut';
-import useAuthStore from '../stores/authStore';
+} from '../../lib/signedOut';
+import useAuthStore from '../../stores/authStore';
 
 const NAVIGATION_STATE: Record<SignOutNotice, object> = {
   'signed-out': SIGNED_OUT_STATE,

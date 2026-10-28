@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import type { FieldBinding } from '../../hooks/useForm';
+import type { FieldBinding } from '../../hooks/useForm/useForm';
 import Input from '../Input/Input';
 
 type ValidatedInputProps = Omit<

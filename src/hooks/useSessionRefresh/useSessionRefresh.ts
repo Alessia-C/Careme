@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { refreshSession } from '../lib/authApi';
-import { broadcastRefresh, listenForRefresh } from '../lib/sessionChannel';
-import useAuthStore from '../stores/authStore';
-import { useEndSession } from './useEndSession';
-import { useExpireSession } from './useExpireSession';
+import { refreshSession } from '../../lib/authApi';
+import { broadcastRefresh, listenForRefresh } from '../../lib/sessionChannel';
+import useAuthStore from '../../stores/authStore';
+import { useEndSession } from '../useEndSession/useEndSession';
+import { useExpireSession } from '../useExpireSession/useExpireSession';
 
 // Renew this long before the access token expires, so a slow request does not
 // let it lapse.

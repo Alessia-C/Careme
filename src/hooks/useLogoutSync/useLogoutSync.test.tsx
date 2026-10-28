@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import useAuthStore from '../stores/authStore';
-import { broadcastLogout } from '../lib/logoutChannel';
+import useAuthStore from '../../stores/authStore';
+import { broadcastLogout } from '../../lib/logoutChannel';
 import { useLogoutSync } from './useLogoutSync';
 
 // Minimal in-memory BroadcastChannel: like the real one it delivers a message

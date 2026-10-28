@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
-import { logout } from '../lib/authApi';
-import { broadcastLogout } from '../lib/logoutChannel';
-import { useEndSession } from './useEndSession';
+import { logout } from '../../lib/authApi';
+import { broadcastLogout } from '../../lib/logoutChannel';
+import { useEndSession } from '../useEndSession/useEndSession';
 
 // Ends a session that lapsed. A plain redirect would leave the refresh cookie
 // in the browser (and the session valid on Supabase) for whoever uses the

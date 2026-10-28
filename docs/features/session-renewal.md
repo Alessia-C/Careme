@@ -13,7 +13,7 @@ Keeps an active user signed in beyond the 60 minutes of the access token, by ren
 ## Behavior
 
 1. Login and session restore return `expires_at` (Unix time in seconds). The page keeps it in the auth store (`expiresAt` in [`authStore`](../../src/stores/authStore.ts)); the tokens stay in HttpOnly cookies and never reach the page's JavaScript.
-2. [`useSessionRefresh`](../../src/hooks/useSessionRefresh.ts) runs in the protected layout. It waits until 60 seconds before `expiresAt` (very long waits are split in chunks, because `setTimeout` overflows after about 24.8 days).
+2. [`useSessionRefresh`](../../src/hooks/useSessionRefresh/useSessionRefresh.ts) runs in the protected layout. It waits until 60 seconds before `expiresAt` (very long waits are split in chunks, because `setTimeout` overflows after about 24.8 days).
 3. At that moment:
    - **The user was active** (a `pointerdown`, `keydown` or `scroll` event since the last renewal, or since the page was loaded for the first renewal): the page calls `POST /api/auth/refresh`. On success the new `expires_at` goes into the store, which schedules the next renewal, and is sent to the other tabs.
    - **The user was not active**: nothing is renewed. The page keeps waiting. If activity happens before `expiresAt`, it renews at once. If not, at `expiresAt` the session is ended: the store and the React Query cache are cleared and the user goes to `/login` (same as after a logout, through `useEndSession`).
@@ -50,7 +50,7 @@ None. The feature reads and writes no table, except that the API reads the profi
 - Unit tests:
   - [`api/auth/refresh.test.ts`](../../api/auth/refresh.test.ts): `405`, `415`, success (new session, no tokens in the body, both cookies in one header, `no-store`, status check with the new JWT), `401` with cookies cleared, `403` for a blocked account, generic `500` with Supabase failures.
   - [`api/_lib/auth.test.ts`](../../api/_lib/auth.test.ts), [`api/auth/login.test.ts`](../../api/auth/login.test.ts), [`api/auth/logout.test.ts`](../../api/auth/logout.test.ts), [`api/auth/me.test.ts`](../../api/auth/me.test.ts): cookie helpers and `expires_at`.
-  - [`src/hooks/useSessionRefresh.test.tsx`](../../src/hooks/useSessionRefresh.test.tsx): renewal timing, idle user, return before expiry, `401` to login, retry after a network error, tabs, cleanup.
+  - [`src/hooks/useSessionRefresh/useSessionRefresh.test.tsx`](../../src/hooks/useSessionRefresh/useSessionRefresh.test.tsx): renewal timing, idle user, return before expiry, `401` to login, retry after a network error, tabs, cleanup.
   - [`src/lib/authApi.test.ts`](../../src/lib/authApi.test.ts), [`src/stores/authStore.test.ts`](../../src/stores/authStore.test.ts), [`src/routes/SessionRestore/SessionRestore.test.tsx`](../../src/routes/SessionRestore/SessionRestore.test.tsx), [`src/pages/LoginPage/LoginPage.test.tsx`](../../src/pages/LoginPage/LoginPage.test.tsx): `refreshSession()`, `expiresAt` in the store, `expires_at` saved on restore and login.
 - E2E tests: no spec covers the renewal itself; [`e2e/logout.spec.ts`](../../e2e/logout.spec.ts) and [`e2e/session-restore.spec.ts`](../../e2e/session-restore.spec.ts) were adapted to the new `expires_at` field.
 

@@ -49,7 +49,7 @@ The page reads and writes no table directly. The API creates the Supabase Auth u
 
 - Unit tests:
   - [`src/pages/SignupPage/SignupPage.test.tsx`](../../src/pages/SignupPage/SignupPage.test.tsx): form and login link, button disabled/enabled, inline errors after blur, checklist shown only after focus, weak password and mismatched confirmation block the button, request payload and check-email screen with focus on the heading, progress state, generic error, rate-limit message, network failure and retry.
-  - [`src/hooks/useForm.test.ts`](../../src/hooks/useForm.test.ts) and [`src/components/ValidatedInput/ValidatedInput.test.tsx`](../../src/components/ValidatedInput/ValidatedInput.test.tsx): the generic form hook (errors only after blur, validators that depend on other fields, overall validity) and the input bound to it.
+  - [`src/hooks/useForm/useForm.test.ts`](../../src/hooks/useForm/useForm.test.ts) and [`src/components/ValidatedInput/ValidatedInput.test.tsx`](../../src/components/ValidatedInput/ValidatedInput.test.tsx): the generic form hook (errors only after blur, validators that depend on other fields, overall validity) and the input bound to it.
   - [`src/components/AuthLayout/AuthLayout.test.tsx`](../../src/components/AuthLayout/AuthLayout.test.tsx): children, decorative photo, logo/heading/description/title from `info`, and `headingRef` receiving focus.
   - [`src/lib/authApi.test.ts`](../../src/lib/authApi.test.ts): sends only the four fields as JSON, maps `201` to ok, `429` to `rate-limited`, network error to `failed`.
   - [`src/router.test.tsx`](../../src/router.test.tsx): `/signup` is served without authentication and shows "Create your account".
