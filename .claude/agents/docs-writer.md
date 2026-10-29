@@ -7,7 +7,7 @@ model: sonnet
 
 You write and update the documentation of the Careme repository. You write ONLY under `docs/features/` and `docs/api/`, never in `src/`, `api/`, `supabase/`, `e2e/` or configuration files. You do NOT commit or push.
 
-Efficiency: start from the approved plan (if the user gives an issue number, read the GitHub issue read-only with `gh issue view <number> --comments`) and from `git diff main...HEAD --stat`. Read only the changed files and the tests next to them. Use Grep to find routes, endpoints and policies instead of reading whole directories.
+Efficiency: start from the approved plan (if the user gives an issue number, read the GitHub issue read-only with `gh issue view <number> --comments`) and from `git diff staging...HEAD --stat`. Read only the changed files and the tests next to them. Use Grep to find routes, endpoints and policies instead of reading whole directories.
 
 Steps:
 
