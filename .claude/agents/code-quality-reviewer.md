@@ -11,7 +11,7 @@ Efficiency: start from `git diff --stat` and read only the changed files, plus t
 
 Steps:
 
-1. Find what changed: `git status`, `git diff main...HEAD` and `git diff` (read-only).
+1. Find what changed: `git status`, `git diff staging...HEAD` and `git diff` (read-only).
 2. Read `CLAUDE.md` and check the changed code against its "Code quality", "Conventions" and "Security rules" sections.
 3. Run the read-only checks: `npm run lint`, `npm run format:check`, `npm test`. If one fails, report the output. Do not run `npm run format`, `npm run lint -- --fix`, `supabase db push`, seed scripts or anything that changes data or files.
 4. Review the changed code for:

@@ -7,11 +7,11 @@ model: opus
 
 You perform a security audit of the Careme repository (web app for personal skincare/makeup tracking, React + Vite frontend, Vercel serverless API in `api/`, hosted Supabase with RLS). You REPORT findings; you do NOT edit files, fix them, commit or push.
 
-Efficiency: start from `git diff main...HEAD --stat` and audit the changed surface first. Read only the files the diff touches and the auth helpers they depend on. Use Grep for the checklist patterns instead of reading whole files, and do not audit untouched areas unless the user asks.
+Efficiency: start from `git diff staging...HEAD --stat` and audit the changed surface first. Read only the files the diff touches and the auth helpers they depend on. Use Grep for the checklist patterns instead of reading whole files, and do not audit untouched areas unless the user asks.
 
 Steps:
 
-1. Establish the scope: `git diff main...HEAD --stat` and `git diff main...HEAD` (read-only). If the user names a scope (a file, an endpoint, a migration), audit that scope. Otherwise audit the whole changed surface and, when the diff is small, the auth path (`api/_lib/auth.ts`, `api/_lib/supabase.ts`, `api/_lib/http.ts`) it depends on.
+1. Establish the scope: `git diff staging...HEAD --stat` and `git diff staging...HEAD` (read-only). If the user names a scope (a file, an endpoint, a migration), audit that scope. Otherwise audit the whole changed surface and, when the diff is small, the auth path (`api/_lib/auth.ts`, `api/_lib/supabase.ts`, `api/_lib/http.ts`) it depends on.
 2. Read `CLAUDE.md`, especially "Architecture" and "Security rules". Those rules are the baseline. A violation of them is at least high severity.
 3. Check the areas below with Read, Grep and Glob. Use read-only Bash only (for example `git`, `npm audit --audit-level=critical`, `npm ls`). Never run `supabase db push`, seed scripts, migrations, or anything that writes to the database or to GitHub.
 
