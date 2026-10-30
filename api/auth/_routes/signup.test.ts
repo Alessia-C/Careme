@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
-import handler from './signup.js';
+import {
+  makeReq,
+  makeRes,
+  stubSupabaseEnv,
+  withErrorHandler,
+} from '../../_lib/test-helpers.js';
+import route from './signup.js';
 
 // vi.mock is hoisted above the imports, so the fake must be created with
 // vi.hoisted to already exist when the mock factory runs.
@@ -17,9 +22,11 @@ const validBody = {
   lastName: 'User',
 };
 
+const handler = withErrorHandler(route);
+
 async function callHandler(method: string, body: unknown) {
-  const { res, asVercel } = makeRes();
-  await handler(makeReq(method, body), asVercel);
+  const { res, asExpress } = makeRes();
+  await handler(makeReq(method, body), asExpress);
   return res;
 }
 

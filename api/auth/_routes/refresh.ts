@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { Request, Response } from 'express';
 import {
   clearSessionCookies,
   getAccessToken,
@@ -8,31 +8,26 @@ import {
   isRefreshTokenInvalid,
   revokeSessionBestEffort,
   setSessionCookies,
-} from '../_lib/auth.js';
+} from '../../_lib/auth.js';
 import {
   sendTooManyRequests,
   withMethod,
   withObjectBody,
-} from '../_lib/http.js';
-import { withSentry } from '../_lib/sentry.js';
+} from '../../_lib/http.js';
 import {
   createAnonClient,
   createUserClient,
   isRateLimitError,
-} from '../_lib/supabase.js';
+} from '../../_lib/supabase.js';
 
-function sendSessionEnded(
-  res: VercelResponse,
-  status: number,
-  message: string,
-) {
+function sendSessionEnded(res: Response, status: number, message: string) {
   // Without a valid session the cookies are useless: remove them so the
   // browser stops sending them and the user has to log in again.
   clearSessionCookies(res);
   return res.status(status).json({ message });
 }
 
-async function handleRefresh(req: VercelRequest, res: VercelResponse) {
+async function handleRefresh(req: Request, res: Response) {
   // The response carries cookies tied to the caller: no cache may keep it.
   res.setHeader('Cache-Control', 'no-store');
 
@@ -84,4 +79,4 @@ async function handleRefresh(req: VercelRequest, res: VercelResponse) {
 
 // withObjectBody is a CSRF defence here (the body is ignored): a cross-site
 // <form> cannot send application/json without a CORS preflight.
-export default withSentry(withMethod('POST', withObjectBody(handleRefresh)));
+export default withMethod('POST', withObjectBody(handleRefresh));
