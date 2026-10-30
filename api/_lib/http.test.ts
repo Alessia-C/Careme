@@ -5,19 +5,19 @@ import { makeReq, makeRes } from './test-helpers.js';
 describe('withMethod', () => {
   it('should call the handler when the method matches', async () => {
     const handler = vi.fn();
-    const { asVercel } = makeRes();
+    const { asExpress } = makeRes();
     const req = makeReq('POST');
 
-    await withMethod('POST', handler)(req, asVercel);
+    await withMethod('POST', handler)(req, asExpress);
 
-    expect(handler).toHaveBeenCalledWith(req, asVercel);
+    expect(handler).toHaveBeenCalledWith(req, asExpress);
   });
 
   it('should return 405 and skip the handler for another method', async () => {
     const handler = vi.fn();
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
 
-    await withMethod('POST', handler)(makeReq('GET'), asVercel);
+    await withMethod('POST', handler)(makeReq('GET'), asExpress);
 
     expect(res.status).toHaveBeenCalledWith(405);
     expect(res.json).toHaveBeenCalledWith({ message: 'Method not allowed' });
@@ -28,13 +28,13 @@ describe('withMethod', () => {
 describe('withObjectBody', () => {
   it('should pass the body to the handler when it is an object', async () => {
     const handler = vi.fn();
-    const { asVercel } = makeRes();
+    const { asExpress } = makeRes();
     const body = { email: 'test@example.com' };
     const req = makeReq('POST', body);
 
-    await withObjectBody(handler)(req, asVercel);
+    await withObjectBody(handler)(req, asExpress);
 
-    expect(handler).toHaveBeenCalledWith(req, asVercel, body);
+    expect(handler).toHaveBeenCalledWith(req, asExpress, body);
   });
 
   it.each([
@@ -45,9 +45,9 @@ describe('withObjectBody', () => {
     'should return 400 and skip the handler when the body is %s',
     async (_label, body) => {
       const handler = vi.fn();
-      const { res, asVercel } = makeRes();
+      const { res, asExpress } = makeRes();
 
-      await withObjectBody(handler)(makeReq('POST', body), asVercel);
+      await withObjectBody(handler)(makeReq('POST', body), asExpress);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
@@ -67,14 +67,14 @@ describe('withObjectBody - content type', () => {
     ['text/plain', false],
   ])('content type %s accepted: %s', async (contentType, accepted) => {
     const handler = vi.fn();
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
     const req = makeReq(
       'POST',
       { email: 'a@b.co' },
       { 'content-type': contentType },
     );
 
-    await withObjectBody(handler)(req, asVercel);
+    await withObjectBody(handler)(req, asExpress);
 
     if (accepted) {
       expect(handler).toHaveBeenCalled();
@@ -86,11 +86,11 @@ describe('withObjectBody - content type', () => {
 
   it('should return 415 when the content type is missing', async () => {
     const handler = vi.fn();
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
     const req = makeReq('POST', { email: 'a@b.co' });
     delete req.headers['content-type'];
 
-    await withObjectBody(handler)(req, asVercel);
+    await withObjectBody(handler)(req, asExpress);
 
     expect(res.status).toHaveBeenCalledWith(415);
     expect(handler).not.toHaveBeenCalled();
@@ -99,9 +99,9 @@ describe('withObjectBody - content type', () => {
 
 describe('sendTooManyRequests', () => {
   it('should answer 429 with a retry message', () => {
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
 
-    sendTooManyRequests(asVercel);
+    sendTooManyRequests(asExpress);
 
     expect(res.status).toHaveBeenCalledWith(429);
     expect(res.json).toHaveBeenCalledWith({

@@ -6,7 +6,7 @@ Revokes the caller's current session through Supabase Auth and deletes the sessi
 | ---------- | --------------------------------------------------------------------------------------------------------------- |
 | **Method** | `POST`                                                                                                          |
 | **Path**   | `/api/auth/logout`                                                                                              |
-| **Source** | [`api/auth/logout.ts`](../../api/auth/logout.ts)                                                                |
+| **Source** | [`api/auth/_routes/logout.ts`](../../api/auth/_routes/logout.ts)                                                |
 | **Auth**   | Supabase user JWT: `Authorization: Bearer <access_token>` header or the `__Host-sb-access-token` session cookie |
 | **Status** | Experimental                                                                                                    |
 

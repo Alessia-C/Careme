@@ -6,7 +6,7 @@ Authenticates a user through Supabase Auth and sets the session in two HttpOnly 
 | ---------- | ---------------------------------------------------------------------------------------------------------------- |
 | **Method** | `POST`                                                                                                           |
 | **Path**   | `/api/auth/login`                                                                                                |
-| **Source** | [`api/auth/login.ts`](../../api/auth/login.ts)                                                                   |
+| **Source** | [`api/auth/_routes/login.ts`](../../api/auth/_routes/login.ts)                                                   |
 | **Auth**   | None (public endpoint, it uses the Supabase anon key). It issues the session cookies used by protected endpoints |
 | **Status** | Experimental                                                                                                     |
 

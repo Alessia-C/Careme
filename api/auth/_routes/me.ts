@@ -1,18 +1,17 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { Request, Response } from 'express';
 import {
   getAccessToken,
   getTokenExpiry,
   withAuth,
   type AuthContext,
-} from '../_lib/auth.js';
-import { withMethod } from '../_lib/http.js';
-import { withSentry } from '../_lib/sentry.js';
+} from '../../_lib/auth.js';
+import { withMethod } from '../../_lib/http.js';
 
 // withAuth already verified the token and read the role from the database:
 // the handler only echoes who the caller is, so the page can restore its
 // in-memory session after a reload. Same shape as the login response, expiry
 // included, so the page can schedule the next renewal.
-function handleMe(req: VercelRequest, res: VercelResponse, auth: AuthContext) {
+function handleMe(req: Request, res: Response, auth: AuthContext) {
   // Personal data that depends on the cookie: no cache may keep it.
   res.setHeader('Cache-Control', 'no-store');
 
@@ -27,4 +26,4 @@ function handleMe(req: VercelRequest, res: VercelResponse, auth: AuthContext) {
   });
 }
 
-export default withSentry(withMethod('GET', withAuth(handleMe)));
+export default withMethod('GET', withAuth(handleMe));

@@ -1,10 +1,11 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { Request, Response } from 'express';
 import {
   isAuthApiError,
   isAuthSessionMissingError,
 } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/node';
 import { isRole, type Role } from '../../shared/validation.js';
+import { getCookie } from './cookies.js';
 import { sendTooManyRequests, type Handler } from './http.js';
 import {
   createAnonClient,
@@ -12,7 +13,7 @@ import {
   isRateLimitError,
 } from './supabase.js';
 
-export function getBearerToken(req: VercelRequest): string | undefined {
+export function getBearerToken(req: Request): string | undefined {
   const authHeader = req.headers.authorization;
   const prefix = 'Bearer ';
   const token = authHeader ? authHeader.slice(prefix.length) : undefined;
@@ -87,14 +88,14 @@ export function buildClearedRefreshCookie() {
   return buildCookie(getRefreshCookieName(), '', REFRESH_COOKIE_PATH, 0);
 }
 
-export function getRefreshToken(req: VercelRequest): string | undefined {
-  return req.cookies[getRefreshCookieName()] || undefined;
+export function getRefreshToken(req: Request): string | undefined {
+  return getCookie(req, getRefreshCookieName());
 }
 
 // Both cookies travel in one Set-Cookie header: a second setHeader call with
 // the same name would replace the first one.
 export function setSessionCookies(
-  res: VercelResponse,
+  res: Response,
   session: { access_token: string; refresh_token: string; expires_in: number },
 ) {
   res.setHeader('Set-Cookie', [
@@ -103,7 +104,7 @@ export function setSessionCookies(
   ]);
 }
 
-export function clearSessionCookies(res: VercelResponse) {
+export function clearSessionCookies(res: Response) {
   res.setHeader('Set-Cookie', [
     buildClearedSessionCookie(),
     buildClearedRefreshCookie(),
@@ -150,19 +151,53 @@ export async function isAccountActive(
   return data === true;
 }
 
+export type AccountState = { isActive: false } | { isActive: true; role: Role };
+
+// Reads the status and the role of the caller with their own JWT (RLS
+// applies). The two are independent, so they run in parallel: one round trip
+// to Supabase less on every login and protected request. For a blocked user
+// RLS hides the profile, so the role result is only looked at after the
+// status: a blocked user gets { isActive: false }, never an error.
+export async function readAccountState(
+  userClient: ReturnType<typeof createUserClient>,
+  userId: string,
+): Promise<AccountState> {
+  // The cast is the same justified exception as the other 'profiles' ones: the
+  // generated DB types are still empty.
+  const [isActive, { data: profile, error: roleError }] = await Promise.all([
+    isAccountActive(userClient),
+    userClient
+      .from('profiles' as never)
+      .select('role')
+      .eq('id', userId)
+      .single(),
+  ]);
+  if (!isActive) {
+    return { isActive: false };
+  }
+  if (roleError) {
+    throw roleError;
+  }
+  // Same reason as above: without generated DB types `profile` has no type.
+  // The value is validated by isRole right below, so nothing is trusted blindly.
+  const role = (profile as { role?: unknown } | null)?.role;
+  if (!isRole(role)) {
+    throw new Error('Unexpected profile role');
+  }
+  return { isActive: true, role };
+}
+
 // Browsers send the cookie; API clients (curl, tests) can still use the
 // Authorization header, which wins when both are present.
-export function getAccessToken(req: VercelRequest): string | undefined {
-  return (
-    getBearerToken(req) ?? (req.cookies[getSessionCookieName()] || undefined)
-  );
+export function getAccessToken(req: Request): string | undefined {
+  return getBearerToken(req) ?? getCookie(req, getSessionCookieName());
 }
 
 export type AuthContext = { id: string; email: string; role: Role };
 
 type AuthHandler = (
-  req: VercelRequest,
-  res: VercelResponse,
+  req: Request,
+  res: Response,
   auth: AuthContext,
 ) => unknown | Promise<unknown>;
 
@@ -251,26 +286,14 @@ export function withAuth(handler: AuthHandler): Handler {
 
     // Supabase Auth ignores profiles.status, so a blocked user still has a
     // valid token. Check it with the caller's own JWT (RLS applies).
-    const userClient = createUserClient(token);
-    if (!(await isAccountActive(userClient))) {
+    const account = await readAccountState(
+      createUserClient(token),
+      data.user.id,
+    );
+    if (!account.isActive) {
       return res.status(403).json({ message: 'Account blocked' });
     }
 
-    // The cast is the same justified exception as the 'profiles' ones in
-    // login.ts: the generated DB types are still empty.
-    const { data: profile, error: roleError } = await userClient
-      .from('profiles' as never)
-      .select('role')
-      .eq('id', data.user.id)
-      .single();
-    if (roleError) {
-      throw roleError;
-    }
-    const role = (profile as { role?: unknown } | null)?.role;
-    if (!isRole(role)) {
-      throw new Error('Unexpected profile role');
-    }
-
-    return handler(req, res, { id: data.user.id, email, role });
+    return handler(req, res, { id: data.user.id, email, role: account.role });
   };
 }
