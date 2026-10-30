@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError } from '@supabase/supabase-js';
-import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
-import { getSessionCookieName } from '../_lib/auth.js';
-import handler from './me.js';
+import {
+  makeReq,
+  makeRes,
+  stubSupabaseEnv,
+  withErrorHandler,
+} from '../../_lib/test-helpers.js';
+import { getSessionCookieName } from '../../_lib/auth.js';
+import route from './me.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
@@ -27,13 +32,15 @@ const makeJwt = (exp: number) =>
 const validToken = makeJwt(EXPIRES_AT);
 const validHeaders = { authorization: `Bearer ${validToken}` };
 
+const handler = withErrorHandler(route);
+
 async function callHandler(
   method: string,
   headers: Record<string, string> = {},
   cookies: Record<string, string> = {},
 ) {
-  const { res, asVercel } = makeRes();
-  await handler(makeReq(method, undefined, headers, cookies), asVercel);
+  const { res, asExpress } = makeRes();
+  await handler(makeReq(method, undefined, headers, cookies), asExpress);
   return res;
 }
 

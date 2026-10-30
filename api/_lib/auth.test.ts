@@ -16,8 +16,12 @@ import {
   setSessionCookies,
   withAuth,
 } from './auth.js';
-import { withSentry } from './sentry.js';
-import { makeReq, makeRes, stubSupabaseEnv } from './test-helpers.js';
+import {
+  makeReq,
+  makeRes,
+  stubSupabaseEnv,
+  withErrorHandler,
+} from './test-helpers.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
@@ -43,12 +47,12 @@ async function callWithAuth(
   headers: Record<string, string> = validHeaders,
   cookies: Record<string, string> = {},
 ) {
-  const { res, asVercel } = makeRes();
-  // Wrapped like a real route: withSentry turns the errors that withAuth
-  // rethrows into a generic 500.
-  await withSentry(withAuth(handler))(
+  const { res, asExpress } = makeRes();
+  // Wrapped like a real route: the error handler turns the errors that
+  // withAuth rethrows into a generic 500.
+  await withErrorHandler(withAuth(handler))(
     makeReq('GET', undefined, headers, cookies),
-    asVercel,
+    asExpress,
   );
   return res;
 }
@@ -210,9 +214,9 @@ describe('refresh cookie', () => {
 
 describe('setSessionCookies / clearSessionCookies', () => {
   it('sets both cookies in a single Set-Cookie header', () => {
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
 
-    setSessionCookies(asVercel, {
+    setSessionCookies(asExpress, {
       access_token: 'access',
       refresh_token: 'refresh',
       expires_in: 3600,
@@ -226,9 +230,9 @@ describe('setSessionCookies / clearSessionCookies', () => {
   });
 
   it('clears both cookies in a single Set-Cookie header', () => {
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
 
-    clearSessionCookies(asVercel);
+    clearSessionCookies(asExpress);
 
     expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', [
       buildClearedSessionCookie(),
@@ -347,6 +351,18 @@ describe('withAuth - account and role', () => {
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ message: 'Account blocked' });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should return 403, not 500, when RLS hides the profile of a blocked user', async () => {
+    // The role is read in parallel with the status: for a blocked user RLS
+    // returns no row, so the role query fails and must not win over the 403.
+    rpc.mockResolvedValue({ data: false, error: null });
+    single.mockResolvedValue({ data: null, error: new Error('no rows') });
+
+    const res = await callWithAuth();
+
+    expect(res.status).toHaveBeenCalledWith(403);
     expect(handler).not.toHaveBeenCalled();
   });
 

@@ -1,21 +1,20 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { withSentry } from '../_lib/sentry.js';
+import type { Request, Response } from 'express';
 import {
   sendTooManyRequests,
   withMethod,
   withObjectBody,
-} from '../_lib/http.js';
-import { createAnonClient, isRateLimitError } from '../_lib/supabase.js';
+} from '../../_lib/http.js';
+import { createAnonClient, isRateLimitError } from '../../_lib/supabase.js';
 import {
   normalizeEmail,
   validateEmail,
   validateInput,
   validatePassword,
-} from '../../shared/validation.js';
+} from '../../../shared/validation.js';
 
 async function handleSignup(
-  _req: VercelRequest,
-  res: VercelResponse,
+  _req: Request,
+  res: Response,
   body: Record<string, unknown>,
 ) {
   const { email, password, firstName, lastName } = body;
@@ -63,4 +62,4 @@ async function handleSignup(
   return res.status(201).json({ message: 'Signup successful' });
 }
 
-export default withSentry(withMethod('POST', withObjectBody(handleSignup)));
+export default withMethod('POST', withObjectBody(handleSignup));

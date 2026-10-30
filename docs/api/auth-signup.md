@@ -2,13 +2,13 @@
 
 Registers a new user through Supabase Auth and enforces the password policy server-side. Called by the signup form of the frontend.
 
-|            |                                                       |
-| ---------- | ----------------------------------------------------- |
-| **Method** | `POST`                                                |
-| **Path**   | `/api/auth/signup`                                    |
-| **Source** | [`api/auth/signup.ts`](../../api/auth/signup.ts)      |
-| **Auth**   | None (public endpoint, it uses the Supabase anon key) |
-| **Status** | Experimental                                          |
+|            |                                                                  |
+| ---------- | ---------------------------------------------------------------- |
+| **Method** | `POST`                                                           |
+| **Path**   | `/api/auth/signup`                                               |
+| **Source** | [`api/auth/_routes/signup.ts`](../../api/auth/_routes/signup.ts) |
+| **Auth**   | None (public endpoint, it uses the Supabase anon key)            |
+| **Status** | Experimental                                                     |
 
 ## Parameters
 

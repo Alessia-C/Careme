@@ -1,17 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError, AuthSessionMissingError } from '@supabase/supabase-js';
-import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
+import {
+  makeReq,
+  makeRes,
+  stubSupabaseEnv,
+  withErrorHandler,
+} from '../../_lib/test-helpers.js';
 import {
   buildClearedRefreshCookie,
   getRefreshCookieName,
   buildClearedSessionCookie,
-} from '../_lib/auth.js';
+} from '../../_lib/auth.js';
 
 const clearedCookies = [
   buildClearedSessionCookie(),
   buildClearedRefreshCookie(),
 ];
-import handler from './logout.js';
+import route from './logout.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
@@ -30,13 +35,15 @@ vi.mock('@supabase/supabase-js', async (importOriginal) => ({
 
 const validHeaders = { authorization: 'Bearer valid-token' };
 
+const handler = withErrorHandler(route);
+
 async function callHandler(
   method: string,
   headers: Record<string, string> = {},
   cookies: Record<string, string> = {},
 ) {
-  const { res, asVercel } = makeRes();
-  await handler(makeReq(method, {}, headers, cookies), asVercel);
+  const { res, asExpress } = makeRes();
+  await handler(makeReq(method, {}, headers, cookies), asExpress);
   return res;
 }
 
@@ -86,10 +93,10 @@ describe('POST /api/auth/logout - request shape', () => {
 
 describe('POST /api/auth/logout - CSRF defence', () => {
   it('should return 415 when the body is not JSON', async () => {
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
     await handler(
       makeReq('POST', {}, { ...validHeaders, 'content-type': 'text/plain' }),
-      asVercel,
+      asExpress,
     );
 
     expect(res.status).toHaveBeenCalledWith(415);
@@ -97,8 +104,8 @@ describe('POST /api/auth/logout - CSRF defence', () => {
   });
 
   it('should return 400 when the JSON body is missing', async () => {
-    const { res, asVercel } = makeRes();
-    await handler(makeReq('POST', undefined, validHeaders), asVercel);
+    const { res, asExpress } = makeRes();
+    await handler(makeReq('POST', undefined, validHeaders), asExpress);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(signOut).not.toHaveBeenCalled();
