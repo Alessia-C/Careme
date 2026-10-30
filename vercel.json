@@ -1,0 +1,9 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "staging": true,
+      "main": true,
+      "*": false
+    }
+  }
+}

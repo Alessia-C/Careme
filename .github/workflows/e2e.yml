@@ -1,8 +1,11 @@
 name: E2E
 on:
   pull_request:
+    branches: [staging, main]
+    # `labeled` re-runs the job when the `update-snapshots` label is added.
+    types: [opened, synchronize, reopened, labeled]
   push:
-    branches: [main]
+    branches: [staging, main]
 
 jobs:
   e2e:
@@ -16,10 +19,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npx playwright test
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      # With the `update-snapshots` label the visual baselines are rewritten
+      # (on Linux, as CI expects) and uploaded in the artifact below.
+      - run: npx playwright test ${{ contains(github.event.pull_request.labels.*.name, 'update-snapshots') && '--update-snapshots' || '' }}
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

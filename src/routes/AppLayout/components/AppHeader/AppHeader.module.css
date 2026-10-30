@@ -1,0 +1,97 @@
+/* Mobile first. From 768px the desktop design applies. */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 64px;
+  padding: 0 var(--space-16);
+  border-bottom: 1px solid var(--color-neutral-grey-200);
+  background: var(--color-white-100);
+}
+
+.logo {
+  display: block;
+  width: 76px;
+  height: 28px;
+  flex-shrink: 0;
+  background-color: var(--color-primary-800);
+  mask: url('../../../../assets/icons/logo.svg') no-repeat center / contain;
+}
+
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.actions button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font: var(--text-body-small);
+}
+
+/* The label is the last span: the icon span comes first and must stay visible. */
+.actions button:not([aria-disabled='true']):hover,
+.actions button:not([aria-disabled='true']):focus-visible {
+  border: 1px solid currentColor;
+  text-decoration: none;
+}
+
+/* aria-disabled has no built-in styling: look disabled while logging out. */
+.actions button[aria-disabled='true'],
+.actions button[aria-disabled='true']:hover,
+.actions button[aria-disabled='true']:active {
+  color: var(--color-grey-400);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.actions button > span:last-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.icon {
+  display: block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  mask: url('../../../../assets/icons/log-out.svg') no-repeat center / contain;
+}
+
+@media (min-width: 768px) {
+  .header {
+    padding: 0 61px;
+  }
+
+  .actions button {
+    min-width: 0;
+    min-height: 0;
+    padding: var(--space-4) var(--space-8);
+  }
+
+  .actions button > span:last-child {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}

@@ -66,16 +66,17 @@ Any other field is ignored. In particular `role` and `status` can never be set f
 
 Errors return JSON shaped `{ "message": string }`, except the `500` responses, which also include `"status": "error"`.
 
-| Status                      | When                                                                                                                | Example body                                                                         |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `400 Bad Request`           | The body is missing or is not a JSON object                                                                         | `{ "message": "Missing or invalid request body" }`                                   |
-| `400 Bad Request`           | `firstName` or `lastName` is missing, not a string or blank                                                         | `{ "message": "First name is required" }`                                            |
-| `400 Bad Request`           | `email` is missing, not a string or not a valid email                                                               | `{ "message": "Invalid email" }`                                                     |
-| `400 Bad Request`           | `password` is missing, not a string or does not meet the policy                                                     | `{ "message": "Invalid password: use 8-20 characters with an uppercase letter, …" }` |
-| `400 Bad Request`           | The email is already registered. The message is generic on purpose, see Notes                                       | `{ "message": "Unable to complete signup" }`                                         |
-| `405 Method Not Allowed`    | The method is not `POST`                                                                                            | `{ "message": "Method not allowed" }`                                                |
-| `429 Too Many Requests`     | Supabase's email or request rate limit is exceeded (limits are project-wide, not per user)                          | `{ "message": "Too many requests, please try again later" }`                         |
-| `500 Internal Server Error` | `SUPABASE_URL` or `SUPABASE_ANON_KEY` is not set, or Supabase fails for another reason. The error is sent to Sentry | `{ "status": "error", "message": "Internal server error" }`                          |
+| Status                       | When                                                                                                                | Example body                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `400 Bad Request`            | The body is missing or is not a JSON object                                                                         | `{ "message": "Missing or invalid request body" }`                                   |
+| `400 Bad Request`            | `firstName` or `lastName` is missing, not a string or blank                                                         | `{ "message": "First name is required" }`                                            |
+| `400 Bad Request`            | `email` is missing, not a string or not a valid email                                                               | `{ "message": "Invalid email" }`                                                     |
+| `400 Bad Request`            | `password` is missing, not a string or does not meet the policy                                                     | `{ "message": "Invalid password: use 8-20 characters with an uppercase letter, …" }` |
+| `400 Bad Request`            | The email is already registered. The message is generic on purpose, see Notes                                       | `{ "message": "Unable to complete signup" }`                                         |
+| `405 Method Not Allowed`     | The method is not `POST`                                                                                            | `{ "message": "Method not allowed" }`                                                |
+| `415 Unsupported Media Type` | The `Content-Type` is not `application/json` (blocks cross-site form posts, see Notes)                              | `{ "message": "Content-Type must be application/json" }`                             |
+| `429 Too Many Requests`      | Supabase's email or request rate limit is exceeded (limits are project-wide, not per user)                          | `{ "message": "Too many requests, please try again later" }`                         |
+| `500 Internal Server Error`  | `SUPABASE_URL` or `SUPABASE_ANON_KEY` is not set, or Supabase fails for another reason. The error is sent to Sentry | `{ "status": "error", "message": "Internal server error" }`                          |
 
 ## Example
 

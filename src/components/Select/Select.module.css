@@ -1,0 +1,14 @@
+.select {
+  appearance: none;
+  cursor: pointer;
+
+  /* The placeholder option (value="") is shown in the muted placeholder color. */
+  &:has(option:checked[value='']) {
+    color: var(--color-black-40);
+  }
+}
+
+.chevron {
+  flex-shrink: 0;
+  pointer-events: none;
+}

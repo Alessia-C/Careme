@@ -1,0 +1,8 @@
+/* Placed by the login page only: the shared Feedback stays unpositioned. */
+.loginFeedback {
+  position: absolute;
+  bottom: var(--space-16);
+  left: var(--space-24);
+  /* Never wider than the form panel: 24px of margin on each side. */
+  max-width: calc(100% - var(--space-48));
+}

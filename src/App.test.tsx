@@ -1,10 +1,25 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import useAuthStore from './stores/authStore';
 import App from './App';
 
 describe('App', () => {
-  it('renders the title', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ user: null, role: null, restoreStatus: 'pending' });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(null, { status: 401 })),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('redirects an unauthenticated visitor to the login page', async () => {
     render(<App />);
-    expect(screen.getByText('Careme')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Sign in to your account'),
+    ).toBeInTheDocument();
   });
 });

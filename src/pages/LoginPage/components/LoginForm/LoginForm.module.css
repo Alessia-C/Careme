@@ -1,0 +1,64 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  align-items: stretch;
+  margin-top: var(--space-24);
+
+  /* The submit button fills the form width, like in the design. */
+  & button {
+    justify-content: center;
+  }
+}
+
+.passwordGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* Plain text link look: no padding so it lines up with the field. */
+.forgotPassword {
+  align-self: flex-start;
+  padding: 0;
+  font: var(--text-body-small);
+}
+
+.signupRow {
+  margin: 0;
+  font: var(--text-body-small);
+  color: var(--color-grey-600);
+  text-align: center;
+}
+
+.signupLink {
+  font: var(--text-h6);
+  font-weight: 700;
+  color: var(--color-primary-900);
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-900);
+    outline-offset: 2px;
+  }
+}
+
+/* Mobile type scale and spacing from the design. */
+@media (max-width: 900px) {
+  .form {
+    gap: var(--space-12);
+  }
+
+  .actions {
+    margin-top: var(--space-12);
+  }
+
+  .signupRow {
+    font-size: 13px;
+  }
+}
