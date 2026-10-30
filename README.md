@@ -232,9 +232,14 @@ Dependabot opens weekly dependency update PRs.
 ## Project structure
 
 ```
-api/                      Vercel serverless functions (one file = one endpoint)
+api/                      Vercel serverless functions
   _lib/
-    sentry.ts             Sentry init + withSentry() handler wrapper
+    sentry.ts             Sentry init, withSentry() and the Express errorHandler
+  auth/
+    [...path].ts          Catch-all function: serves every /api/auth/* URL
+    _app.ts               Express app of the auth domain
+    _router.ts            Routes of the auth domain
+    _routes/              One handler (+ test) per endpoint
   health.ts               GET /api/health
   sentry-test.ts          GET /api/sentry-test
   supabase-ping.ts        GET /api/supabase-ping

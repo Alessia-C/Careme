@@ -1,18 +1,17 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { Request, Response } from 'express';
 import {
   sendTooManyRequests,
   withMethod,
   withObjectBody,
-} from '../_lib/http.js';
-import { withSentry } from '../_lib/sentry.js';
-import { createAnonClient, isRateLimitError } from '../_lib/supabase.js';
+} from '../../_lib/http.js';
+import { createAnonClient, isRateLimitError } from '../../_lib/supabase.js';
 import {
   clearSessionCookies,
   getAccessToken,
   getRefreshToken,
   isInvalidSessionError,
   isRefreshTokenInvalid,
-} from '../_lib/auth.js';
+} from '../../_lib/auth.js';
 
 type AnonClient = ReturnType<typeof createAnonClient>;
 
@@ -39,13 +38,13 @@ async function revokeWithRefreshToken(
   return signOutError;
 }
 
-async function handleLogout(req: VercelRequest, res: VercelResponse) {
+async function handleLogout(req: Request, res: Response) {
   // Both cookies are cleared first, on every outcome of this handler. The
   // client drops its local session whatever happens (shared devices), so the
   // browser must not keep a cookie that could still authenticate the next
   // person. If Supabase then fails, the token is not revoked but it is no
   // longer in the browser. The header survives the generic 500 sent by
-  // withSentry. It is not sent on 405/415/400, rejected before this handler:
+  // the error handler. It is not sent on 405/415/400, rejected before this handler:
   // that is what stops a cross-site form from forcing a logout.
   clearSessionCookies(res);
 
@@ -97,4 +96,4 @@ async function handleLogout(req: VercelRequest, res: VercelResponse) {
 // withObjectBody is only a CSRF defence here (the body is ignored): a cross-site
 // <form> cannot send application/json without a CORS preflight, so it cannot
 // force a logout.
-export default withSentry(withMethod('POST', withObjectBody(handleLogout)));
+export default withMethod('POST', withObjectBody(handleLogout));

@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
-import handler from './login.js';
+import {
+  makeReq,
+  makeRes,
+  stubSupabaseEnv,
+  withErrorHandler,
+} from '../../_lib/test-helpers.js';
+import route from './login.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
@@ -48,9 +53,11 @@ const signedIn = {
   error: null,
 };
 
+const handler = withErrorHandler(route);
+
 async function callHandler(method: string, body: unknown) {
-  const { res, asVercel } = makeRes();
-  await handler(makeReq(method, body), asVercel);
+  const { res, asExpress } = makeRes();
+  await handler(makeReq(method, body), asExpress);
   return res;
 }
 
@@ -213,6 +220,18 @@ describe('POST /api/auth/login - blocked account', () => {
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ message: 'Account blocked' });
     expect(JSON.stringify(res.json.mock.calls)).not.toContain('access-jwt');
+  });
+
+  it('should return 403, not 500, when RLS hides the profile of a blocked user', async () => {
+    // The role is read in parallel with the status: for a blocked user RLS
+    // returns no row, so the role query fails and must not win over the 403.
+    rpc.mockResolvedValue({ data: false, error: null });
+    single.mockResolvedValue({ data: null, error: new Error('no rows') });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(signOut).toHaveBeenCalledWith('access-jwt', 'local');
   });
 
   it('should revoke the session Supabase just created for a blocked user', async () => {

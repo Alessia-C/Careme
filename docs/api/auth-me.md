@@ -6,7 +6,7 @@ Returns the user behind the session cookie (or Bearer token). The frontend calls
 | ---------- | --------------------------------------------------------------------------------------------------------------- |
 | **Method** | `GET`                                                                                                           |
 | **Path**   | `/api/auth/me`                                                                                                  |
-| **Source** | [`api/auth/me.ts`](../../api/auth/me.ts)                                                                        |
+| **Source** | [`api/auth/_routes/me.ts`](../../api/auth/_routes/me.ts)                                                        |
 | **Auth**   | Supabase user JWT: `Authorization: Bearer <access_token>` header or the `__Host-sb-access-token` session cookie |
 | **Status** | Experimental                                                                                                    |
 
