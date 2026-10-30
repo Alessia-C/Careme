@@ -1,34 +1,29 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { Request, Response } from 'express';
 import {
   getSessionExpiry,
-  isAccountActive,
+  readAccountState,
   revokeSessionBestEffort,
   setSessionCookies,
-} from '../_lib/auth.js';
-import { withSentry } from '../_lib/sentry.js';
+} from '../../_lib/auth.js';
 import {
   sendTooManyRequests,
   withMethod,
   withObjectBody,
-} from '../_lib/http.js';
+} from '../../_lib/http.js';
 import {
   createAnonClient,
   createUserClient,
   isRateLimitError,
-} from '../_lib/supabase.js';
-import {
-  isRole,
-  normalizeEmail,
-  validateEmail,
-} from '../../shared/validation.js';
+} from '../../_lib/supabase.js';
+import { normalizeEmail, validateEmail } from '../../../shared/validation.js';
 
 // Supabase reports these only after the credentials were verified, so a
 // distinct message does not reveal which emails are registered.
 const FORBIDDEN_CODES = ['user_banned', 'email_not_confirmed'];
 
 async function handleLogin(
-  _req: VercelRequest,
-  res: VercelResponse,
+  _req: Request,
+  res: Response,
   body: Record<string, unknown>,
 ) {
   const { email, password } = body;
@@ -62,26 +57,12 @@ async function handleLogin(
   // Supabase Auth ignores profiles.status, so a blocked user still gets a valid
   // token. Check the status with the caller's own JWT (RLS applies) and never
   // return the tokens for a blocked user.
+  // The role is only a hint for the UI: authorization is enforced by RLS.
   const userClient = createUserClient(data.session.access_token);
-  if (!(await isAccountActive(userClient))) {
+  const account = await readAccountState(userClient, data.user.id);
+  if (!account.isActive) {
     await revokeSessionBestEffort(supabase, data.session.access_token);
     return res.status(403).json({ message: 'Account blocked' });
-  }
-
-  // The role is only a hint for the UI: authorization is enforced by RLS.
-  // The cast is the same justified exception as the other 'profiles' ones: the
-  // generated DB types are still empty.
-  const { data: profile, error: roleError } = await userClient
-    .from('profiles' as never)
-    .select('role')
-    .eq('id', data.user.id)
-    .single();
-  if (roleError) {
-    throw roleError;
-  }
-  const role = (profile as { role?: unknown } | null)?.role;
-  if (!isRole(role)) {
-    throw new Error('Unexpected profile role');
   }
 
   // The tokens never reach the page's JavaScript: both travel in HttpOnly
@@ -90,9 +71,9 @@ async function handleLogin(
 
   return res.status(200).json({
     message: 'Login successful',
-    user: { id: data.user.id, email: data.user.email, role },
+    user: { id: data.user.id, email: data.user.email, role: account.role },
     expires_at: getSessionExpiry(data.session),
   });
 }
 
-export default withSentry(withMethod('POST', withObjectBody(handleLogin)));
+export default withMethod('POST', withObjectBody(handleLogin));
