@@ -178,6 +178,8 @@ export async function readAccountState(
   if (roleError) {
     throw roleError;
   }
+  // Same reason as above: without generated DB types `profile` has no type.
+  // The value is validated by isRole right below, so nothing is trusted blindly.
   const role = (profile as { role?: unknown } | null)?.role;
   if (!isRole(role)) {
     throw new Error('Unexpected profile role');

@@ -57,6 +57,7 @@ Security is a top priority: when in doubt, choose the safer option and ask.
 ## Environment
 
 - There is a single Supabase project shared by local dev, Vercel previews and production (a separate production project is planned before release). Never run `supabase db push`, seed scripts or any data-modifying command without explicit approval.
+- Vercel functions run in `dub1` (Dublin, set in `vercel.json`) to cut latency towards Supabase. Change both together if the Supabase region changes.
 - Supabase free tier pauses after ~1 week of inactivity: if the API fails to connect, check the project is not paused before debugging code.
 
 ## Conventions

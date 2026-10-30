@@ -46,6 +46,8 @@ let baseUrl: string;
 beforeAll(async () => {
   server = app.listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
+  // address() is string | AddressInfo | null; after listen(0) on TCP it is
+  // always an AddressInfo.
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 

@@ -32,6 +32,8 @@ export function stubSupabaseEnv() {
   vi.stubEnv('SUPABASE_ANON_KEY', 'anon-key');
 }
 
+// Same kind of fake as makeReq: a partial Response, cast because the handlers
+// only call status, json and setHeader.
 export function makeRes() {
   const res = {
     status: vi.fn().mockReturnThis(),
