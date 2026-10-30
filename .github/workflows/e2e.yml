@@ -22,7 +22,7 @@ jobs:
       # With the `update-snapshots` label the visual baselines are rewritten
       # (on Linux, as CI expects) and uploaded in the artifact below.
       - run: npx playwright test ${{ contains(github.event.pull_request.labels.*.name, 'update-snapshots') && '--update-snapshots' || '' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report

@@ -6,7 +6,7 @@ Exchanges the refresh cookie for a new session through Supabase Auth and rotates
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Method** | `POST`                                                                                                                                        |
 | **Path**   | `/api/auth/refresh`                                                                                                                           |
-| **Source** | [`api/auth/refresh.ts`](../../api/auth/refresh.ts)                                                                                            |
+| **Source** | [`api/auth/_routes/refresh.ts`](../../api/auth/_routes/refresh.ts)                                                                            |
 | **Auth**   | The HttpOnly refresh cookie (`__Secure-sb-refresh-token`, `sb-refresh-token` under `vercel dev`). No `Authorization` header and no `withAuth` |
 | **Status** | Experimental                                                                                                                                  |
 

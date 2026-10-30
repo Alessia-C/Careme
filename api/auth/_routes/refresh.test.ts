@@ -1,13 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError } from '@supabase/supabase-js';
-import { makeReq, makeRes, stubSupabaseEnv } from '../_lib/test-helpers.js';
+import {
+  makeReq,
+  makeRes,
+  stubSupabaseEnv,
+  withErrorHandler,
+} from '../../_lib/test-helpers.js';
 import {
   buildClearedRefreshCookie,
   buildClearedSessionCookie,
   getRefreshCookieName,
   getSessionCookieName,
-} from '../_lib/auth.js';
-import handler from './refresh.js';
+} from '../../_lib/auth.js';
+import route from './refresh.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
@@ -51,12 +56,14 @@ const clearedCookies = [
   buildClearedRefreshCookie(),
 ];
 
+const handler = withErrorHandler(route);
+
 async function callHandler(
   method: string,
   cookies: Record<string, string> = validCookies,
 ) {
-  const { res, asVercel } = makeRes();
-  await handler(makeReq(method, {}, {}, cookies), asVercel);
+  const { res, asExpress } = makeRes();
+  await handler(makeReq(method, {}, {}, cookies), asExpress);
   return res;
 }
 
@@ -88,10 +95,10 @@ describe('POST /api/auth/refresh - request shape', () => {
   });
 
   it('should return 415 when the body is not JSON', async () => {
-    const { res, asVercel } = makeRes();
+    const { res, asExpress } = makeRes();
     await handler(
       makeReq('POST', {}, { 'content-type': 'text/plain' }, validCookies),
-      asVercel,
+      asExpress,
     );
 
     expect(res.status).toHaveBeenCalledWith(415);
