@@ -1,6 +1,6 @@
 # API documentation
 
-The backend is a set of Vercel serverless functions in [`api/`](../../api/). A standalone endpoint is a file `api/<name>.ts`, served at `/api/<name>`. A domain with several endpoints (today `auth` and `products`) is one Express app exposed as a catch-all function (`api/auth/[...path].ts`, `api/products/[[...path]].ts`): its router, handlers and tests live in files and folders starting with `_` (`api/auth/_app.ts`, `_router.ts`, `_routes/<endpoint>.ts`), which Vercel does not deploy as functions.
+The backend is a set of Vercel serverless functions in [`api/`](../../api/). A standalone endpoint is a file `api/<name>.ts`, served at `/api/<name>`. A domain with several endpoints (today `auth` and `products`) is one Express app exposed as a catch-all function (`api/auth/[...path].ts`, `api/products/index.ts`): its router, handlers and tests live in files and folders starting with `_` (`api/auth/_app.ts`, `_router.ts`, `_routes/<endpoint>.ts`), which Vercel does not deploy as functions.
 
 - **Local base URL:** `http://localhost:3000` (run with `vercel dev`, see the [README](../../README.md#running-the-app))
 - **Preview/production base URL:** the Vercel deployment URL
