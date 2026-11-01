@@ -20,11 +20,6 @@
   --feedback-border: var(--color-red-600);
 }
 
-.feedback[data-status='warning'] {
-  --feedback-bg: var(--color-yellow-50);
-  --feedback-border: var(--color-yellow-600);
-}
-
 .feedback[data-status='info'] {
   --feedback-bg: var(--color-blue-50);
   --feedback-border: var(--color-blue-600);

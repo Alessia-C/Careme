@@ -1,12 +1,10 @@
-import type { ReactNode } from 'react';
 import styles from './Feedback.module.css';
 
-export type FeedbackStatus = 'success' | 'error' | 'info' | 'warning';
+export type FeedbackStatus = 'success' | 'error' | 'info';
 
 interface FeedbackProps {
   title: string;
-  // A node, so part of the text can be emphasised (e.g. a product name).
-  description?: ReactNode;
+  description?: string;
   status: FeedbackStatus;
   customClassName?: string;
   id?: string;

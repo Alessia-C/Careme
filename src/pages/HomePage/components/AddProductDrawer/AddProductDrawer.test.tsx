@@ -1,29 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import AddProductDrawer from './AddProductDrawer';
 
-type Handler = (url: string, init?: RequestInit) => Response;
+const created = () =>
+  new Response(JSON.stringify({ product: { id: '1' } }), { status: 201 });
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status });
-
-const noDuplicate = () => json({ products: [], total: 0 });
-const created = () => json({ product: { id: '1' } }, 201);
-
-// Answers by method: the drawer first asks the list (GET), then creates (POST).
-const mockApi = (handlers: { get?: Handler; post?: Handler }) => {
-  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-    const handler = init?.method === 'POST' ? handlers.post : handlers.get;
-    return Promise.resolve(handler ? handler(url, init) : noDuplicate());
-  });
+const mockApi = (answer: () => Response = created) => {
+  const fetchMock = vi.fn(() => Promise.resolve(answer()));
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 };
-
-const postCalls = (fetchMock: ReturnType<typeof mockApi>) =>
-  fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST');
 
 const renderDrawer = (onClose = vi.fn()) => {
   const queryClient = new QueryClient();
@@ -44,10 +32,6 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('AddProductDrawer', () => {
-  beforeEach(() => {
-    mockApi({ post: created });
-  });
-
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -151,9 +135,9 @@ describe('AddProductDrawer', () => {
     expect(submitButton()).toBeDisabled();
   });
 
-  it('checks for a duplicate and then creates the product', async () => {
+  it('creates the product and closes the drawer', async () => {
     const user = userEvent.setup();
-    const fetchMock = mockApi({ post: created });
+    const fetchMock = mockApi();
     const { onClose, invalidate } = renderDrawer();
 
     await fillValidForm(user);
@@ -163,12 +147,14 @@ describe('AddProductDrawer', () => {
     await user.click(submitButton());
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      '/api/products?name=Eye+Palette&brand=MAC&limit=1',
-    );
-    expect(fetchMock.mock.calls[1][0]).toBe('/api/products');
-    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe('/api/products');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(String(init.body))).toEqual({
       name: 'Eye Palette',
       brand: 'MAC',
       category: 'skincare',
@@ -180,6 +166,7 @@ describe('AddProductDrawer', () => {
 
   it('can be submitted with the Enter key', async () => {
     const user = userEvent.setup();
+    mockApi();
     const { onClose } = renderDrawer();
 
     await fillValidForm(user);
@@ -188,102 +175,12 @@ describe('AddProductDrawer', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
-  it('shows the duplicate warning and creates nothing', async () => {
-    const user = userEvent.setup();
-    const fetchMock = mockApi({
-      get: () =>
-        json({
-          products: [{ id: '1', name: 'Eye Palette', brand: 'MAC' }],
-          total: 1,
-        }),
-    });
-    const { onClose, invalidate } = renderDrawer();
-
-    await fillValidForm(user);
-    await user.click(submitButton());
-
-    expect(await screen.findByText('Duplicate product found')).toBeVisible();
-    expect(
-      screen.getByText(/already exists in your catalog/),
-    ).toHaveTextContent(
-      'A product named Eye Palette by MAC already exists in your catalog.',
-    );
-    expect(screen.getByLabelText('Name*')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
-    expect(screen.getByLabelText('Brand*')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
-    expect(submitButton()).toBeDisabled();
-    expect(postCalls(fetchMock)).toHaveLength(0);
-    expect(onClose).not.toHaveBeenCalled();
-    expect(invalidate).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    ['Name', ' 2'],
-    ['Brand', ' Pro'],
-  ])('lets the user retry once the %s is changed', async (label, extra) => {
-    const user = userEvent.setup();
-    mockApi({
-      get: (url) =>
-        url.includes('Eye+Palette&brand=MAC')
-          ? json({
-              products: [{ id: '1', name: 'Eye Palette', brand: 'MAC' }],
-              total: 1,
-            })
-          : noDuplicate(),
-      post: created,
-    });
-    const { onClose } = renderDrawer();
-
-    await fillValidForm(user);
-    await user.click(submitButton());
-    await screen.findByText('Duplicate product found');
-
-    await user.type(screen.getByLabelText(`${label}*`), extra);
-
-    expect(
-      screen.queryByText('Duplicate product found'),
-    ).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Name*')).not.toHaveAttribute('aria-invalid');
-    expect(submitButton()).toBeEnabled();
-
-    await user.click(submitButton());
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-  });
-
-  it('does not take an unrelated product for a duplicate', async () => {
-    const user = userEvent.setup();
-    // What the API answers when it ignores the name and brand filters.
-    mockApi({
-      get: () =>
-        json({
-          products: [{ id: '2', name: 'Cleansing Oil', brand: 'Shiseido' }],
-          total: 4,
-        }),
-      post: created,
-    });
-    const { onClose } = renderDrawer();
-
-    await fillValidForm(user);
-    await user.click(submitButton());
-
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(
-      screen.queryByText('Duplicate product found'),
-    ).not.toBeInTheDocument();
-  });
-
   it('shows a generic error, keeps the values and allows a retry', async () => {
     const user = userEvent.setup();
     let attempts = 0;
-    const fetchMock = mockApi({
-      post: () =>
-        ++attempts === 1 ? new Response(null, { status: 500 }) : created(),
-    });
+    const fetchMock = mockApi(() =>
+      ++attempts === 1 ? new Response(null, { status: 500 }) : created(),
+    );
     const { onClose, invalidate } = renderDrawer();
 
     await fillValidForm(user);
@@ -303,7 +200,7 @@ describe('AddProductDrawer', () => {
     await user.click(submitButton());
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(postCalls(fetchMock)).toHaveLength(2);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('shows the same error when the network fails', async () => {
@@ -325,7 +222,7 @@ describe('AddProductDrawer', () => {
 
   it('asks the user to wait when the rate limit is hit', async () => {
     const user = userEvent.setup();
-    mockApi({ post: () => new Response(null, { status: 429 }) });
+    mockApi(() => new Response(null, { status: 429 }));
     renderDrawer();
 
     await fillValidForm(user);
@@ -342,9 +239,7 @@ describe('AddProductDrawer', () => {
     const pending = new Promise<Response>((resolve) => {
       release = resolve;
     });
-    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
-      init?.method === 'POST' ? pending : Promise.resolve(noDuplicate()),
-    );
+    const fetchMock = vi.fn(() => pending);
     vi.stubGlobal('fetch', fetchMock);
     renderDrawer();
 
@@ -354,7 +249,7 @@ describe('AddProductDrawer', () => {
     const sending = await screen.findByRole('button', { name: 'Adding…' });
     expect(sending).toBeDisabled();
     await user.keyboard('{Enter}');
-    expect(postCalls(fetchMock)).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
 
     release(created());
     await waitFor(() =>
@@ -366,7 +261,7 @@ describe('AddProductDrawer', () => {
 
   it('closes without sending anything from Cancel', async () => {
     const user = userEvent.setup();
-    const fetchMock = mockApi({});
+    const fetchMock = mockApi();
     const { onClose, invalidate } = renderDrawer();
 
     await fillValidForm(user);
@@ -379,7 +274,7 @@ describe('AddProductDrawer', () => {
 
   it('closes without sending anything from the close button', async () => {
     const user = userEvent.setup();
-    const fetchMock = mockApi({});
+    const fetchMock = mockApi();
     const { onClose } = renderDrawer();
 
     await fillValidForm(user);
