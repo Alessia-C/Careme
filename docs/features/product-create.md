@@ -1,18 +1,18 @@
 # Product creation
 
-Lets a logged-in user add a product (name, brand, category, status, optional note) to their own list. The API tells the client when the user already has a product with the same name and brand, so the UI can ask for confirmation; the product is created anyway.
+Lets a logged-in user add a product (name, brand, category, status, optional note) to their own list. The API tells the client when the user already has a product with the same name and brand, the product is created anyway. The UI ([Add product](add-product.md)) does not use this flag yet.
 
-|               |                                                                    |
-| ------------- | ------------------------------------------------------------------ |
-| **Status**    | In progress                                                        |
-| **Issue**     | [#62](https://github.com/Alessia-C/Careme/issues/62)               |
-| **Users**     | Logged-in user                                                     |
-| **Pages**     | None yet (backend only; the creation form comes with the UI issue) |
-| **Endpoints** | [`POST /api/products`](../api/products-create.md)                  |
+|               |                                                      |
+| ------------- | ---------------------------------------------------- |
+| **Status**    | In progress                                          |
+| **Issue**     | [#62](https://github.com/Alessia-C/Careme/issues/62) |
+| **Users**     | Logged-in user                                       |
+| **Pages**     | `/` through the [Add product](add-product.md) drawer |
+| **Endpoints** | [`POST /api/products`](../api/products-create.md)    |
 
 ## Behavior
 
-The client sends `name`, `brand`, `category`, `status` and optionally `note`. The API answers `201` with the created product, `duplicate` and `duplicateOf`. There is no UI yet, so empty, loading and error states are not defined.
+The client sends `name`, `brand`, `category`, `status` and optionally `note`. The API answers `201` with the created product, `duplicate` and `duplicateOf`. The UI is the "Add Product" drawer described in [Add product](add-product.md) and calls `POST` directly, so a duplicate is created and the flag is ignored for now. Blocking duplicates is planned in a separate issue. Loading and error states belong to the drawer.
 
 ## Business rules
 
@@ -38,14 +38,15 @@ Writes one row to `products` ([migration](../../supabase/migrations/202609260941
 
 - Unit tests: [`api/products/_routes/create.test.ts`](../../api/products/_routes/create.test.ts), [`shared/products.test.ts`](../../shared/products.test.ts)
 - Wiring over HTTP: [`api/products/_app.test.ts`](../../api/products/_app.test.ts)
-- E2E tests: None (no UI yet)
+- UI tests: see [Add product](add-product.md#tests), including [`e2e/add-product.spec.ts`](../../e2e/add-product.spec.ts)
 
 ## Open decisions
 
-- Whether the UI asks for confirmation on `duplicate: true` and what the user can do then (decided with the frontend issue).
+- Whether the UI asks for confirmation or blocks on `duplicate: true`. The design blocks a duplicate with a pre-check; it is planned in a separate issue and depends on the `name` and `brand` filters of [#155](https://github.com/Alessia-C/Careme/issues/155), see [Add product](add-product.md#open-decisions).
 
 ## Changelog
 
-| Date       | Change                 | PR  |
-| ---------- | ---------------------- | --- |
-| 2026-11-01 | Initial implementation | TBD |
+| Date       | Change                                                                            | PR  |
+| ---------- | --------------------------------------------------------------------------------- | --- |
+| 2026-11-01 | Initial implementation                                                            | TBD |
+| 2026-11-01 | UI added: the "Add Product" drawer; the client does not use `duplicate: true` yet | TBD |

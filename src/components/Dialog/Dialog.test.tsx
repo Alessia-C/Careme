@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import Dialog from './Dialog';
 
@@ -110,5 +111,36 @@ describe('Dialog', () => {
     fireEvent.click(getDialog());
 
     expect(onClose).not.toHaveBeenCalled();
+  });
+  describe('side layout', () => {
+    const sideDialog = (onClose = vi.fn()) => (
+      <Dialog open title="Add Product" onClose={onClose} layout="side">
+        <p>Body text</p>
+      </Dialog>
+    );
+
+    it('has no close button in the default layout', () => {
+      render(dialogElement({ open: true }));
+      expect(
+        screen.queryByRole('button', { name: 'Close' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows the title and a close button', () => {
+      render(sideDialog());
+      expect(
+        screen.getByRole('heading', { name: 'Add Product' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    });
+
+    it('calls onClose when the close button is activated', async () => {
+      const onClose = vi.fn();
+      render(sideDialog(onClose));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 });

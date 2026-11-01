@@ -35,3 +35,6 @@ coverage
 playwright-report/
 .vercel
 .env*
+
+# Claude Code: personal settings of each developer
+.claude/settings.local.json

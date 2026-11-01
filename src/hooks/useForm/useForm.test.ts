@@ -26,6 +26,31 @@ describe('useForm', () => {
     expect(result.current.isValid).toBe(false);
   });
 
+  it('starts a field from its initial value when one is given', () => {
+    const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));
+    expect(result.current.values).toEqual({
+      name: 'Jane',
+      password: '',
+      confirm: '',
+    });
+  });
+
+  it('accepts a change event from a select or a textarea', () => {
+    const { result } = renderHook(() => useForm(rules));
+    const selectEvent = {
+      target: { value: 'makeup' },
+    } as ChangeEvent<HTMLSelectElement>;
+    const textareaEvent = {
+      target: { value: 'a note' },
+    } as ChangeEvent<HTMLTextAreaElement>;
+
+    act(() => result.current.field('name').onChange(selectEvent));
+    act(() => result.current.field('password').onChange(textareaEvent));
+
+    expect(result.current.values.name).toBe('makeup');
+    expect(result.current.values.password).toBe('a note');
+  });
+
   it('updates a single value on change', () => {
     const { result } = renderHook(() => useForm(rules));
     act(() => result.current.field('name').onChange(changeEvent('Jane')));
