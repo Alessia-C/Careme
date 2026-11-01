@@ -18,6 +18,8 @@
   box-sizing: border-box;
   min-height: calc(100vh - 64px);
   padding: var(--space-16);
+  /* Pages put white cards on it, like in the design. */
+  background: var(--color-grey-100);
 }
 
 @media (min-width: 768px) {
