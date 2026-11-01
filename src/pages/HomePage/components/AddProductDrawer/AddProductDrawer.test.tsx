@@ -64,6 +64,22 @@ describe('AddProductDrawer', () => {
     expect(screen.getByLabelText('Note')).toHaveValue('');
   });
 
+  it('suggests what to type in the text fields', () => {
+    renderDrawer();
+    expect(screen.getByLabelText('Name*')).toHaveAttribute(
+      'placeholder',
+      'Enter product name',
+    );
+    expect(screen.getByLabelText('Brand*')).toHaveAttribute(
+      'placeholder',
+      'Enter brand name',
+    );
+    expect(screen.getByLabelText('Note')).toHaveAttribute(
+      'placeholder',
+      'Enter notes…',
+    );
+  });
+
   it('offers every category and status', () => {
     renderDrawer();
     const options = (label: string) =>

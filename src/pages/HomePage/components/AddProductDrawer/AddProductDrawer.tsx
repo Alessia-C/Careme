@@ -136,6 +136,7 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
     >
       <ValidatedInput
         label="Name*"
+        placeholder="Enter product name"
         autoComplete="off"
         maxLength={PRODUCT_NAME_MAX_LENGTH}
         required
@@ -144,6 +145,7 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       />
       <ValidatedInput
         label="Brand*"
+        placeholder="Enter brand name"
         autoComplete="off"
         maxLength={PRODUCT_BRAND_MAX_LENGTH}
         required
@@ -171,6 +173,7 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       </Select>
       <Textarea
         label="Note"
+        placeholder="Enter notes…"
         value={noteField.value}
         onChange={noteField.onChange}
         onBlur={noteField.onBlur}
