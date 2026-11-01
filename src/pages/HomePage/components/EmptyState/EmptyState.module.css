@@ -1,0 +1,32 @@
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-32) var(--space-24);
+  border-radius: var(--radius-xl);
+  background: var(--color-white-100);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.title {
+  margin: 0;
+  font: var(--text-h3);
+  color: var(--color-text-primary-black);
+}
+
+.description {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-grey-600);
+}

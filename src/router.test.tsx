@@ -37,7 +37,9 @@ describe('routes', () => {
     vi.mocked(isAuthenticated).mockReturnValue(true);
     renderAt('/');
 
-    expect(screen.getByText('Careme')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Add your product' }),
+    ).toBeInTheDocument();
   });
 
   it('redirects an authenticated user from /login to the homepage', () => {
