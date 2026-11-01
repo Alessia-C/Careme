@@ -39,7 +39,7 @@ None
 | `status`   | `string` | Yes      | `new` \| `used` \| `finished`  | Usage status. Required even if the DB has a default    |
 | `note`     | `string` | No       | Up to 500 chars after trimming | Free text. Missing, `null` or blank is saved as `null` |
 
-`name`, `brand` and `note` are trimmed before they are saved. Any other field (`id`, `user_id`, `created_at`, …) is ignored: the owner is always the authenticated user.
+`name`, `brand` and `note` are trimmed before they are saved. A NUL character (`\u0000`) in any text field is rejected with `400`. Any other field (`id`, `user_id`, `created_at`, …) is ignored: the owner is always the authenticated user.
 
 ```json
 {
@@ -91,7 +91,7 @@ All errors return JSON shaped `{ "message": string }`.
 | `429 Too Many Requests`      | Supabase rate limit                                               | `{ "message": "Too many requests, please try again later" }` |
 | `500 Internal Server Error`  | Unexpected server or database error                               | `{ "status": "error", "message": "Internal server error" }`  |
 
-Validation messages: `Name is required (max 100 characters)`, `Brand is required (max 100 characters)`, `Category must be skincare or makeup`, `Status must be new, used or finished`, `Note must be a string`, `Note is too long (max 500 characters)`.
+Validation messages: `Name is required (max 100 characters)`, `Brand is required (max 100 characters)`, `Category must be skincare or makeup`, `Status must be new, used or finished`, `Note must be a string`, `Note is too long (max 500 characters)`, `Note contains invalid characters`.
 
 ## Example
 

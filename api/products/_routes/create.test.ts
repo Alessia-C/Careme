@@ -238,6 +238,9 @@ describe('POST /api/products', () => {
     ['status is unknown', { status: 'open' }, 'Status must be'],
     ['note is not a string', { note: 5 }, 'Note must be a string'],
     ['note is too long', { note: 'a'.repeat(501) }, 'Note is too long'],
+    ['name has a NUL character', { name: 'a\u0000b' }, 'Name is required'],
+    ['brand has a NUL character', { brand: 'a\u0000b' }, 'Brand is required'],
+    ['note has a NUL character', { note: 'a\u0000b' }, 'Note contains'],
   ])('should return 400 when %s', async (_reason, override, message) => {
     const res = await callHandler('POST', { ...validBody, ...override });
 
