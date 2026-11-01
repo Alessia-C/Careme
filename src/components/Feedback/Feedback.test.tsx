@@ -21,7 +21,7 @@ describe('Feedback', () => {
     expect(screen.getByRole('alert')).toHaveAttribute('data-status', 'error');
   });
 
-  it.each<FeedbackStatus>(['success', 'info'])(
+  it.each<FeedbackStatus>(['success', 'info', 'warning'])(
     'uses a polite role="status" for %s',
     (status) => {
       render(<Feedback title="Note" description="Details." status={status} />);
