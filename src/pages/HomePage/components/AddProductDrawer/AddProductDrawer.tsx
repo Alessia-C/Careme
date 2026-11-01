@@ -1,5 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import Feedback from '../../../../components/Feedback/Feedback';
 import FormDrawer from '../../../../components/FormDrawer/FormDrawer';
 import Select from '../../../../components/Select/Select';
@@ -7,7 +6,11 @@ import Textarea from '../../../../components/Textarea/Textarea';
 import ValidatedInput from '../../../../components/ValidatedInput/ValidatedInput';
 import { useForm } from '../../../../hooks/useForm/useForm';
 import { useSubmit } from '../../../../hooks/useSubmit/useSubmit';
-import { addProduct, PRODUCTS_QUERY_KEY } from '../../../../lib/productsApi';
+import {
+  createProduct,
+  PRODUCTS_QUERY_KEY,
+  type CreateProductResult,
+} from '../../../../lib/productsApi';
 import {
   isCategory,
   isProductStatus,
@@ -62,34 +65,16 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
     },
     { category: 'makeup', status: 'new' },
   );
-  // The name and brand the server said already exist. The warning is derived
-  // from them, so it goes away as soon as the user changes either one.
-  const [duplicate, setDuplicate] = useState<{
-    name: string;
-    brand: string;
-  } | null>(null);
-  const duplicateWarning =
-    duplicate !== null &&
-    duplicate.name === values.name.trim() &&
-    duplicate.brand === values.brand.trim()
-      ? duplicate
-      : null;
-  const isDuplicate = duplicateWarning !== null;
-
   const { isSubmitting, errorReason, handleSubmit } = useSubmit({
     isValid,
-    action: async () => {
+    action: async (): Promise<CreateProductResult> => {
       const { category, status } = values;
       // The selects only offer valid values and isValid requires them, so this
       // only narrows the types for the API.
       if (!isCategory(category) || !isProductStatus(status)) {
-        return { ok: false as const, reason: 'failed' as const };
+        return { ok: false, reason: 'failed' };
       }
-      const result = await addProduct({ ...values, category, status });
-      if (!result.ok && result.reason === 'duplicate') {
-        setDuplicate({ name: values.name.trim(), brand: values.brand.trim() });
-      }
-      return result;
+      return createProduct({ ...values, category, status });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
@@ -99,29 +84,12 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
 
   const noteField = field('note');
 
-  const feedback = (
-    <>
-      {duplicateWarning && (
-        <Feedback
-          status="warning"
-          title="Duplicate product found"
-          description={
-            <>
-              A product named <strong>{duplicateWarning.name}</strong> by{' '}
-              <strong>{duplicateWarning.brand}</strong> already exists in your
-              catalog.
-            </>
-          }
-        />
-      )}
-      {errorReason && errorReason !== 'duplicate' && (
-        <Feedback
-          status="error"
-          title="Something went wrong"
-          description={ERROR_DESCRIPTIONS[errorReason]}
-        />
-      )}
-    </>
+  const feedback = errorReason && (
+    <Feedback
+      status="error"
+      title="Something went wrong"
+      description={ERROR_DESCRIPTIONS[errorReason]}
+    />
   );
 
   return (
@@ -131,7 +99,7 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       onClose={onClose}
       onSubmit={handleSubmit}
       submitLabel={isSubmitting ? 'Adding…' : 'Add Product'}
-      isSubmitDisabled={!isValid || isSubmitting || isDuplicate}
+      isSubmitDisabled={!isValid || isSubmitting}
       feedback={feedback}
     >
       <ValidatedInput
@@ -141,7 +109,6 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
         maxLength={PRODUCT_NAME_MAX_LENGTH}
         required
         field={field('name')}
-        invalid={isDuplicate}
       />
       <ValidatedInput
         label="Brand*"
@@ -150,7 +117,6 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
         maxLength={PRODUCT_BRAND_MAX_LENGTH}
         required
         field={field('brand')}
-        invalid={isDuplicate}
       />
       <Select
         label="Category*"

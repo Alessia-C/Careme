@@ -1,15 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
-interface ApiOptions {
-  // What GET /api/products?name=&brand=&limit=1 answers.
-  existingProducts?: Array<{ id: string; name: string; brand: string }>;
-}
-
-// Fake API with a logged-in user and the two products endpoints the drawer
-// uses. It records the body of every POST so a test can check what was sent.
-async function mockApi(page: Page, options: ApiOptions = {}) {
+// Fake API with a logged-in user and the products endpoint the drawer uses. It
+// records the body of every POST so a test can check what was sent.
+async function mockApi(page: Page) {
   const created: unknown[] = [];
-  const existingProducts = options.existingProducts ?? [];
 
   await page.route('**/api/auth/me', (route) =>
     route.fulfill({
@@ -24,16 +18,10 @@ async function mockApi(page: Page, options: ApiOptions = {}) {
   await page.route(
     (url) => url.pathname === '/api/products',
     (route) => {
-      if (route.request().method() === 'POST') {
-        created.push(route.request().postDataJSON());
-        return route.fulfill({
-          status: 201,
-          json: { product: { id: 'new' }, duplicate: false, duplicateOf: null },
-        });
-      }
+      created.push(route.request().postDataJSON());
       return route.fulfill({
-        status: 200,
-        json: { products: existingProducts, total: existingProducts.length },
+        status: 201,
+        json: { product: { id: 'new' }, duplicate: false, duplicateOf: null },
       });
     },
   );
@@ -75,27 +63,6 @@ test('the first product is added from the empty state', async ({ page }) => {
       note: 'Warm neutrals',
     },
   ]);
-});
-
-test('a product that already exists is not created', async ({ page }) => {
-  const created = await mockApi(page, {
-    existingProducts: [{ id: '1', name: 'Eye Palette', brand: 'MAC' }],
-  });
-
-  await openDrawerAndFill(page);
-  const submit = page
-    .getByRole('dialog')
-    .getByRole('button', { name: 'Add Product' });
-  await submit.click();
-
-  await expect(page.getByText('Duplicate product found')).toBeVisible();
-  await expect(submit).toBeDisabled();
-  expect(created).toEqual([]);
-
-  // Changing the name clears the warning and lets the user add it.
-  await page.getByLabel('Name*').fill('Eye Palette Mini');
-  await expect(page.getByText('Duplicate product found')).toBeHidden();
-  await expect(submit).toBeEnabled();
 });
 
 test('Cancel closes the drawer without creating anything', async ({ page }) => {

@@ -46,14 +46,6 @@ describe('ValidatedInput', () => {
     );
   });
 
-  it('shows the error look when forced, even if the field is valid', () => {
-    render(<ValidatedInput label="Email" field={makeField()} invalid />);
-    expect(screen.getByLabelText('Email')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
-  });
-
   it('shows no error when the field is valid', () => {
     render(<ValidatedInput label="Email" field={makeField()} />);
     expect(screen.getByLabelText('Email')).not.toHaveAttribute('aria-invalid');
