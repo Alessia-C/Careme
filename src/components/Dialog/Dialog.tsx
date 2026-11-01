@@ -11,6 +11,9 @@ interface DialogProps {
   children: ReactNode;
   className?: string;
   closeOnBackdropClick?: boolean;
+  // 'side' is the layout of the Drawer: the title sits on the left of a header
+  // with its own close button, and the box is a panel on the right.
+  layout?: 'center' | 'side';
 }
 
 const Dialog = ({
@@ -22,6 +25,7 @@ const Dialog = ({
   children,
   className,
   closeOnBackdropClick = true,
+  layout = 'center',
 }: DialogProps) => {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -59,6 +63,12 @@ const Dialog = ({
     }
   };
 
+  const heading = (
+    <h2 id={titleId} className={styles.title}>
+      {title}
+    </h2>
+  );
+
   return (
     <dialog
       ref={ref}
@@ -67,12 +77,26 @@ const Dialog = ({
       aria-describedby={description ? descriptionId : undefined}
       onClose={handleClose}
       onClick={handleClick}
-      className={[styles.dialog, className].filter(Boolean).join(' ')}
+      className={[styles.dialog, layout === 'side' && styles.side, className]
+        .filter(Boolean)
+        .join(' ')}
     >
       <div className={styles.content}>
-        <h2 id={titleId} className={styles.title}>
-          {title}
-        </h2>
+        {layout === 'side' ? (
+          <div className={styles.header}>
+            {heading}
+            <button
+              type="button"
+              aria-label="Close"
+              className={styles.close}
+              onClick={onClose}
+            >
+              <span aria-hidden="true" className={styles.closeIcon} />
+            </button>
+          </div>
+        ) : (
+          heading
+        )}
         {description && (
           <p id={descriptionId} className={styles.description}>
             {description}
