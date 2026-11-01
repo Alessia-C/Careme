@@ -23,3 +23,5 @@ Each user-facing feature has one document in this folder. It describes the behav
 | [Product creation](product-create.md) | In progress | Backend `POST /api/products`: validated product owned by the caller; duplicate name+brand is flagged in the response, not blocked.                       |
 | [Product list](product-list.md)       | In progress | Backend `GET /api/products`: the caller's products, newest first, with search on name or brand, category filter and pagination.                          |
 | [Product detail](product-detail.md)   | In progress | Backend `GET /api/products/:id`: one product of the caller with its note; a missing, foreign or malformed id is a `404`.                                 |
+| [Product update](product-update.md)   | In progress | Backend `PUT /api/products/:id`: the whole product is validated like on creation and replaced; a missing, foreign or malformed id is a `404`.            |
+| [Product delete](product-delete.md)   | In progress | Backend `DELETE /api/products/:id`: permanent delete, `204` without body; a missing, foreign or malformed id is a `404`.                                 |
