@@ -263,6 +263,7 @@ describe('GET /api/products', () => {
     ['a comma', 'a,b'],
     ['a parenthesis', 'a(b)'],
     ['a NUL character', 'a\u0000b'],
+    ['a filter injection', 'a",user_id.neq.x'],
     ['more than 100 characters', 'a'.repeat(101)],
     ['repeated', ['a', 'b']],
     ['an object', { a: 'b' }],

@@ -31,6 +31,9 @@ const invalid = (message: string): ParsedFilters => ({ ok: false, message });
 // Characters that are wildcards in LIKE (% _ \), in the PostgREST filter
 // syntax (* , ( ) ") or that would close the quoted value. They are rejected
 // instead of escaped: a product search never needs them.
+// This is a security barrier, not only a functional choice: search is pasted
+// into the .or() filter, so allowing " or , would let a caller add conditions
+// to it. Do not remove a character without changing how the filter is built.
 const SEARCH_FORBIDDEN_CHARACTERS = /[%_\\*",()]/;
 
 // Matches the \d{1,9} of parseIntegerParam: nine digits stay far below
