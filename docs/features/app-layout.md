@@ -24,7 +24,7 @@ A shared shell (skip link, header with logo and Logout button, main content area
 - Responsive behavior (breakpoint 768px):
   - Desktop (>= 768px): header side padding is 61px; the icon and the "Logout" text are both visible.
   - Mobile (< 768px): header side padding is 16px (`--space-16`); only the icon is shown. The "Logout" label is visually hidden but still the accessible name of the button. The button area is at least 44x44px.
-  - The `<main>` padding follows the same pattern (16px on mobile, 24px vertical and 61px horizontal on desktop) and its minimum height is the viewport minus the 64px header.
+  - The `<main>` padding follows the same pattern (16px on mobile, 24px vertical and 61px horizontal on desktop) and its minimum height is the viewport minus the 64px header. Its background is light grey (`--color-grey-100`), so pages can put white cards on it.
 - Hover and keyboard focus on the Logout button show a 1px border in the text color and no text underline (no double underline).
 - The header has a fixed height of 64px and a 1px bottom border.
 - Empty, loading and error states: None (the shell has no data of its own).
@@ -69,3 +69,4 @@ None. The feature does not read or write any table.
 | ---------- | -------------------------------------------- | --- |
 | 2026-10-25 | Initial implementation                       | TBD |
 | 2026-10-25 | Logout button wired, `useLogoutSync` mounted | TBD |
+| 2026-11-01 | `main` background is `--color-grey-100`      | TBD |
