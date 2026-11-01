@@ -17,17 +17,27 @@ import app from './_app.js';
 // These tests go through a real HTTP server, so they check the wiring that the
 // route tests (which call the handlers directly) cannot see: routing, the body
 // parser, the 404 and the order of the middleware.
-const { getUser, rpc, single, maybeSingle, insert, range, from, createClient } =
-  vi.hoisted(() => ({
-    getUser: vi.fn(),
-    rpc: vi.fn(),
-    single: vi.fn(),
-    maybeSingle: vi.fn(),
-    insert: vi.fn(),
-    range: vi.fn(),
-    from: vi.fn(),
-    createClient: vi.fn(),
-  }));
+const {
+  getUser,
+  rpc,
+  single,
+  maybeSingle,
+  insert,
+  update,
+  range,
+  from,
+  createClient,
+} = vi.hoisted(() => ({
+  getUser: vi.fn(),
+  rpc: vi.fn(),
+  single: vi.fn(),
+  maybeSingle: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  range: vi.fn(),
+  from: vi.fn(),
+  createClient: vi.fn(),
+}));
 
 vi.mock('@supabase/supabase-js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@supabase/supabase-js')>()),
@@ -68,6 +78,7 @@ beforeEach(() => {
     or: vi.fn(),
     order: vi.fn(),
     insert,
+    update,
     single,
     maybeSingle,
     range,
@@ -78,6 +89,7 @@ beforeEach(() => {
   query.or.mockReturnValue(query);
   query.order.mockReturnValue(query);
   insert.mockReturnValue(query);
+  update.mockReturnValue(query);
   from.mockReturnValue(query);
   createClient.mockReturnValue({ auth: { getUser }, rpc, from });
   getUser.mockResolvedValue({
@@ -112,6 +124,18 @@ function post(
 ) {
   return fetch(`${baseUrl}${path}`, {
     method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: 'Bearer valid-token',
+      ...headers,
+    },
+    body,
+  });
+}
+
+function put(path: string, body: string, headers: Record<string, string> = {}) {
+  return fetch(`${baseUrl}${path}`, {
+    method: 'PUT',
     headers: {
       'content-type': 'application/json',
       authorization: 'Bearer valid-token',
@@ -198,7 +222,40 @@ describe('products app - routing', () => {
     },
   );
 
-  it.each(['POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'])(
+  it('should update the product on PUT /api/products/:id', async () => {
+    maybeSingle.mockResolvedValue({ data: createdProduct, error: null });
+
+    const res = await put(`/api/products/${productId}`, validBody);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ product: createdProduct });
+  });
+
+  it('should answer 404 on PUT /api/products/:id when the product is missing', async () => {
+    const res = await put(`/api/products/${productId}`, validBody);
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ message: 'Product not found' });
+  });
+
+  it('should answer 404 on PUT /api/products/:id for an id that is not a uuid', async () => {
+    const res = await put('/api/products/abc', validBody);
+
+    expect(res.status).toBe(404);
+    expect(maybeSingle).not.toHaveBeenCalled();
+  });
+
+  it('should answer 400 on PUT /api/products/:id when brand is blank', async () => {
+    const res = await put(
+      `/api/products/${productId}`,
+      JSON.stringify({ ...JSON.parse(validBody), brand: '   ' }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(maybeSingle).not.toHaveBeenCalled();
+  });
+
+  it.each(['POST', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'])(
     'should answer 405 to %s on /api/products/:id',
     async (method) => {
       const res = await fetch(`${baseUrl}/api/products/${productId}`, {
@@ -232,11 +289,27 @@ describe('products app - request body', () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
+  it('should answer 415 to a form-encoded PUT body', async () => {
+    const res = await put(`/api/products/${productId}`, 'name=x', {
+      'content-type': 'application/x-www-form-urlencoded',
+    });
+
+    expect(res.status).toBe(415);
+    expect(maybeSingle).not.toHaveBeenCalled();
+  });
+
   it('should answer 400 to malformed JSON', async () => {
     const res = await post('/api/products', '{"name": ');
 
     expect(res.status).toBe(400);
     expect(insert).not.toHaveBeenCalled();
+  });
+
+  it('should answer 400 to malformed JSON in a PUT', async () => {
+    const res = await put(`/api/products/${productId}`, '{"name": ');
+
+    expect(res.status).toBe(400);
+    expect(maybeSingle).not.toHaveBeenCalled();
   });
 
   it('should answer 400 to a body above the size limit', async () => {
@@ -260,6 +333,24 @@ describe('products app - authentication', () => {
       expect(maybeSingle).not.toHaveBeenCalled();
     },
   );
+
+  it('should answer 401 to a PUT without a session', async () => {
+    const res = await put(`/api/products/${productId}`, validBody, {
+      authorization: '',
+    });
+
+    expect(res.status).toBe(401);
+    expect(maybeSingle).not.toHaveBeenCalled();
+  });
+
+  it('should answer 403 to a PUT from a blocked account', async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    const res = await put(`/api/products/${productId}`, validBody);
+
+    expect(res.status).toBe(403);
+    expect(maybeSingle).not.toHaveBeenCalled();
+  });
 
   it('should answer 401 without a session', async () => {
     const res = await post('/api/products', validBody, { authorization: '' });

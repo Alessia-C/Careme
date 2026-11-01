@@ -63,7 +63,7 @@ All errors return JSON shaped `{ "message": string }`.
 | `401 Unauthorized`          | Missing, invalid, expired or revoked token                                      | `{ "message": "Missing or invalid authorization header" }`   |
 | `403 Forbidden`             | The account is blocked                                                          | `{ "message": "Account blocked" }`                           |
 | `404 Not Found`             | The id is not a uuid, the product does not exist, or it belongs to another user | `{ "message": "Product not found" }`                         |
-| `405 Method Not Allowed`    | Any method other than `GET`                                                     | `{ "message": "Method not allowed" }`                        |
+| `405 Method Not Allowed`    | Any method other than `GET` and `PUT`                                           | `{ "message": "Method not allowed" }`                        |
 | `429 Too Many Requests`     | Supabase rate limit                                                             | `{ "message": "Too many requests, please try again later" }` |
 | `500 Internal Server Error` | Unexpected server or database error                                             | `{ "status": "error", "message": "Internal server error" }`  |
 
@@ -78,4 +78,5 @@ curl http://localhost:3000/api/products/00000000-0000-0000-0000-000000000001 \
 
 - Runs as the caller (`createUserClient`), so the RLS select policy applies. The query also filters `user_id` explicitly.
 - The three `404` cases have the same answer on purpose: the response never tells whether an id exists for someone else. A malformed id is answered without calling the database, because Postgres would fail on it.
+- The path also serves `PUT` ([`PUT /api/products/:id`](products-update.md)) through `withMethods`.
 - The function is [`api/products/[...path].ts`](../../api/products/[...path].ts), next to `index.ts` which serves `/api/products`.
