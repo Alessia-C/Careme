@@ -86,7 +86,7 @@ All errors return JSON shaped `{ "message": string }`.
 | `400 Bad Request`            | Body missing, malformed or too large, or a field fails validation | `{ "message": "Name is required (max 100 characters)" }`     |
 | `401 Unauthorized`           | Missing, invalid, expired or revoked token                        | `{ "message": "Missing or invalid authorization header" }`   |
 | `403 Forbidden`              | The account is blocked                                            | `{ "message": "Account blocked" }`                           |
-| `405 Method Not Allowed`     | Any method other than `POST`                                      | `{ "message": "Method not allowed" }`                        |
+| `405 Method Not Allowed`     | Any method other than `GET` and `POST`                            | `{ "message": "Method not allowed" }`                        |
 | `415 Unsupported Media Type` | `Content-Type` is not `application/json`                          | `{ "message": "Content-Type must be application/json" }`     |
 | `429 Too Many Requests`      | Supabase rate limit                                               | `{ "message": "Too many requests, please try again later" }` |
 | `500 Internal Server Error`  | Unexpected server or database error                               | `{ "status": "error", "message": "Internal server error" }`  |
@@ -108,4 +108,5 @@ curl -X POST http://localhost:3000/api/products \
 - The duplicate check is informative, not atomic: there is no unique constraint, and two concurrent requests can both report `duplicate: false`.
 - The comparison is exact on the trimmed values and case sensitive: `CeraVe` and `cerave` are different brands.
 - Limits (100/100/500) live in [`shared/products.ts`](../../shared/products.ts) so the frontend form can reuse them.
-- The function is `api/products/index.ts`: a catch-all (`[...path].ts`) needs at least one segment, so it would never match `/api/products`.
+- The function is `api/products/index.ts`: a catch-all (`[...path].ts`) needs at least one segment, so it would never match `/api/products`. `api/products/[...path].ts` serves the paths with a segment.
+- The path also serves `GET` ([`GET /api/products`](products-list.md)) through `withMethods`.

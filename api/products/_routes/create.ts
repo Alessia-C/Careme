@@ -1,5 +1,9 @@
 import type { Request, Response } from 'express';
-import { getAccessToken, withAuth, type AuthContext } from '../../_lib/auth.js';
+import {
+  requireAccessToken,
+  withAuth,
+  type AuthContext,
+} from '../../_lib/auth.js';
 import {
   sendTooManyRequests,
   withMethod,
@@ -8,6 +12,7 @@ import {
 import { createUserClient, isRateLimitError } from '../../_lib/supabase.js';
 import {
   PRODUCT_BRAND_MAX_LENGTH,
+  PRODUCT_COLUMNS,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_NOTE_MAX_LENGTH,
   isCategory,
@@ -15,13 +20,7 @@ import {
   type Category,
   type ProductStatus,
 } from '../../../shared/products.js';
-import { validateInput } from '../../../shared/validation.js';
-
-const PRODUCT_COLUMNS = 'id, name, brand, category, status, note, created_at';
-
-// Postgres text cannot hold a NUL character: it would fail at the insert and
-// become a 500 reported to Sentry, so it is rejected up front with a 400.
-const hasNulCharacter = (value: string) => value.includes('\u0000');
+import { hasNulCharacter, validateInput } from '../../../shared/validation.js';
 
 // Returns the trimmed value, or undefined when it is not a non-empty string
 // within the limit.
@@ -162,11 +161,7 @@ async function createProduct(
 // the handler needs the auth context together with the body, and an anonymous
 // caller must get 401 before any 415 or 400 about the body.
 function handleCreate(req: Request, res: Response, auth: AuthContext) {
-  const token = getAccessToken(req);
-  if (!token) {
-    // Unreachable: withAuth rejects requests without a token.
-    throw new Error('Unexpected request without token');
-  }
+  const token = requireAccessToken(req);
   return withObjectBody((_req, _res, body) =>
     createProduct(res, auth, token, body),
   )(req, res);

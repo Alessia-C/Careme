@@ -28,6 +28,18 @@ export function withMethod(method: string, handler: Handler): Handler {
   };
 }
 
+// Like withMethod, for a path that serves several methods: picks the handler of
+// req.method and answers 405 for any other. Own property check, so that a method such as
+// "constructor" never reaches an inherited property of the object.
+export function withMethods(handlers: Record<string, Handler>): Handler {
+  return (req, res) => {
+    if (!Object.prototype.hasOwnProperty.call(handlers, req.method)) {
+      return res.status(405).json({ message: 'Method not allowed' });
+    }
+    return handlers[req.method](req, res);
+  };
+}
+
 // Rejects anything but a JSON body with 415, then a missing or non-object body
 // with 400. The handler receives the body already narrowed.
 // The content type check is a CSRF defence: a cross-site <form> can only send
