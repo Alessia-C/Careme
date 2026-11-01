@@ -13,6 +13,7 @@ import {
   getSessionCookieName,
   getSessionExpiry,
   getTokenExpiry,
+  requireAccessToken,
   setSessionCookies,
   withAuth,
 } from './auth.js';
@@ -137,6 +138,19 @@ describe('getAccessToken', () => {
   it('ignores an empty cookie', () => {
     const req = makeReq('GET', undefined, {}, { [getSessionCookieName()]: '' });
     expect(getAccessToken(req)).toBeUndefined();
+  });
+});
+
+describe('requireAccessToken', () => {
+  it('returns the token of the request', () => {
+    const req = makeReq('GET', undefined, validHeaders);
+    expect(requireAccessToken(req)).toBe('valid-token');
+  });
+
+  it('throws when the request has no token', () => {
+    expect(() => requireAccessToken(makeReq('GET'))).toThrow(
+      'Unexpected request without token',
+    );
   });
 });
 

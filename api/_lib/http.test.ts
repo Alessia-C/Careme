@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { sendTooManyRequests, withMethod, withObjectBody } from './http.js';
+import {
+  sendTooManyRequests,
+  withMethod,
+  withMethods,
+  withObjectBody,
+} from './http.js';
 import { makeReq, makeRes } from './test-helpers.js';
 
 describe('withMethod', () => {
@@ -23,6 +28,36 @@ describe('withMethod', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Method not allowed' });
     expect(handler).not.toHaveBeenCalled();
   });
+});
+
+describe('withMethods', () => {
+  it('should call only the handler of the request method', async () => {
+    const get = vi.fn();
+    const post = vi.fn();
+    const { asExpress } = makeRes();
+    const req = makeReq('GET');
+
+    await withMethods({ GET: get, POST: post })(req, asExpress);
+
+    expect(get).toHaveBeenCalledWith(req, asExpress);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it.each(['DELETE', 'constructor'])(
+    'should return 405 and skip the handlers for %s',
+    async (method) => {
+      const get = vi.fn();
+      const { res, asExpress } = makeRes();
+
+      await withMethods({ GET: get })(makeReq(method), asExpress);
+
+      expect(res.status).toHaveBeenCalledWith(405);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Method not allowed',
+      });
+      expect(get).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('withObjectBody', () => {

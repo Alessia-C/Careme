@@ -193,6 +193,15 @@ export function getAccessToken(req: Request): string | undefined {
   return getBearerToken(req) ?? getCookie(req, getSessionCookieName());
 }
 
+// For handlers behind withAuth, which has already rejected a missing token.
+export function requireAccessToken(req: Request): string {
+  const token = getAccessToken(req);
+  if (!token) {
+    throw new Error('Unexpected request without token');
+  }
+  return token;
+}
+
 export type AuthContext = { id: string; email: string; role: Role };
 
 type AuthHandler = (

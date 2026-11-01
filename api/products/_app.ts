@@ -10,8 +10,8 @@ const app = express();
 // Express adds both by default; every products response is personal data.
 app.disable('x-powered-by');
 app.set('etag', false);
-// The only route is the mount path itself, so the app must be case sensitive:
-// the Router's own setting never sees the /api/products prefix.
+// The app must be case sensitive: the Router's own setting never sees the
+// /api/products prefix.
 app.set('case sensitive routing', true);
 
 // Order matters: body parsing, then the routes, then the catch-all 404 and
