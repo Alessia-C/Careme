@@ -3,6 +3,7 @@ import { withMethods } from '../_lib/http.js';
 import create from './_routes/create.js';
 import detail from './_routes/detail.js';
 import list from './_routes/list.js';
+import remove from './_routes/remove.js';
 import update from './_routes/update.js';
 
 // router.all and not router.get/post: Express would answer a wrong method with
@@ -15,5 +16,8 @@ export const productsRouter = Router({ caseSensitive: true });
 
 // GET /api/products and POST /api/products
 productsRouter.all('/', withMethods({ GET: list, POST: create }));
-// GET /api/products/:id and PUT /api/products/:id
-productsRouter.all('/:id', withMethods({ GET: detail, PUT: update }));
+// GET, PUT and DELETE /api/products/:id
+productsRouter.all(
+  '/:id',
+  withMethods({ GET: detail, PUT: update, DELETE: remove }),
+);

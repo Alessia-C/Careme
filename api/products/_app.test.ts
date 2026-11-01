@@ -24,6 +24,7 @@ const {
   maybeSingle,
   insert,
   update,
+  remove,
   range,
   from,
   createClient,
@@ -34,6 +35,7 @@ const {
   maybeSingle: vi.fn(),
   insert: vi.fn(),
   update: vi.fn(),
+  remove: vi.fn(),
   range: vi.fn(),
   from: vi.fn(),
   createClient: vi.fn(),
@@ -79,6 +81,7 @@ beforeEach(() => {
     order: vi.fn(),
     insert,
     update,
+    delete: remove,
     single,
     maybeSingle,
     range,
@@ -90,6 +93,7 @@ beforeEach(() => {
   query.order.mockReturnValue(query);
   insert.mockReturnValue(query);
   update.mockReturnValue(query);
+  remove.mockReturnValue(query);
   from.mockReturnValue(query);
   createClient.mockReturnValue({ auth: { getUser }, rpc, from });
   getUser.mockResolvedValue({
@@ -130,6 +134,13 @@ function post(
       ...headers,
     },
     body,
+  });
+}
+
+function del(path: string, headers: Record<string, string> = {}) {
+  return fetch(`${baseUrl}${path}`, {
+    method: 'DELETE',
+    headers: { authorization: 'Bearer valid-token', ...headers },
   });
 }
 
@@ -255,7 +266,30 @@ describe('products app - routing', () => {
     expect(maybeSingle).not.toHaveBeenCalled();
   });
 
-  it.each(['POST', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'])(
+  it('should delete the product on DELETE /api/products/:id', async () => {
+    maybeSingle.mockResolvedValue({ data: { id: productId }, error: null });
+
+    const res = await del(`/api/products/${productId}`);
+
+    expect(res.status).toBe(204);
+    expect(await res.text()).toBe('');
+  });
+
+  it('should answer 404 on DELETE /api/products/:id when the product is missing', async () => {
+    const res = await del(`/api/products/${productId}`);
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ message: 'Product not found' });
+  });
+
+  it('should answer 404 on DELETE /api/products/:id for an id that is not a uuid', async () => {
+    const res = await del('/api/products/abc');
+
+    expect(res.status).toBe(404);
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it.each(['POST', 'PATCH', 'OPTIONS', 'HEAD'])(
     'should answer 405 to %s on /api/products/:id',
     async (method) => {
       const res = await fetch(`${baseUrl}/api/products/${productId}`, {
@@ -341,6 +375,24 @@ describe('products app - authentication', () => {
 
     expect(res.status).toBe(401);
     expect(maybeSingle).not.toHaveBeenCalled();
+  });
+
+  it('should answer 401 to a DELETE without a session', async () => {
+    const res = await del(`/api/products/${productId}`, {
+      authorization: '',
+    });
+
+    expect(res.status).toBe(401);
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('should answer 403 to a DELETE from a blocked account', async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    const res = await del(`/api/products/${productId}`);
+
+    expect(res.status).toBe(403);
+    expect(remove).not.toHaveBeenCalled();
   });
 
   it('should answer 403 to a PUT from a blocked account', async () => {

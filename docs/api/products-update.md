@@ -85,7 +85,7 @@ All errors return JSON shaped `{ "message": string }`.
 | `401 Unauthorized`           | Missing, invalid, expired or revoked token                                      | `{ "message": "Missing or invalid authorization header" }`   |
 | `403 Forbidden`              | The account is blocked                                                          | `{ "message": "Account blocked" }`                           |
 | `404 Not Found`              | The id is not a uuid, the product does not exist, or it belongs to another user | `{ "message": "Product not found" }`                         |
-| `405 Method Not Allowed`     | Any method other than `GET` and `PUT`                                           | `{ "message": "Method not allowed" }`                        |
+| `405 Method Not Allowed`     | Any method other than `GET`, `PUT` and `DELETE`                                 | `{ "message": "Method not allowed" }`                        |
 | `415 Unsupported Media Type` | `Content-Type` is not `application/json`                                        | `{ "message": "Content-Type must be application/json" }`     |
 | `429 Too Many Requests`      | Supabase rate limit                                                             | `{ "message": "Too many requests, please try again later" }` |
 | `500 Internal Server Error`  | Unexpected server or database error                                             | `{ "status": "error", "message": "Internal server error" }`  |
@@ -108,4 +108,4 @@ curl -X PUT http://localhost:3000/api/products/00000000-0000-0000-0000-000000000
 - Sending the current values again is not an error: the answer is `200` with the product, so the call is idempotent. There is no `updated_at` column.
 - There is no duplicate check: unlike `POST /api/products`, the response has no `duplicate` or `duplicateOf` fields, and a name and brand equal to another product are accepted.
 - The validation lives in [`api/products/_validation.ts`](../../api/products/_validation.ts), shared with create. It may move to `shared/` when the frontend form needs it.
-- The same path serves `GET` ([`GET /api/products/:id`](products-detail.md)) through `withMethods`.
+- The same path serves `GET` ([`GET /api/products/:id`](products-detail.md)) and `DELETE` ([`DELETE /api/products/:id`](products-delete.md)) through `withMethods`.
