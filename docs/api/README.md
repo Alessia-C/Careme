@@ -20,6 +20,7 @@ The backend is a set of Vercel serverless functions in [`api/`](../../api/). A s
 | `POST` | [`/api/products`](products-create.md)     | JWT            | Creates a product for the caller, flagging a duplicate   |
 | `GET`  | [`/api/products`](products-list.md)       | JWT            | Lists the caller's products, with search and pagination  |
 | `GET`  | [`/api/products/:id`](products-detail.md) | JWT            | Returns one of the caller's products, with its note      |
+| `PUT`  | [`/api/products/:id`](products-update.md) | JWT            | Replaces one of the caller's products                    |
 
 ## Conventions
 
