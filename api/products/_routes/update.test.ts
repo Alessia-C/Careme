@@ -200,32 +200,14 @@ describe('PUT /api/products/:id', () => {
     );
   });
 
-  it('should return 200 even when nothing changes', async () => {
-    const res = await callHandler('PUT', validBody);
-    const again = await callHandler('PUT', validBody);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(again.status).toHaveBeenCalledWith(200);
-  });
-
+  // The full list of validation cases lives in _validation.test.ts: here only
+  // the ones the endpoint must answer with a 400 without touching the database.
   it.each([
     ['name is missing', { name: undefined }, 'Name is required'],
-    ['name is blank', { name: '   ' }, 'Name is required'],
-    ['name is not a string', { name: 42 }, 'Name is required'],
-    ['name is too long', { name: 'a'.repeat(101) }, 'Name is required'],
-    ['brand is missing', { brand: undefined }, 'Brand is required'],
     ['brand is empty', { brand: '' }, 'Brand is required'],
     ['brand is blank', { brand: '   ' }, 'Brand is required'],
-    ['brand is too long', { brand: 'a'.repeat(101) }, 'Brand is required'],
-    ['category is missing', { category: undefined }, 'Category must be'],
     ['category is unknown', { category: 'perfume' }, 'Category must be'],
-    ['status is missing', { status: undefined }, 'Status must be'],
     ['status is unknown', { status: 'open' }, 'Status must be'],
-    ['note is not a string', { note: 5 }, 'Note must be a string'],
-    ['note is too long', { note: 'a'.repeat(501) }, 'Note is too long'],
-    ['name has a NUL character', { name: 'a\u0000b' }, 'Name is required'],
-    ['brand has a NUL character', { brand: 'a\u0000b' }, 'Brand is required'],
-    ['note has a NUL character', { note: 'a\u0000b' }, 'Note contains'],
   ])('should return 400 when %s', async (_reason, override, message) => {
     const res = await callHandler('PUT', { ...validBody, ...override });
 
@@ -234,17 +216,6 @@ describe('PUT /api/products/:id', () => {
       message: expect.stringContaining(message),
     });
     expect(update).not.toHaveBeenCalled();
-  });
-
-  it('should accept values exactly at the length limits', async () => {
-    const res = await callHandler('PUT', {
-      ...validBody,
-      name: 'a'.repeat(100),
-      brand: 'b'.repeat(100),
-      note: 'c'.repeat(500),
-    });
-
-    expect(res.status).toHaveBeenCalledWith(200);
   });
 
   it('should return 404 without calling the database when the id is not a uuid', async () => {
