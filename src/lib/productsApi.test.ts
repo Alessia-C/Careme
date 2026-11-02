@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UnauthorizedError } from './apiFetch';
-import { createProduct, listProducts, type ProductInput } from './productsApi';
+import {
+  createProduct,
+  getProduct,
+  listProducts,
+  type ProductInput,
+} from './productsApi';
 
 const input: ProductInput = {
   name: 'Eye Palette',
@@ -180,5 +185,88 @@ describe('listProducts', () => {
     await expect(
       listProducts({ search: '', offset: 0, limit: 12 }),
     ).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+});
+
+describe('getProduct', () => {
+  const product = {
+    id: 'p1',
+    name: 'Eye Palette',
+    brand: 'MAC',
+    category: 'makeup',
+    status: 'new',
+    note: 'Warm Neutrals',
+  };
+
+  it('asks for the product by its encoded id', async () => {
+    const fetchMock = mockFetch(jsonResponse({ product }));
+
+    await getProduct('a/b c');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/products/a%2Fb%20c',
+      undefined,
+    );
+  });
+
+  it('returns the product', async () => {
+    mockFetch(jsonResponse({ product }));
+    expect(await getProduct('p1')).toEqual({ ok: true, product });
+  });
+
+  it('accepts a product without a note', async () => {
+    mockFetch(jsonResponse({ product: { ...product, note: null } }));
+    expect(await getProduct('p1')).toEqual({
+      ok: true,
+      product: { ...product, note: null },
+    });
+  });
+
+  it.each([403, 404])('reports not found on a %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await getProduct('p1')).toEqual({
+      ok: false,
+      reason: 'not-found',
+    });
+  });
+
+  it('reports the rate limit on 429', async () => {
+    mockFetch(new Response(null, { status: 429 }));
+    expect(await getProduct('p1')).toEqual({
+      ok: false,
+      reason: 'rate-limited',
+    });
+  });
+
+  it('fails on a 500', async () => {
+    mockFetch(new Response(null, { status: 500 }));
+    expect(await getProduct('p1')).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('fails on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await getProduct('p1')).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it.each([
+    ['an HTML fallback', new Response('<html></html>', { status: 200 })],
+    ['a body without the product', jsonResponse({})],
+    ['a product without its name', jsonResponse({ product: { id: 'p1' } })],
+    [
+      'a note that is not text',
+      jsonResponse({ product: { ...product, note: 5 } }),
+    ],
+    [
+      'an unknown category',
+      jsonResponse({ product: { ...product, category: 'hair' } }),
+    ],
+  ])('fails on %s', async (_label, response) => {
+    mockFetch(response);
+    expect(await getProduct('p1')).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('lets an expired session through as UnauthorizedError', async () => {
+    mockFetch(new Response(null, { status: 401 }));
+    await expect(getProduct('p1')).rejects.toBeInstanceOf(UnauthorizedError);
   });
 });

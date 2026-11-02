@@ -1,48 +1,80 @@
 # Product detail
 
-Lets a logged-in user read one of their own products with all its fields, including the note that the [product list](product-list.md) leaves out.
+Lets a logged-in user open one of their own products from the [product list](product-list.md) in a read-only drawer, with all its fields, including the note that the list leaves out.
 
-|               |                                                                  |
-| ------------- | ---------------------------------------------------------------- |
-| **Status**    | In progress                                                      |
-| **Issue**     | [#63](https://github.com/Alessia-C/Careme/issues/63)             |
-| **Users**     | Logged-in user                                                   |
-| **Pages**     | None yet (backend only; the detail page comes with the UI issue) |
-| **Endpoints** | [`GET /api/products/:id`](../api/products-detail.md)             |
+|               |                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Status**    | In progress                                                                                                               |
+| **Issue**     | [#63](https://github.com/Alessia-C/Careme/issues/63) (API), [#68](https://github.com/Alessia-C/Careme/issues/68) (drawer) |
+| **Users**     | Logged-in user                                                                                                            |
+| **Pages**     | `/` (drawer on the home page, see [`src/router.tsx`](../../src/router.tsx))                                               |
+| **Endpoints** | [`GET /api/products/:id`](../api/products-detail.md)                                                                      |
 
 ## Behavior
 
-The client calls `GET /api/products/:id`. The API answers `200` with the `product`, or `404` when it cannot be shown. There is no UI yet, so empty, loading and error states are not defined.
+### The drawer
+
+- The "Detail" button of a product card opens a side drawer ([`ProductDetailDrawer`](../../src/pages/HomePage/components/ProductDetailDrawer/ProductDetailDrawer.tsx)). The drawer is a `<dialog>` (via `Drawer` and `Dialog`), so it is announced as a dialog, traps the focus, and closes with Esc, a click on the overlay or the close button (X).
+- On close, the focus goes back to the "Detail" button that opened it. The page gives the drawer a new `key` on every open, so it mounts again each time.
+- The title is the product name and the subtitle is the brand. The subtitle also describes the dialog for screen readers (`aria-describedby`). Until the product is loaded, and when it fails, the title is "Product detail".
+- The body is a description list with Category (Skincare or Makeup), Status (New, Used or Finished) and Note. A missing note shows "No note" in a muted style, with no empty value. Long text wraps.
+- The footer has the "Update" and "Delete" buttons, shown only once the product is loaded. Both are **disabled**: updating and deleting from the drawer have their own issue.
+- There is no Cancel button, so on a phone the close button (X) stays visible (`showCloseOnMobile`). In the add product drawer it is hidden on phones, where the form has its own Cancel.
+- Opening another product shows the newly selected one. The selected id lives in the state of the home page (`selectedProductId`), not in the URL.
+- The user text (name, brand, note) is rendered as text by React.
+
+### States
+
+- Loading: a `ContentState` with a loader and "Loading product…". If the product is already in the cache (for example it was opened before), it is shown at once while it is asked again.
+- Not found: a red `ContentState` "Product not found" with "It may no longer be available.", and no "Try again". It is shown for `404` and for `403`, so the screen never tells whether an id exists or why it cannot be read.
+- Error (network, server, `429`, a body that is not a product): a red `ContentState` "We couldn’t load the product" with "Please check your connection and try again." and a "Try again" button that repeats the request. A failed request hides the cached product, so a product removed from another tab is not kept on screen.
+- The request is retried once automatically before the error is shown. A `401` and a not found are not retried; a `401` ends the session (see [Session expiry](session-expiry.md)).
+- The product is asked again every time the drawer opens. It is not asked again on window focus or on reconnect.
+
+### API contract
+
+The client calls `GET /api/products/:id` with the id encoded in the path (`getProduct` in [`src/lib/productsApi.ts`](../../src/lib/productsApi.ts)). It accepts a `200` whose `product` has the list fields and a `note` that is a string or `null`; any other body is a failure. Details of the endpoint are in [`docs/api/products-detail.md`](../api/products-detail.md).
 
 ## Business rules
 
 - A user can only read their own products.
-- The `404` is the same for a missing product, a product of another user and an id that is not a uuid, so the answer never tells whether an id exists for someone else.
+- The `404` is the same for a missing product, a product of another user and an id that is not a uuid, so the answer never tells whether an id exists for someone else. The drawer shows the same "Product not found" for those and for a `403`.
 - A malformed id is answered without calling the database.
-- The product has `id`, `name`, `brand`, `category`, `status`, `note` (`null` when there is none) and `created_at`.
+- The product has `id`, `name`, `brand`, `category`, `status`, `note` (`null` when there is none) and `created_at`. The drawer shows name, brand, category, status and note.
+- The drawer is read-only: nothing can be changed from it yet.
 
 ## Data
 
-Reads one row of `products` by `id` ([migration](../../supabase/migrations/20260926094137_create_products.sql)); the primary key index serves the lookup.
+Reads one row of `products` by `id` ([migration](../../supabase/migrations/20260926094137_create_products.sql)); the primary key index serves the lookup. The drawer keeps the product in the React Query cache under `['products', 'detail', <id>]` ([`useProduct`](../../src/hooks/useProduct/useProduct.ts)), inside the `['products']` family that is invalidated when a product is added.
 
 ## Security and access
 
 - Runs as the caller, so the RLS select policy applies (`auth.uid() = user_id` and an `active` profile), see [`20261018120000_harden_profiles_security.sql`](../../supabase/migrations/20261018120000_harden_profiles_security.sql). The query filters `user_id` as well.
-- A `blocked` user gets `403` from `withAuth`.
-- Nothing is written.
+- A `blocked` user gets `403` from `withAuth`; the drawer shows it as "Product not found".
+- Nothing is written. "Update" and "Delete" are disabled.
 
 ## Tests
 
-- Unit tests: [`api/products/_routes/detail.test.ts`](../../api/products/_routes/detail.test.ts), [`shared/products.test.ts`](../../shared/products.test.ts)
+- Unit tests (API): [`api/products/_routes/detail.test.ts`](../../api/products/_routes/detail.test.ts), [`shared/products.test.ts`](../../shared/products.test.ts)
 - Wiring over HTTP: [`api/products/_app.test.ts`](../../api/products/_app.test.ts)
-- E2E tests: None (no UI yet)
+- Unit tests (UI):
+  - [`src/pages/HomePage/components/ProductDetailDrawer/ProductDetailDrawer.test.tsx`](../../src/pages/HomePage/components/ProductDetailDrawer/ProductDetailDrawer.test.tsx)
+  - [`src/pages/HomePage/HomePage.test.tsx`](../../src/pages/HomePage/HomePage.test.tsx)
+  - [`src/hooks/useProduct/useProduct.test.tsx`](../../src/hooks/useProduct/useProduct.test.tsx)
+  - [`src/lib/productsApi.test.ts`](../../src/lib/productsApi.test.ts)
+  - [`src/components/Drawer/Drawer.test.tsx`](../../src/components/Drawer/Drawer.test.tsx) (`subtitle`, `footer`, `showCloseOnMobile`)
+  - [`src/components/Dialog/Dialog.test.tsx`](../../src/components/Dialog/Dialog.test.tsx)
+- E2E tests: [`e2e/product-detail.spec.ts`](../../e2e/product-detail.spec.ts) (open, Esc and focus back, close button, retry after a server error, not found without retry, close button on a phone)
 
 ## Open decisions
 
-- None
+- Update and Delete: the buttons are shown but disabled; they come with a separate issue.
+- The issue says the selected product "lives only in the store", but the code keeps `selectedProductId` in the `useState` of `HomePage`. Confirm whether it must move to a Zustand store.
+- Figma frame "product-detail": the docs could not check the code against the design; the design needs to confirm the layout and the "No note" text.
 
 ## Changelog
 
-| Date       | Change                 | PR  |
-| ---------- | ---------------------- | --- |
-| 2026-11-01 | Initial implementation | TBD |
+| Date       | Change                                                 | PR  |
+| ---------- | ------------------------------------------------------ | --- |
+| 2026-11-01 | Initial implementation (backend)                       | TBD |
+| 2026-11-02 | Read-only detail drawer on the home page, `useProduct` | TBD |
