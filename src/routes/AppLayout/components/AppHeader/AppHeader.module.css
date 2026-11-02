@@ -1,6 +1,10 @@
-/* Mobile first. From 768px the desktop design applies. */
+/* Mobile first. From 768px (tablet) the larger design applies. */
 
 .header {
+  /* Stays on top while the page scrolls. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;

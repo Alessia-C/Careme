@@ -51,27 +51,6 @@
   }
 }
 
-.loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-  align-items: center;
-  padding: var(--space-48) var(--space-24);
-}
-
-.loadingText {
-  margin: 0;
-  font: var(--text-body);
-  color: var(--color-grey-600);
-}
-
-.error {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-  align-items: flex-start;
-}
-
 .moreError {
   margin-top: var(--space-16);
 }

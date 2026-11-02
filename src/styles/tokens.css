@@ -4,6 +4,13 @@
  * di testo della pagina Typography usano Open Sans: vale quest'ultimo.
  */
 
+/*
+ * Breakpoints (mobile first). CSS cannot read a variable inside @media, so
+ * every @media (min-width: ...) in the CSS Modules repeats these values:
+ *   tablet  = 768px
+ *   desktop = 1024px
+ */
+
 :root {
   --primary-color: var(--color-primary-800);
   --secondary-color: var(--color-primary-600);

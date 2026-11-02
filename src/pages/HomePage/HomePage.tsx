@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Button from '../../components/Button/Button';
+import ContentState from '../../components/ContentState/ContentState';
 import Feedback from '../../components/Feedback/Feedback';
-import Loader from '../../components/Loader/Loader';
 import plusIcon from '../../assets/icons/plus.svg';
 import { useProducts } from '../../hooks/useProducts/useProducts';
-import EmptyState from './components/EmptyState/EmptyState';
 import AddProductDrawer from './components/AddProductDrawer/AddProductDrawer';
 import ProductList from './components/ProductList/ProductList';
 import ProductSearch from './components/ProductSearch/ProductSearch';
@@ -81,10 +80,11 @@ function HomePage() {
     refetch,
   } = useProducts(search);
 
-  const openDrawer = () => {
+  const openDrawer = useCallback(() => {
     setDrawerKey((key) => key + 1);
     setIsDrawerOpen(true);
-  };
+  }, []);
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
 
   const view = getView({
     isPending,
@@ -123,27 +123,23 @@ function HomePage() {
       )}
 
       {view === 'loading' && (
-        <div className={styles.loading} role="status">
-          <Loader />
-          <p className={styles.loadingText}>Loading products…</p>
-        </div>
+        <ContentState status="loading" title="Loading products…" />
       )}
 
       {view === 'error' && (
-        <div className={styles.error}>
-          <Feedback
-            status="error"
-            title="We couldn’t load your products"
-            description="Please check your connection and try again."
-          />
+        <ContentState
+          status="error"
+          title="We couldn’t load your products"
+          text="Please check your connection and try again."
+        >
           <div className={styles.action}>
             <Button label="Try again" onClick={() => void refetch()} />
           </div>
-        </div>
+        </ContentState>
       )}
 
       {view === 'first-access' && (
-        <EmptyState
+        <ContentState
           title="Add your product"
           text="Start by adding your first product to manage your catalog"
           icon={
@@ -155,11 +151,11 @@ function HomePage() {
           <div className={styles.action}>
             <Button label="Add product" onClick={openDrawer} />
           </div>
-        </EmptyState>
+        </ContentState>
       )}
 
       {view === 'no-results' && (
-        <EmptyState
+        <ContentState
           title="No product found"
           text="Try a different name or brand"
         />
@@ -198,7 +194,7 @@ function HomePage() {
       <AddProductDrawer
         key={drawerKey}
         open={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={closeDrawer}
       />
     </div>
   );

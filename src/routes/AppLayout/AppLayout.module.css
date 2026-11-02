@@ -2,7 +2,8 @@
   position: absolute;
   top: var(--space-8);
   left: var(--space-8);
-  z-index: 1;
+  /* Above the sticky header (z-index 2) when it takes the focus. */
+  z-index: 3;
   padding: var(--space-8) var(--space-12);
   border-radius: var(--radius-md);
   background: var(--color-white-100);
