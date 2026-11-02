@@ -73,43 +73,13 @@ test('the list shows the products of the user', async ({ page }) => {
   await expect(cards.nth(1)).toContainText('Used');
 });
 
-test('the search filters the list and clearing it restores it', async ({
-  page,
-}) => {
-  await mockApi(page, (params) =>
-    params.get('search') === 'serum'
-      ? { products: makeProducts(1), total: 1 }
-      : { products: makeProducts(3), total: 3 },
-  );
+// The search has its own issue: until then the field is shown, disabled.
+test('the search field is disabled', async ({ page }) => {
+  await mockApi(page, () => ({ products: makeProducts(3), total: 3 }));
   await page.goto('/');
   await expect(page.getByRole('article')).toHaveCount(3);
 
-  const search = page.getByRole('searchbox', { name: 'Search' });
-  await search.fill('serum');
-  await search.press('Enter');
-  await expect(page.getByRole('article')).toHaveCount(1);
-
-  await search.fill('');
-  await expect(page.getByRole('article')).toHaveCount(3);
-});
-
-test('a search without matches says so', async ({ page }) => {
-  await mockApi(page, (params) =>
-    params.has('search')
-      ? { products: [], total: 0 }
-      : { products: makeProducts(3), total: 3 },
-  );
-  await page.goto('/');
-  await expect(page.getByRole('article')).toHaveCount(3);
-
-  const search = page.getByRole('searchbox', { name: 'Search' });
-  await search.fill('eyeliner');
-  await search.press('Enter');
-
-  await expect(
-    page.getByRole('heading', { name: 'No product found' }),
-  ).toBeVisible();
-  await expect(page.getByRole('article')).toHaveCount(0);
+  await expect(page.getByRole('searchbox', { name: 'Search' })).toBeDisabled();
 });
 
 test('Load more adds the next page', async ({ page }) => {

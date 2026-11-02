@@ -17,17 +17,32 @@ interface SearchInputProps extends Omit<
 const SearchInput = ({
   helperText = 'Type and press Enter to search',
   status = 'default',
+  disabled,
   ...rest
 }: SearchInputProps) => {
   const id = useId();
 
   return (
-    <FormField id={id} status={status} helper={helperText}>
+    <FormField
+      id={id}
+      status={status}
+      disabled={disabled}
+      // An error appears after the user presses Enter, while the focus stays
+      // on the input: the alert announces it at once.
+      helper={
+        status === 'error' && helperText ? (
+          <span role="alert">{helperText}</span>
+        ) : (
+          helperText
+        )
+      }
+    >
       <img src={searchIcon} alt="" className={styles.icon} />
       <input
         placeholder="Search..."
         {...rest}
         id={id}
+        disabled={disabled}
         type="search"
         aria-label="Search"
         className={fieldStyles.control}
