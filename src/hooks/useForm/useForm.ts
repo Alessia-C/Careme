@@ -30,22 +30,23 @@ export function useForm<Name extends string>(
 ) {
   const names = Object.keys(rules) as Name[];
 
+  // Object.fromEntries types its keys as string: the keys here are the names
+  // of the rules, so the result has exactly the shape the cast says.
   const buildValues = (from: Partial<Record<Name, string>>) =>
     Object.fromEntries(names.map((name) => [name, from[name] ?? ''])) as Record<
       Name,
       string
     >;
+  const buildTouched = () =>
+    Object.fromEntries(names.map((name) => [name, false])) as Record<
+      Name,
+      boolean
+    >;
 
   const [values, setValues] = useState(() => buildValues(initialValues));
   // What "unchanged" means: the initial values, or the ones of the last reset.
   const [baseline, setBaseline] = useState(values);
-  const [touched, setTouched] = useState(
-    () =>
-      Object.fromEntries(names.map((name) => [name, false])) as Record<
-        Name,
-        boolean
-      >,
-  );
+  const [touched, setTouched] = useState(buildTouched);
 
   const isFieldValid = (name: Name) =>
     rules[name].validate(values[name], values);
@@ -62,12 +63,7 @@ export function useForm<Name extends string>(
     const nextValues = nextInitial ? buildValues(nextInitial) : baseline;
     setValues(nextValues);
     setBaseline(nextValues);
-    setTouched(
-      Object.fromEntries(names.map((name) => [name, false])) as Record<
-        Name,
-        boolean
-      >,
-    );
+    setTouched(buildTouched());
   };
 
   const field = (name: Name): FieldBinding => {

@@ -19,7 +19,11 @@ export function useUnsavedChangesGuard(isActive: boolean) {
   useEffect(() => {
     if (!isActive) return;
 
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Some browsers (Safari) only warn when returnValue is set too.
+      event.returnValue = '';
+    };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [isActive]);

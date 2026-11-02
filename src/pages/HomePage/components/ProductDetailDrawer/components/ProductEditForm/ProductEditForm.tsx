@@ -9,6 +9,7 @@ interface ProductEditFormProps {
   nameRef?: Ref<HTMLInputElement>;
   onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
   onCancel: () => void;
+  // Only for what the user must fix: while sending the button stays focusable.
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   feedback?: ReactNode;
@@ -30,6 +31,7 @@ const ProductEditForm = ({
     onCancel={onCancel}
     submitLabel={isSubmitting ? 'Saving…' : 'Save Changes'}
     isSubmitDisabled={isSubmitDisabled}
+    isSubmitting={isSubmitting}
     isCancelDisabled={isSubmitting}
     feedback={feedback}
   >

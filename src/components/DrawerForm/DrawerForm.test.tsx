@@ -51,6 +51,23 @@ describe('DrawerForm', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
+  it('marks the submit button as disabled while sending, without disabling it', () => {
+    render(
+      <DrawerForm
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        submitLabel="Saving…"
+        isSubmitDisabled={false}
+        isSubmitting
+      >
+        <input aria-label="Name" />
+      </DrawerForm>,
+    );
+    const button = screen.getByRole('button', { name: 'Saving…' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toBeEnabled();
+  });
+
   it('can disable Cancel while the form is being sent', () => {
     renderForm({ isCancelDisabled: true });
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();

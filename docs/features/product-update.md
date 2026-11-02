@@ -29,13 +29,13 @@ Lets a logged-in user edit one of their own products from the [product detail](p
 
 1. The button changes to its sending state and is disabled; "Cancel" is disabled too.
 2. The app sends `PUT /api/products/:id` with the five fields (`updateProduct` in [`src/lib/productsApi.ts`](../../src/lib/productsApi.ts)). `name`, `brand` and `note` are trimmed by the API.
-3. On success the drawer goes back to view mode: the title, the subtitle and the fields show the updated product, a closable success `Feedback` "Product updated successfully" is shown, the focus goes to "Update", and a visually hidden live region says "<name>, <brand>, updated".
+3. On success the drawer goes back to view mode: the title, the subtitle and the fields show the updated product, a success `Feedback` "Product updated successfully" with no close button is shown, and the focus goes to "Update". The `Feedback` is the only message that speaks: the hidden live region of the drawer says "<name>, <brand>, loaded" once, when the product is first there, and does not repeat it.
 4. The updated product is written in the detail cache (`['products', 'detail', <id>]`), after cancelling a detail request still in flight so an old answer cannot overwrite it. Only the list queries (`['products', 'list']`) are invalidated, so the list shows the new name, brand and the rest of the product.
 
 ### Errors
 
 - Server error, network error or a body that is not a product: a red `Feedback` "Server Error" with "Something went wrong — We couldn’t save your product. Please try again." The typed values are kept and the user can press "Save Changes" again.
-- `404` (the product no longer exists) and `403` (blocked user): the same "Server Error" message, so the form never tells why the save failed. On a `404` the `['products']` queries are invalidated, so the detail is asked again and the drawer then shows "Product not found".
+- `404` (the product no longer exists) and `403` (blocked user): the same "Server Error" message, so the form never tells why the save failed. On a `404` the `['products']` queries are invalidated, so the detail is asked again. While the form is open it stays (a failed detail request does not take the typed values away); once the edit ends the drawer shows "Product not found".
 - `429`: a red `Feedback` "Too many attempts" with "Please wait a moment and try again."
 - `401`: the user is sent to `/login` (see [Session expiry](session-expiry.md)).
 - A new attempt clears the previous error.
@@ -67,6 +67,7 @@ A change is any difference from the loaded product **after trimming** (`useForm.
 - Sending the current values again is not an error: the answer is `200`.
 - There is no duplicate check: a name and brand equal to another product are accepted.
 - Concurrent edits from two sessions: the last write wins, with no conflict resolution.
+- The form starts from the product in the cache at the moment "Update" is pressed. If a request for the detail is still in flight and brings newer values, the form does not take them, and saving replaces every field with what the form holds: the last write wins here too. A product that was just opened from a stale cache is the usual case.
 - The product in the response has `id`, `name`, `brand`, `category`, `status`, `note` (`null` when there is none) and `created_at`. There is no `updated_at` column.
 
 ## Data

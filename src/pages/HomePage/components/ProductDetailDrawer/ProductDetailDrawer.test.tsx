@@ -411,7 +411,7 @@ describe('ProductDetailDrawer: update', () => {
     expect(JSON.parse(String(putCalls(fetchMock)[0][1]?.body)).note).toBe('');
   });
 
-  it('puts the focus on Update after saving and announces it', async () => {
+  it('puts the focus on Update after saving, and says it once', async () => {
     mockApi();
     const user = userEvent.setup();
     renderDrawer();
@@ -419,30 +419,47 @@ describe('ProductDetailDrawer: update', () => {
 
     await user.click(saveButton());
 
+    // The success message is the only one that speaks: the region of the
+    // product does not say "loaded" again, nor "updated".
     await screen.findByText('Product updated successfully');
     expect(screen.getByRole('button', { name: 'Update' })).toHaveFocus();
-    expect(
-      screen
-        .getAllByRole('status')
-        .some((status) => status.textContent === 'Eye Palette, MAC, updated'),
-    ).toBe(true);
+    const spoken = screen
+      .getAllByRole('status')
+      .map((status) => status.textContent)
+      .filter(Boolean);
+    expect(spoken.sort()).toEqual([
+      'Eye Palette, MAC, loaded',
+      'Product updated successfully',
+    ]);
   });
 
-  it('closes the success message, and does not show it again in the next edit', async () => {
+  it('does not say the product is loaded again when the edit ends', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+    const hidden = screen
+      .getAllByRole('status')
+      .find((status) => /loaded$/.test(status.textContent ?? ''));
+    expect(hidden).toHaveTextContent('Eye Palette, MAC, loaded');
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(hidden).toHaveTextContent('Eye Palette, MAC, loaded');
+  });
+
+  it('shows the success message with no way to close it, and not again in the next edit', async () => {
     mockApi();
     const user = userEvent.setup();
     renderDrawer();
     await startEdit(user);
     await user.click(saveButton());
-    await screen.findByText('Product updated successfully');
 
-    await user.click(screen.getByRole('button', { name: 'Close message' }));
+    await screen.findByText('Product updated successfully');
+    expect(screen.queryByRole('button', { name: 'Close message' })).toBeNull();
+
+    await startEdit(user);
     expect(screen.queryByText('Product updated successfully')).toBeNull();
-
-    await startEdit(user);
-    await user.click(saveButton());
-    await screen.findByText('Product updated successfully');
-    await startEdit(user);
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByText('Product updated successfully')).toBeNull();
   });
@@ -569,7 +586,7 @@ describe('ProductDetailDrawer: update', () => {
     expect(screen.getByLabelText('Name*')).toHaveValue('Lip Gloss');
   });
 
-  it('cannot be cancelled while it is saving', async () => {
+  it('cannot be cancelled while it is saving, and keeps the focus on Save', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((_url: string, init?: RequestInit) =>
@@ -584,8 +601,60 @@ describe('ProductDetailDrawer: update', () => {
 
     await user.click(saveButton());
 
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    const saving = screen.getByRole('button', { name: 'Saving…' });
+    expect(saving).toHaveAttribute('aria-disabled', 'true');
+    expect(saving).toHaveFocus();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  });
+
+  it('sends only one request when Save is pressed twice while saving', async () => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+      init?.method === 'PUT'
+        ? new Promise<Response>(() => undefined)
+        : Promise.resolve(jsonResponse({ product })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    await user.click(saveButton());
+    await user.click(screen.getByRole('button', { name: 'Saving…' }));
+
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT'),
+    ).toHaveLength(1);
+  });
+
+  it('keeps the form when the product fails to load again while editing', async () => {
+    let fail = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          fail
+            ? new Response(null, { status: 500 })
+            : jsonResponse({ product }),
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    const { queryClient, onClose } = renderDrawer();
+    await startEdit(user);
+    await retype(user, 'Name*', 'Lip Gloss');
+
+    fail = true;
+    await act(() =>
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail', 'p1'] }),
+    );
+
+    expect(screen.getByLabelText('Name*')).toHaveValue('Lip Gloss');
+    expect(screen.queryByText('We couldn’t load the product')).toBeNull();
+
+    // What was typed is still protected.
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(confirmModal()).not.toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   describe('leaving with changes', () => {

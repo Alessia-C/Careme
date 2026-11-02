@@ -102,6 +102,7 @@ describe('useForm', () => {
     act(() => result.current.field('confirm').onChange(changeEvent('abc')));
     expect(result.current.isValid).toBe(true);
   });
+
   describe('isDirty', () => {
     it('is false until a value differs from the initial one', () => {
       const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));

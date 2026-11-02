@@ -82,6 +82,11 @@ describe('Modal', () => {
     expect(props.onConfirm).not.toHaveBeenCalled();
   });
 
+  it('focuses the confirm button when focusConfirm is set', () => {
+    renderModal({ focusConfirm: true });
+    expect(screen.getByRole('button', { name: 'Remove' })).toHaveFocus();
+  });
+
   it('sends Esc to onDismiss when it is given, not to onCancel', () => {
     const onDismiss = vi.fn();
     const props = renderModal({ onDismiss });

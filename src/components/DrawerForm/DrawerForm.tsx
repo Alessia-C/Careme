@@ -7,6 +7,10 @@ interface DrawerFormProps {
   onCancel: () => void;
   submitLabel: string;
   isSubmitDisabled: boolean;
+  // Sending: the submit button says so to assistive technology but is not
+  // disabled, because a disabled button loses the focus the user has on it.
+  // The caller ignores a second submit.
+  isSubmitting?: boolean;
   // While the form is being sent, leaving it would hide the answer.
   isCancelDisabled?: boolean;
   // Messages (warnings, errors) shown under the fields.
@@ -22,6 +26,7 @@ const DrawerForm = ({
   onCancel,
   submitLabel,
   isSubmitDisabled,
+  isSubmitting = false,
   isCancelDisabled = false,
   feedback,
   children,
@@ -32,7 +37,12 @@ const DrawerForm = ({
       {feedback}
     </div>
     <div className={styles.actions}>
-      <Button type="submit" label={submitLabel} disabled={isSubmitDisabled} />
+      <Button
+        type="submit"
+        label={submitLabel}
+        disabled={isSubmitDisabled}
+        aria-disabled={isSubmitting || undefined}
+      />
       <Button
         label="Cancel"
         variant="secondary"

@@ -61,6 +61,9 @@ const Dialog = ({
 
     if (open && !dialog.open) {
       dialog.showModal();
+      // React's autoFocus runs while the dialog is still closed, where it has
+      // no effect: a safer first choice is asked for with this marker.
+      dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus();
     } else if (!open && dialog.open) {
       closingFromProp.current = true;
       dialog.close();

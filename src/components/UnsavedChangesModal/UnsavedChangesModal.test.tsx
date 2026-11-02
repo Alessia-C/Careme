@@ -26,6 +26,13 @@ describe('UnsavedChangesModal', () => {
     );
   });
 
+  it('has the focus on Continue editing, not on Discard', () => {
+    renderModal();
+    expect(
+      screen.getByRole('button', { name: 'Continue editing' }),
+    ).toHaveFocus();
+  });
+
   it('discards from Discard', () => {
     const { onDiscard, onContinue } = renderModal();
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }));

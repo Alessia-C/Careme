@@ -98,6 +98,17 @@ describe('Dialog', () => {
     expect(getDialog()).toHaveAttribute('open');
   });
 
+  it('moves the focus to the element marked data-autofocus when it opens', () => {
+    render(
+      <Dialog open title="Remove product" onClose={vi.fn()}>
+        <button>First</button>
+        <button data-autofocus>Safe choice</button>
+      </Dialog>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Safe choice' })).toHaveFocus();
+  });
+
   it('opens again if the browser closes it while open is still true', () => {
     const { rerender } = render(dialogElement({ open: true }));
 

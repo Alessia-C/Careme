@@ -46,8 +46,10 @@ describe('ProductEditForm', () => {
   });
 
   it('says it is saving, and cannot be cancelled meanwhile', () => {
-    renderForm({ isSubmitting: true, isSubmitDisabled: true });
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    renderForm({ isSubmitting: true });
+    const saving = screen.getByRole('button', { name: 'Saving…' });
+    expect(saving).toHaveAttribute('aria-disabled', 'true');
+    expect(saving).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
   });
 });

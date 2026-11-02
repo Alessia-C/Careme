@@ -76,21 +76,23 @@ const ProductDetailDrawer = ({
   const { product, isPending, isError, isNotFound, refetch } = useProduct(
     selected?.id ?? null,
   );
-  // A failed request wins over the cached product: if it was removed from
-  // another tab, the drawer must not keep showing it.
-  const loaded = isError ? undefined : product;
-  // The loaded product is the newest, if its name or brand changed elsewhere.
-  const shown = loaded ?? selected;
   const contentRef = useRef<HTMLDivElement>(null);
   const updateButtonRef = useRef<HTMLButtonElement>(null);
-  // Set when the edit ends, to move the focus once the button is back.
-  const focusUpdateButton = useRef(false);
 
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [isUpdated, setIsUpdated] = useState(false);
   const [leaveRequest, setLeaveRequest] = useState<LeaveRequest | null>(null);
   // Without the product there is nothing to edit, even if the form is open.
-  const isEditing = mode === 'edit' && Boolean(loaded);
+  const isEditing = mode === 'edit' && product !== undefined;
+  // A failed request wins over the cached product: if it was removed from
+  // another tab, the drawer must not keep showing it. Except while editing:
+  // a refetch that fails must not take the form, and what was typed in it,
+  // away. Saving tells the user if the product is gone.
+  const loaded = isError && !isEditing ? undefined : product;
+  // The loaded product is the newest, if its name or brand changed elsewhere.
+  const shown = loaded ?? selected;
+
+  const endEdit = () => setMode('view');
 
   const { values, isValid, isDirty, reset, field } =
     useForm(PRODUCT_FORM_RULES);
@@ -107,6 +109,8 @@ const ProductDetailDrawer = ({
         return { ok: false, reason: 'failed' };
       }
       const result = await updateProduct(loaded.id, input);
+      // The product is gone: the lists and the detail are asked again, and
+      // once the edit ends the drawer says it is not available.
       if (!result.ok && result.reason === 'not-found') {
         void queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
       }
@@ -122,17 +126,13 @@ const ProductDetailDrawer = ({
 
   // The button the user pressed is gone when the form closes, and the focus
   // would fall to the dialog: it goes to the button that took its place.
+  const previousMode = useRef(mode);
   useEffect(() => {
-    if (mode === 'view' && focusUpdateButton.current) {
-      focusUpdateButton.current = false;
+    if (previousMode.current === 'edit' && mode === 'view') {
       updateButtonRef.current?.focus();
     }
+    previousMode.current = mode;
   }, [mode]);
-
-  function endEdit() {
-    focusUpdateButton.current = true;
-    setMode('view');
-  }
 
   const startEdit = () => {
     if (!loaded) return;
@@ -167,12 +167,12 @@ const ProductDetailDrawer = ({
   };
 
   const discardChanges = () => {
+    const request = leaveRequest;
+    setLeaveRequest(null);
     if (guard.isBlocked) {
       guard.proceed();
       return;
     }
-    const request = leaveRequest;
-    setLeaveRequest(null);
     endEdit();
     if (request === 'close') onClose();
   };
@@ -185,11 +185,7 @@ const ProductDetailDrawer = ({
   };
 
   const updateFeedback = isUpdated && (
-    <Feedback
-      status="success"
-      title="Product updated successfully"
-      onClose={() => setIsUpdated(false)}
-    />
+    <Feedback status="success" title="Product updated successfully" />
   );
 
   const hasValidationError = VALIDATED_FIELDS.some(
@@ -209,7 +205,19 @@ const ProductDetailDrawer = ({
   }
 
   let content;
-  if (isError) {
+  if (loaded && isEditing) {
+    content = (
+      <ProductEditForm
+        field={field}
+        nameRef={focusOnMount}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        isSubmitDisabled={!isValid}
+        isSubmitting={isSubmitting}
+        feedback={editFeedback}
+      />
+    );
+  } else if (isError) {
     content = isNotFound ? (
       <ContentState
         status="error"
@@ -225,30 +233,17 @@ const ProductDetailDrawer = ({
         <Button label="Try again" onClick={retry} size="large" fullWidth />
       </ContentState>
     );
-  } else if (loaded && isEditing) {
-    content = (
-      <ProductEditForm
-        field={field}
-        nameRef={focusOnMount}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        isSubmitDisabled={!isValid || isSubmitting}
-        isSubmitting={isSubmitting}
-        feedback={editFeedback}
-      />
-    );
   } else if (loaded) {
     content = <ProductDetailView product={loaded} feedback={updateFeedback} />;
   } else if (isPending) {
     content = <ContentState status="loading" title="Loading product…" />;
   }
 
-  let announcement = '';
-  if (loaded && !isEditing) {
-    announcement = `${loaded.name}, ${loaded.brand}, ${
-      isUpdated ? 'updated' : 'loaded'
-    }`;
-  }
+  // Said once, when the product is there. The text comes from the list item,
+  // which does not change while the drawer is open: leaving the edit or saving
+  // must not say "loaded" again, and the update has its own message.
+  const announcement =
+    loaded && selected ? `${selected.name}, ${selected.brand}, loaded` : '';
 
   return (
     <>
@@ -287,7 +282,7 @@ const ProductDetailDrawer = ({
         </div>
         {/* Always in the drawer, and only its text changes: the loader and
             the error say themselves what they are, but the product appears
-            (or is updated) without a word to a screen reader. */}
+            without a word to a screen reader. */}
         <VisuallyHiddenStatus>{announcement}</VisuallyHiddenStatus>
       </Drawer>
       <UnsavedChangesModal

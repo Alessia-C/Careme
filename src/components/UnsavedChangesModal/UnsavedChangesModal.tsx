@@ -7,7 +7,7 @@ interface UnsavedChangesModalProps {
 }
 
 // Asks before leaving a form with changes that would be lost. Staying is the
-// safe answer, so it is the main button and also what Esc does.
+// safe answer, so it is the main button, has the focus and is what Esc does.
 const UnsavedChangesModal = ({
   open,
   onDiscard,
@@ -21,6 +21,7 @@ const UnsavedChangesModal = ({
     cancelLabel="Discard"
     onConfirm={onContinue}
     onCancel={onDiscard}
+    focusConfirm
     onDismiss={onContinue}
   />
 );
