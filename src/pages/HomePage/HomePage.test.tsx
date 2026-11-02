@@ -400,7 +400,7 @@ describe('HomePage: product detail', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Serum' }),
     ).toHaveAccessibleDescription('Cerave');
-    expect(screen.getByText('Note of p2')).toBeInTheDocument();
+    expect(await screen.findByText('Note of p2')).toBeInTheDocument();
   });
 
   it('closes the detail from the close button', async () => {
@@ -432,7 +432,7 @@ describe('HomePage: product detail', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Serum' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Note of p2')).toBeInTheDocument();
+    expect(await screen.findByText('Note of p2')).toBeInTheDocument();
   });
 
   it('shows the product at once, without asking, when the detail opens again soon', async () => {

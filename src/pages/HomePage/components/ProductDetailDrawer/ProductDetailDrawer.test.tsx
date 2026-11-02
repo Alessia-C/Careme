@@ -81,8 +81,10 @@ describe('ProductDetailDrawer', () => {
     mockFetch(() => jsonResponse({ product }));
     renderDrawer();
 
-    const dialog = await screen.findByRole('dialog', { name: 'Eye Palette' });
-    expect(dialog).toHaveAccessibleDescription('MAC');
+    expect(await screen.findByText('Category')).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: 'Eye Palette' }),
+    ).toHaveAccessibleDescription('MAC');
     expect(screen.getByText('Category').nextElementSibling).toHaveTextContent(
       'Makeup',
     );
@@ -158,9 +160,7 @@ describe('ProductDetailDrawer', () => {
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
-    expect(
-      await screen.findByRole('dialog', { name: 'Eye Palette' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Category')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalled();
   });
 
@@ -182,7 +182,7 @@ describe('ProductDetailDrawer', () => {
     expect(document.activeElement).not.toBe(dialog);
     expect(document.activeElement?.tagName).not.toBe('BUTTON');
 
-    await screen.findByRole('dialog', { name: 'Eye Palette' });
+    await screen.findByText('Category');
   });
 
   it('announces the product when it is loaded, in a region that was already there', async () => {
@@ -193,7 +193,7 @@ describe('ProductDetailDrawer', () => {
       .find((status) => status.textContent === '');
     expect(region).toBeDefined();
 
-    await screen.findByRole('dialog', { name: 'Eye Palette' });
+    await screen.findByText('Category');
 
     expect(region).toHaveTextContent('Eye Palette, MAC, loaded');
   });
