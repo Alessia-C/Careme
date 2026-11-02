@@ -1,7 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// Fake API with a logged-in user and the products endpoint the drawer uses. It
-// records the body of every POST so a test can check what was sent.
+// Fake API with a logged-in user and the products endpoint the page and the
+// drawer use. It records the body of every POST so a test can check what was
+// sent.
 async function mockApi(page: Page) {
   const created: unknown[] = [];
 
@@ -18,6 +19,10 @@ async function mockApi(page: Page) {
   await page.route(
     (url) => url.pathname === '/api/products',
     (route) => {
+      // The page also asks for the list: a user with no products yet.
+      if (route.request().method() === 'GET') {
+        return route.fulfill({ status: 200, json: { products: [], total: 0 } });
+      }
       created.push(route.request().postDataJSON());
       return route.fulfill({
         status: 201,

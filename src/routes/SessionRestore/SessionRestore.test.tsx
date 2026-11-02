@@ -63,8 +63,11 @@ describe('SessionRestore', () => {
     renderAt('/');
     await screen.findByRole('button', { name: 'Logout' });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('/api/auth/me');
+    // The home page also asks for the products, which is not what is checked.
+    const meCalls = fetchMock.mock.calls.filter(
+      ([url]) => url === '/api/auth/me',
+    );
+    expect(meCalls).toHaveLength(1);
   });
 
   it('redirects to /login without any message when there is no session', async () => {

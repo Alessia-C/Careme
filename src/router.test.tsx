@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isAuthenticated } from './lib/auth';
 import useAuthStore from './stores/authStore';
 import { routes } from './router';
@@ -23,6 +23,16 @@ describe('routes', () => {
     vi.mocked(isAuthenticated).mockReturnValue(false);
     // The session restore has its own tests (SessionRestore.test.tsx).
     useAuthStore.setState({ restoreStatus: 'restored' });
+    // The home page asks for the list of products: an empty one shows its
+    // first access heading. Without the stub the request would leave the test.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(Response.json({ products: [], total: 0 }))),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('redirects to /login keeping the destination when unauthenticated', () => {
@@ -33,12 +43,12 @@ describe('routes', () => {
     expect(router.state.location.search).toBe('?next=%2F');
   });
 
-  it('renders the protected page when authenticated', () => {
+  it('renders the protected page when authenticated', async () => {
     vi.mocked(isAuthenticated).mockReturnValue(true);
     renderAt('/');
 
     expect(
-      screen.getByRole('heading', { name: 'Add your product' }),
+      await screen.findByRole('heading', { name: 'Add your product' }),
     ).toBeInTheDocument();
   });
 

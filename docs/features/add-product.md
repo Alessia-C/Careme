@@ -14,9 +14,9 @@ Lets a logged-in user add a product (name, brand, category, status, optional not
 
 ### The page
 
-- `/` shows the title "Your products" and, because the product list does not exist yet (MK-031), always the first-access empty state: an `EmptyState` with a plus icon, the title "Add your product", the text "Start by adding your first product to manage your catalog" and an "Add product" button.
+- `/` shows the title "Your products" and the [product list](product-list.md). When the user has no products and is not searching, it shows the first-access empty state instead: an `EmptyState` with a plus icon, the title "Add your product", the text "Start by adding your first product to manage your catalog" and an "Add product" button.
 - The button opens the "Add Product" drawer, a side panel built on the native `<dialog>`: `AddProductDrawer` provides the fields and the submit logic, `FormDrawer` the structure shared by form drawers (title, scrolling fields, messages, and the submit and Cancel buttons).
-- After a successful creation the drawer closes and the page stays on the empty state, since there is no list to show the new product yet.
+- After a successful creation the drawer closes and the list refreshes, so the new product appears (the first one replaces the empty state).
 
 ### The drawer
 
@@ -36,7 +36,7 @@ Lets a logged-in user add a product (name, brand, category, status, optional not
 
 1. The button changes to "Adding…" and is disabled while the request runs.
 2. The app sends `POST /api/products`.
-3. On success the `['products']` query is invalidated and the drawer closes.
+3. On success the `['products']` queries are invalidated, which refreshes the list, and the drawer closes.
 
 - The caller's id is never sent: the API takes it from the session.
 - If the user already has a product with the same name and brand it is created anyway: the response says `duplicate: true`, which this UI does not use yet (see Open decisions).
@@ -87,7 +87,6 @@ Reads and writes `products` only through the API (the frontend never talks to Su
 
 - Duplicate blocking: the Figma frame `add-product-validation-errors` blocks a product with the same name and brand (red Name and Brand, a warning, "Add Product" disabled until one changes). It is not part of this story: it will be handled in a new linked issue, after [#155](https://github.com/Alessia-C/Careme/issues/155) adds the `name` and `brand` filters to `GET /api/products`. Until then `POST /api/products` creates the duplicate and flags it.
 - Acceptance criteria of #66 that the design does not cover: the "add anyway" and "go update the existing one" options for a duplicate, and the "add another" option after success. They are not implemented; the product owner needs to confirm this.
-- The product list does not exist yet (MK-031): the criterion "the product list reflects the new entry" is met only through the `['products']` invalidation, which has no list to refresh for now.
 - Category and Status on phones: the mobile design shows the placeholders "Select category" and "Select status", while the desktop design shows Makeup and New already selected. The implementation keeps the defaults on both; the design needs to confirm.
 
 ## Changelog
@@ -95,3 +94,4 @@ Reads and writes `products` only through the API (the frontend never talks to Su
 | Date       | Change                                        | PR  |
 | ---------- | --------------------------------------------- | --- |
 | 2026-11-01 | Initial implementation (drawer, phone layout) | TBD |
+| 2026-11-01 | The list refreshes after a creation (#67)     | TBD |

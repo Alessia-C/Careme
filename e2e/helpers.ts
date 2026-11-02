@@ -10,3 +10,13 @@ export async function mockNoSession(page: Page) {
     }),
   );
 }
+
+// The home page asks GET /api/products as soon as it opens. For a spec that is
+// not about the list, an empty one keeps the page out of its loading state
+// (its role="status" would clash with the status messages the spec checks).
+export async function mockEmptyProducts(page: Page) {
+  await page.route(
+    (url) => url.pathname === '/api/products',
+    (route) => route.fulfill({ status: 200, json: { products: [], total: 0 } }),
+  );
+}

@@ -1,8 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
-import { mockNoSession } from './helpers';
+import { mockEmptyProducts, mockNoSession } from './helpers';
 
 async function mockApi(page: Page) {
   await mockNoSession(page);
+  await mockEmptyProducts(page);
   await page.route('**/api/auth/login', (route) =>
     route.fulfill({
       status: 200,

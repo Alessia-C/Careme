@@ -1,0 +1,115 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+  box-sizing: border-box;
+  height: 100%;
+  padding: var(--space-24);
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--radius-12);
+  background: var(--color-white-100);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.header {
+  display: flex;
+  gap: var(--space-12);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.heading {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.name {
+  margin: 0;
+  font: var(--text-h4);
+  color: var(--color-black-100);
+}
+
+.category {
+  margin: 0;
+  font: var(--text-body-small);
+  letter-spacing: var(--tracking-body-small);
+  color: var(--color-black-60);
+}
+
+/* Colors from the Figma badges. "New" has no token: it is its own green. */
+.badge {
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-12);
+  border-radius: 100px;
+  font: var(--text-label);
+  white-space: nowrap;
+
+  &[data-status='new'] {
+    background: #e0f5e5;
+    color: #268540;
+  }
+
+  &[data-status='used'] {
+    background: var(--color-grey-100);
+    color: var(--color-grey-600);
+  }
+
+  &[data-status='finished'] {
+    background: color-mix(in srgb, var(--color-primary-50) 70%, transparent);
+    color: var(--color-primary-900);
+  }
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: none;
+  background: var(--color-grey-300);
+}
+
+.brand {
+  display: flex;
+  gap: var(--space-12);
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.brandLabel {
+  font: var(--text-caption);
+  letter-spacing: var(--tracking-caption);
+  color: var(--color-black-60);
+}
+
+.brandValue {
+  min-width: 0;
+  margin: 0;
+  font: var(--text-body-small);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-body-small);
+  color: var(--color-black-100);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* Detail is twice as wide as Delete, as in the design. Button does not take
+   a className, so the width and the centred label are set on the buttons
+   inside this wrapper (same pattern as HomePage). */
+.actions {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-8);
+  margin-top: auto;
+
+  & button {
+    justify-content: center;
+    width: 100%;
+    padding: 10px;
+  }
+}
