@@ -1,0 +1,25 @@
+.header {
+  display: flex;
+  gap: var(--space-16);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font: var(--text-h3);
+  color: var(--color-black-100);
+}
+
+/* Button does not take a className, so the width and the centred label are
+   set on the button inside this wrapper (same pattern as LoginForm). */
+.action {
+  width: 218px;
+  max-width: 100%;
+
+  & button {
+    justify-content: center;
+    width: 100%;
+    padding: 10px;
+  }
+}

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import Button from '../../components/Button/Button';
 import ContentState from '../../components/ContentState/ContentState';
 import Feedback from '../../components/Feedback/Feedback';
+import PageHeader from '../../components/PageHeader/PageHeader';
 import plusIcon from '../../assets/icons/plus.svg';
 import { useProducts } from '../../hooks/useProducts/useProducts';
 import AddProductDrawer from './components/AddProductDrawer/AddProductDrawer';
@@ -101,15 +102,12 @@ function HomePage() {
   return (
     <div className={styles.page}>
       <title>Careme</title>
-      {showHeader ? (
-        <div className={styles.header}>
-          <h1 className={styles.pageTitle}>Your products</h1>
-          <div className={styles.action}>
-            <Button label="Add product" onClick={openDrawer} />
-          </div>
-        </div>
-      ) : (
-        <h1 className={styles.visuallyHidden}>Your products</h1>
+      {showHeader && (
+        <PageHeader
+          title="Your products"
+          actionLabel="Add product"
+          onAction={openDrawer}
+        />
       )}
 
       {/* Disabled until the search has its own issue: the field is in the design,

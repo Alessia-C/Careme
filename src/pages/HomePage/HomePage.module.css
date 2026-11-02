@@ -15,19 +15,6 @@
   white-space: nowrap;
 }
 
-.header {
-  display: flex;
-  gap: var(--space-16);
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pageTitle {
-  margin: 0;
-  font: var(--text-h3);
-  color: var(--color-black-100);
-}
-
 .icon {
   display: flex;
   align-items: center;
