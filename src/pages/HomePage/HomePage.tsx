@@ -7,6 +7,7 @@ import {
   getProductListView,
 } from '../../lib/productListView';
 import AddProductDrawer from './components/AddProductDrawer/AddProductDrawer';
+import ProductDetailDrawer from './components/ProductDetailDrawer/ProductDetailDrawer';
 import ProductListSection from './components/ProductListSection/ProductListSection';
 import ProductSearch from './components/ProductSearch/ProductSearch';
 import ProductsEmptyState from './components/ProductsEmptyState/ProductsEmptyState';
@@ -19,9 +20,15 @@ function HomePage() {
   // focus back to this button.
   const [drawerKey, setDrawerKey] = useState(0);
   const [search, setSearch] = useState('');
-  // The product detail drawer is a later issue: for now the Detail button only
-  // records which product was chosen.
-  const [, setSelectedProductId] = useState<string | null>(null);
+  // The id stays after the detail drawer closes, so its content does not
+  // vanish while it slides out. A new key remounts it on every open, which asks
+  // for the product again and gives the focus back to the Detail button on
+  // close, as for the Add product drawer.
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null,
+  );
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailKey, setDetailKey] = useState(0);
 
   const {
     products,
@@ -42,6 +49,15 @@ function HomePage() {
   }, []);
 
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+
+  // Stable, so the memoized product cards are not rendered again with the page.
+  const openDetail = useCallback((productId: string) => {
+    setSelectedProductId(productId);
+    setDetailKey((key) => key + 1);
+    setIsDetailOpen(true);
+  }, []);
+
+  const closeDetail = useCallback(() => setIsDetailOpen(false), []);
   // Stable, so the memoized empty state is not rendered again with the page.
   const retry = useCallback(() => void refetch(), [refetch]);
 
@@ -89,7 +105,7 @@ function HomePage() {
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
           isFetchNextPageError={isFetchNextPageError}
-          onDetail={setSelectedProductId}
+          onDetail={openDetail}
           onLoadMore={() => void fetchNextPage()}
         />
       ) : (
@@ -100,6 +116,13 @@ function HomePage() {
         key={drawerKey}
         open={isDrawerOpen}
         onClose={closeDrawer}
+      />
+      <ProductDetailDrawer
+        // Prefixed: both drawers count from 0, and sibling keys must differ.
+        key={`detail-${detailKey}`}
+        open={isDetailOpen}
+        productId={selectedProductId}
+        onClose={closeDetail}
       />
     </div>
   );

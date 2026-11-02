@@ -142,5 +142,68 @@ describe('Dialog', () => {
 
       expect(onClose).toHaveBeenCalledTimes(1);
     });
+
+    it('shows the subtitle and describes the dialog with it', () => {
+      render(
+        <Dialog
+          open
+          title="Eye Palette"
+          subtitle="MAC"
+          onClose={vi.fn()}
+          layout="side"
+        >
+          <p>Body text</p>
+        </Dialog>,
+      );
+
+      expect(screen.getByText('MAC')).toBeInTheDocument();
+      expect(getDialog()).toHaveAccessibleDescription('MAC');
+    });
+
+    it('prefers the description to the subtitle for describing the dialog', () => {
+      render(
+        <Dialog
+          open
+          title="Eye Palette"
+          subtitle="MAC"
+          description="Read only"
+          onClose={vi.fn()}
+          layout="side"
+        >
+          <p>Body text</p>
+        </Dialog>,
+      );
+
+      expect(getDialog()).toHaveAccessibleDescription('Read only');
+    });
+
+    it('ignores the subtitle in the default layout', () => {
+      render(
+        <Dialog open title="Remove product" subtitle="MAC" onClose={vi.fn()}>
+          <p>Body text</p>
+        </Dialog>,
+      );
+
+      expect(screen.queryByText('MAC')).not.toBeInTheDocument();
+    });
+
+    it('keeps the close button on phones only when asked to', () => {
+      const { rerender } = render(sideDialog());
+      const closeButton = () => screen.getByRole('button', { name: 'Close' });
+      expect(closeButton().className).not.toMatch(/closeOnMobile/);
+
+      rerender(
+        <Dialog
+          open
+          title="Add Product"
+          onClose={vi.fn()}
+          layout="side"
+          showCloseOnMobile
+        >
+          <p>Body text</p>
+        </Dialog>,
+      );
+      expect(closeButton().className).toMatch(/closeOnMobile/);
+    });
   });
 });

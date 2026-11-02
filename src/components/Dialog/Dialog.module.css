@@ -125,6 +125,27 @@ body:has(dialog[open]) {
   text-align: left;
 }
 
+.headings {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-grey-600);
+}
+
+/* With a subtitle the header is taller than the close button: the button
+   stays level with the title instead of the middle of both lines. */
+.headerTop {
+  align-items: flex-start;
+}
+
+.headerTop .close {
+  margin-block-start: var(--space-4);
+}
+
 /* 24px is the minimum target size (WCAG 2.5.8): base.css resets the padding,
    so the size is set here and the 14px icon is centered in it. */
 .close {
@@ -160,8 +181,9 @@ body:has(dialog[open]) {
 }
 
 /* Phones: the panel takes the whole width under the header, flat on the grey
-   page background, with a bigger title. There is no close button: the form has
-   its own Cancel, and nothing is left to tap outside the panel. */
+   page background, with a bigger title. There is no close button unless the
+   panel asks for it: a form has its own Cancel, and nothing is left to tap
+   outside the panel. */
 @media (max-width: 767px) {
   .side {
     width: 100%;
@@ -182,7 +204,7 @@ body:has(dialog[open]) {
     font: var(--text-h3);
   }
 
-  .side .close {
+  .side .close:not(.closeOnMobile) {
     display: none;
   }
 }

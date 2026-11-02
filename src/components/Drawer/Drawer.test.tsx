@@ -52,4 +52,43 @@ describe('Drawer', () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('shows the subtitle', () => {
+    render(
+      <Drawer open title="Eye Palette" subtitle="MAC" onClose={vi.fn()}>
+        <p>Body text</p>
+      </Drawer>,
+    );
+    expect(screen.getByText('MAC')).toBeInTheDocument();
+  });
+
+  it('shows the footer after the children', () => {
+    render(
+      <Drawer
+        open
+        title="Eye Palette"
+        onClose={vi.fn()}
+        footer={<button type="button">Update</button>}
+      >
+        <p>Body text</p>
+      </Drawer>,
+    );
+
+    const body = screen.getByText('Body text');
+    const footer = screen.getByRole('button', { name: 'Update' });
+    expect(
+      body.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('passes showCloseOnMobile to the close button', () => {
+    render(
+      <Drawer open title="Eye Palette" onClose={vi.fn()} showCloseOnMobile>
+        <p>Body text</p>
+      </Drawer>,
+    );
+    expect(screen.getByRole('button', { name: 'Close' }).className).toMatch(
+      /closeOnMobile/,
+    );
+  });
 });
