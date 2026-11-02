@@ -125,14 +125,12 @@ describe('AddProductDrawer', () => {
     expect(screen.getByLabelText('Name*')).toHaveAttribute('maxlength', '100');
     expect(screen.getByLabelText('Brand*')).toHaveAttribute('maxlength', '100');
 
+    expect(screen.getByLabelText('Note')).toHaveAttribute('maxlength', '500');
+
+    // A longer text pasted in is cut at the limit instead of being refused.
     await user.click(screen.getByLabelText('Note'));
     await user.paste('a'.repeat(501));
-    await user.tab();
-
-    expect(
-      screen.getByText('Note must be at most 500 characters'),
-    ).toBeInTheDocument();
-    expect(submitButton()).toBeDisabled();
+    expect(screen.getByLabelText('Note')).toHaveValue('a'.repeat(500));
   });
 
   it('creates the product and closes the drawer', async () => {

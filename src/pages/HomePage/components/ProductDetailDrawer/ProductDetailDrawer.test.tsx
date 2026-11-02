@@ -1,6 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProductListItem } from '../../../../lib/productsApi';
 import ProductDetailDrawer from './ProductDetailDrawer';
@@ -41,20 +48,33 @@ const mockFetch = (...responses: Array<() => Response>) => {
   return fetchMock;
 };
 
+// The drawer holds back a navigation while there are changes to lose, which
+// needs a data router.
 const renderDrawer = ({
   selected = selectedProduct,
   onClose = vi.fn(),
-}: { selected?: ProductListItem | null; onClose?: () => void } = {}) =>
-  render(
+}: { selected?: ProductListItem | null; onClose?: () => void } = {}) => {
+  const queryClient = new QueryClient({
     // No wait between the attempts, so a retry does not slow the test down.
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retryDelay: 0 } } })
-      }
-    >
-      <ProductDetailDrawer open selected={selected} onClose={onClose} />
+    defaultOptions: { queries: { retryDelay: 0 } },
+  });
+  const router = createMemoryRouter([
+    {
+      path: '/',
+      element: (
+        <ProductDetailDrawer open selected={selected} onClose={onClose} />
+      ),
+    },
+    { path: '/other', element: <p>Other page</p> },
+  ]);
+  const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+  return { onClose, invalidate, queryClient, router };
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -121,13 +141,11 @@ describe('ProductDetailDrawer', () => {
     );
   });
 
-  it('shows the Update and Delete buttons disabled', async () => {
+  it('shows Update enabled and Delete disabled', async () => {
     mockFetch(() => jsonResponse({ product }));
     renderDrawer();
 
-    expect(
-      await screen.findByRole('button', { name: 'Update' }),
-    ).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Update' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
   });
 
@@ -249,5 +267,512 @@ describe('ProductDetailDrawer', () => {
     expect(screen.getByRole('button', { name: 'Close' }).className).toMatch(
       /closeOnMobile/,
     );
+  });
+});
+
+describe('ProductDetailDrawer: update', () => {
+  const updatedProduct = { ...product, name: 'Lip Gloss', brand: 'Kiko' };
+
+  // Answers the GET of the detail with the product, and the PUT with what
+  // `update` returns.
+  const mockApi = (
+    update: () => Response = () => jsonResponse({ product }),
+  ) => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === 'PUT' ? update() : jsonResponse({ product }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  };
+
+  const putCalls = (fetchMock: ReturnType<typeof mockApi>) =>
+    fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT');
+
+  const startEdit = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(await screen.findByRole('button', { name: 'Update' }));
+  };
+
+  const saveButton = () => screen.getByRole('button', { name: 'Save Changes' });
+
+  const confirmModal = () =>
+    screen.queryByRole('alertdialog', { name: 'Unsaved changes' });
+
+  const retype = async (
+    user: ReturnType<typeof userEvent.setup>,
+    label: string,
+    text: string,
+  ) => {
+    const input = screen.getByLabelText(label);
+    await user.clear(input);
+    if (text) await user.type(input, text);
+  };
+
+  it('opens the form with the product, and no Delete', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    expect(
+      screen.getByRole('dialog', { name: 'Update Product' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Name*')).toHaveValue('Eye Palette');
+    expect(screen.getByLabelText('Brand*')).toHaveValue('MAC');
+    expect(screen.getByLabelText('Category*')).toHaveValue('makeup');
+    expect(screen.getByLabelText('Status*')).toHaveValue('new');
+    expect(screen.getByLabelText('Note')).toHaveValue(
+      'Warm Neutrals, best seller palette with warm tones',
+    );
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Update' })).toBeNull();
+    expect(saveButton()).toBeEnabled();
+  });
+
+  it('puts the focus on the name when the form opens', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    expect(screen.getByLabelText('Name*')).toHaveFocus();
+  });
+
+  it('shows an empty text for a product without a note', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(jsonResponse({ product: { ...product, note: null } })),
+      ),
+    );
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    expect(screen.getByLabelText('Note')).toHaveValue('');
+  });
+
+  it('saves every field, and goes back to the details of the updated product', async () => {
+    const fetchMock = mockApi(() =>
+      jsonResponse({
+        product: { ...updatedProduct, category: 'skincare', status: 'used' },
+      }),
+    );
+    const user = userEvent.setup();
+    const { invalidate, queryClient } = renderDrawer();
+    await startEdit(user);
+
+    await retype(user, 'Name*', 'Lip Gloss');
+    await retype(user, 'Brand*', 'Kiko');
+    await user.selectOptions(screen.getByLabelText('Category*'), 'skincare');
+    await user.selectOptions(screen.getByLabelText('Status*'), 'used');
+    await user.click(saveButton());
+
+    expect(
+      await screen.findByText('Product updated successfully'),
+    ).toBeInTheDocument();
+    const [url, init] = putCalls(fetchMock)[0];
+    expect(url).toBe('/api/products/p1');
+    expect(JSON.parse(String(init?.body))).toEqual({
+      name: 'Lip Gloss',
+      brand: 'Kiko',
+      category: 'skincare',
+      status: 'used',
+      note: 'Warm Neutrals, best seller palette with warm tones',
+    });
+    expect(
+      screen.getByRole('dialog', { name: 'Lip Gloss' }),
+    ).toHaveAccessibleDescription('Kiko');
+    expect(screen.getByText('Category').nextElementSibling).toHaveTextContent(
+      'Skincare',
+    );
+    expect(screen.getByText('Status').nextElementSibling).toHaveTextContent(
+      'Used',
+    );
+    expect(
+      queryClient.getQueryData(['products', 'detail', 'p1']),
+    ).toMatchObject({ name: 'Lip Gloss' });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['products', 'list'],
+    });
+  });
+
+  it('sends the note as an empty text when it is cleared', async () => {
+    const fetchMock = mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    await retype(user, 'Note', '');
+    await user.click(saveButton());
+
+    await screen.findByText('Product updated successfully');
+    expect(JSON.parse(String(putCalls(fetchMock)[0][1]?.body)).note).toBe('');
+  });
+
+  it('puts the focus on Update after saving and announces it', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    await user.click(saveButton());
+
+    await screen.findByText('Product updated successfully');
+    expect(screen.getByRole('button', { name: 'Update' })).toHaveFocus();
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((status) => status.textContent === 'Eye Palette, MAC, updated'),
+    ).toBe(true);
+  });
+
+  it('closes the success message, and does not show it again in the next edit', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+    await user.click(saveButton());
+    await screen.findByText('Product updated successfully');
+
+    await user.click(screen.getByRole('button', { name: 'Close message' }));
+    expect(screen.queryByText('Product updated successfully')).toBeNull();
+
+    await startEdit(user);
+    await user.click(saveButton());
+    await screen.findByText('Product updated successfully');
+    await startEdit(user);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText('Product updated successfully')).toBeNull();
+  });
+
+  it('asks for the name and blocks saving while it is empty', async () => {
+    const fetchMock = mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    await retype(user, 'Name*', '');
+    await user.tab();
+
+    expect(screen.getByText('Name is required')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Validation Error');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Please fix the errors',
+    );
+    expect(saveButton()).toBeDisabled();
+    expect(putCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it('does not accept a name of only spaces', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    await retype(user, 'Brand*', '   ');
+
+    expect(saveButton()).toBeDisabled();
+  });
+
+  it('shows a server error, keeping the form and what was typed', async () => {
+    mockApi(() => new Response(null, { status: 500 }));
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+    await retype(user, 'Name*', 'Lip Gloss');
+
+    await user.click(saveButton());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Server Error');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Something went wrong — We couldn’t save your product. Please try again.',
+    );
+    expect(screen.getByLabelText('Name*')).toHaveValue('Lip Gloss');
+    expect(saveButton()).toBeEnabled();
+  });
+
+  it('shows the rate limit', async () => {
+    mockApi(() => new Response(null, { status: 429 }));
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    await user.click(saveButton());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Too many attempts',
+    );
+  });
+
+  it('shows the same error for a product that is gone, and asks for the products again', async () => {
+    mockApi(() => new Response(null, { status: 404 }));
+    const user = userEvent.setup();
+    const { invalidate } = renderDrawer();
+    await startEdit(user);
+
+    await user.click(saveButton());
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['products'] }),
+    );
+  });
+
+  it('can be saved again after an error', async () => {
+    let fail = true;
+    mockApi(() =>
+      fail ? new Response(null, { status: 500 }) : jsonResponse({ product }),
+    );
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+    await user.click(saveButton());
+    await screen.findByRole('alert');
+
+    fail = false;
+    await user.click(saveButton());
+
+    expect(
+      await screen.findByText('Product updated successfully'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows no error from the last try when the form opens again', async () => {
+    let fail = true;
+    mockApi(() =>
+      fail ? new Response(null, { status: 500 }) : jsonResponse({ product }),
+    );
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+    await user.click(saveButton());
+    await screen.findByRole('alert');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    fail = false;
+    await startEdit(user);
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('does not close on a click outside, in the details or in the form', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    const { onClose } = renderDrawer();
+    await startEdit(user);
+    await retype(user, 'Name*', 'Lip Gloss');
+
+    fireEvent.click(screen.getByRole('dialog', { name: 'Update Product' }));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(confirmModal()).toBeNull();
+    expect(screen.getByLabelText('Name*')).toHaveValue('Lip Gloss');
+  });
+
+  it('cannot be cancelled while it is saving', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) =>
+        init?.method === 'PUT'
+          ? new Promise<Response>(() => undefined)
+          : Promise.resolve(jsonResponse({ product })),
+      ),
+    );
+    const user = userEvent.setup();
+    renderDrawer();
+    await startEdit(user);
+
+    await user.click(saveButton());
+
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  });
+
+  describe('leaving with changes', () => {
+    it('goes back to the details on Cancel when nothing changed', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      renderDrawer();
+      await startEdit(user);
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      expect(confirmModal()).toBeNull();
+      expect(screen.getByRole('button', { name: 'Update' })).toHaveFocus();
+    });
+
+    it('does not count the spaces around a value as a change', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      renderDrawer();
+      await startEdit(user);
+      await user.type(screen.getByLabelText('Name*'), '  ');
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      expect(confirmModal()).toBeNull();
+    });
+
+    it('asks first on Cancel when something changed', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      renderDrawer();
+      await startEdit(user);
+      await retype(user, 'Name*', 'Lip Gloss');
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      expect(confirmModal()).toHaveAccessibleDescription(
+        'You have unsaved changes. Are you sure you want to leave? Your changes will be lost.',
+      );
+      expect(screen.getByLabelText('Name*')).toHaveValue('Lip Gloss');
+    });
+
+    it('goes on editing from Continue editing', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      renderDrawer();
+      await startEdit(user);
+      await retype(user, 'Name*', 'Lip Gloss');
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await user.click(
+        screen.getByRole('button', { name: 'Continue editing' }),
+      );
+
+      expect(confirmModal()).toBeNull();
+      expect(screen.getByLabelText('Name*')).toHaveValue('Lip Gloss');
+    });
+
+    it('throws the changes away from Discard, and shows the product as it was', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      const { onClose } = renderDrawer();
+      await startEdit(user);
+      await retype(user, 'Name*', 'Lip Gloss');
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await user.click(screen.getByRole('button', { name: 'Discard' }));
+
+      expect(confirmModal()).toBeNull();
+      expect(
+        screen.getByRole('dialog', { name: 'Eye Palette' }),
+      ).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Update' })).toHaveFocus();
+
+      await startEdit(user);
+      expect(screen.getByLabelText('Name*')).toHaveValue('Eye Palette');
+    });
+
+    it('closes the drawer from the X when nothing changed', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      const { onClose } = renderDrawer();
+      await startEdit(user);
+
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+
+      expect(confirmModal()).toBeNull();
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks first on the X when something changed, and closes on Discard', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      const { onClose } = renderDrawer();
+      await startEdit(user);
+      await retype(user, 'Name*', 'Lip Gloss');
+
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+      expect(confirmModal()).not.toBeNull();
+      expect(onClose).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Discard' }));
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks first on Esc, without closing the drawer', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      const { onClose } = renderDrawer();
+      await startEdit(user);
+      await retype(user, 'Name*', 'Lip Gloss');
+
+      fireEvent(
+        screen.getByRole('dialog', { name: 'Update Product' }),
+        new Event('cancel', { cancelable: true }),
+      );
+
+      expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('dialog', { name: 'Update Product' }),
+      ).toHaveAttribute('open');
+    });
+
+    it('keeps editing on Esc in the question, without closing the drawer', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      const { onClose } = renderDrawer();
+      await startEdit(user);
+      await retype(user, 'Name*', 'Lip Gloss');
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      fireEvent(
+        screen.getByRole('alertdialog'),
+        new Event('cancel', { cancelable: true }),
+      );
+
+      await waitFor(() => expect(confirmModal()).toBeNull());
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Name*')).toHaveValue('Lip Gloss');
+    });
+
+    it('closes the drawer on Esc when there are no changes to lose', async () => {
+      mockApi();
+      const { onClose } = renderDrawer();
+
+      await screen.findByRole('button', { name: 'Update' });
+      fireEvent(
+        screen.getByRole('dialog', { name: 'Eye Palette' }),
+        new Event('cancel', { cancelable: true }),
+      );
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('holds a navigation until the user answers', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      const { router } = renderDrawer();
+      await startEdit(user);
+      await retype(user, 'Name*', 'Lip Gloss');
+
+      await act(() => router.navigate('/other'));
+      expect(confirmModal()).not.toBeNull();
+      expect(screen.queryByText('Other page')).toBeNull();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Continue editing' }),
+      );
+      expect(confirmModal()).toBeNull();
+      expect(router.state.location.pathname).toBe('/');
+
+      await act(() => router.navigate('/other'));
+      await user.click(screen.getByRole('button', { name: 'Discard' }));
+      expect(await screen.findByText('Other page')).toBeInTheDocument();
+    });
+
+    it('lets a navigation through when nothing changed', async () => {
+      mockApi();
+      const user = userEvent.setup();
+      const { router } = renderDrawer();
+      await startEdit(user);
+
+      await act(() => router.navigate('/other'));
+
+      expect(await screen.findByText('Other page')).toBeInTheDocument();
+    });
   });
 });

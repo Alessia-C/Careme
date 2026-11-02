@@ -30,12 +30,15 @@ export function useForm<Name extends string>(
 ) {
   const names = Object.keys(rules) as Name[];
 
-  const [values, setValues] = useState(
-    () =>
-      Object.fromEntries(
-        names.map((name) => [name, initialValues[name] ?? '']),
-      ) as Record<Name, string>,
-  );
+  const buildValues = (from: Partial<Record<Name, string>>) =>
+    Object.fromEntries(names.map((name) => [name, from[name] ?? ''])) as Record<
+      Name,
+      string
+    >;
+
+  const [values, setValues] = useState(() => buildValues(initialValues));
+  // What "unchanged" means: the initial values, or the ones of the last reset.
+  const [baseline, setBaseline] = useState(values);
   const [touched, setTouched] = useState(
     () =>
       Object.fromEntries(names.map((name) => [name, false])) as Record<
@@ -47,6 +50,25 @@ export function useForm<Name extends string>(
   const isFieldValid = (name: Name) =>
     rules[name].validate(values[name], values);
   const isValid = names.every(isFieldValid);
+
+  // Spaces around a value do not count: the API trims them before saving.
+  const isDirty = names.some(
+    (name) => values[name].trim() !== baseline[name].trim(),
+  );
+
+  // Starts over from `nextInitial` (or the current baseline) with no field
+  // touched, for a form that stays mounted while what it edits changes.
+  const reset = (nextInitial?: Partial<Record<Name, string>>) => {
+    const nextValues = nextInitial ? buildValues(nextInitial) : baseline;
+    setValues(nextValues);
+    setBaseline(nextValues);
+    setTouched(
+      Object.fromEntries(names.map((name) => [name, false])) as Record<
+        Name,
+        boolean
+      >,
+    );
+  };
 
   const field = (name: Name): FieldBinding => {
     const hasError = touched[name] && !isFieldValid(name);
@@ -60,5 +82,5 @@ export function useForm<Name extends string>(
     };
   };
 
-  return { values, isValid, field };
+  return { values, isValid, isDirty, reset, field };
 }
