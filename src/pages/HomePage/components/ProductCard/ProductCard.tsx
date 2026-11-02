@@ -39,7 +39,7 @@ const ProductCard = ({ product, onDetail }: ProductCardProps) => {
             {STATUS_LABELS[product.status]}
           </span>
         </div>
-        <hr className={styles.divider} />
+        <hr className={styles.divider} aria-hidden="true" />
         <dl className={styles.brand}>
           <dt className={styles.brandLabel}>Brand</dt>
           <dd className={styles.brandValue}>{product.brand}</dd>
@@ -50,6 +50,8 @@ const ProductCard = ({ product, onDetail }: ProductCardProps) => {
           label="Detail"
           aria-label={`Detail ${product.name}`}
           onClick={() => onDetail(product.id)}
+          size="large"
+          fullWidth
         />
         {/* Only the CTA of the design, disabled until deleting a product has
             its own issue: an enabled button that does nothing would mislead. */}
@@ -58,6 +60,8 @@ const ProductCard = ({ product, onDetail }: ProductCardProps) => {
           aria-label={`Delete ${product.name}`}
           variant="secondary"
           appearance="outline"
+          size="large"
+          fullWidth
           disabled
         />
       </div>

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Outlet } from 'react-router';
 import Loader from '../../components/Loader/Loader';
+import VisuallyHiddenStatus from '../../components/VisuallyHiddenStatus/VisuallyHiddenStatus';
 import { fetchSession } from '../../lib/authApi';
 import useAuthStore from '../../stores/authStore';
 import styles from './SessionRestore.module.css';
@@ -45,9 +46,7 @@ function SessionRestore() {
     return (
       <main className={styles.loading}>
         <Loader />
-        <p role="status" className={styles.status}>
-          Loading
-        </p>
+        <VisuallyHiddenStatus>Loading</VisuallyHiddenStatus>
       </main>
     );
   }

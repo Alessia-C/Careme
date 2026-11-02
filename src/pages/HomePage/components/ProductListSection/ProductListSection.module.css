@@ -3,13 +3,7 @@
 }
 
 .more {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--space-24);
-
-  & button {
-    justify-content: center;
-    min-width: 160px;
-    padding: 10px;
-  }
+  width: 160px;
+  max-width: 100%;
+  margin: var(--space-24) auto 0;
 }

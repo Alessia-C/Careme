@@ -42,6 +42,8 @@ const ProductListSection = ({
           label={isFetchingNextPage ? 'Loading…' : 'Load more'}
           variant="secondary"
           appearance="outline"
+          size="large"
+          fullWidth
           // Not `disabled`: the button keeps the focus while it loads.
           aria-disabled={isFetchingNextPage}
           // `aria-disabled` does not stop the click, so the guard avoids a second

@@ -100,18 +100,10 @@
   overflow-wrap: anywhere;
 }
 
-/* Detail is twice as wide as Delete, as in the design. Button does not take
-   a className, so the width and the centred label are set on the buttons
-   inside this wrapper (same pattern as HomePage). */
+/* Detail is twice as wide as Delete, as in the design. */
 .actions {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: var(--space-8);
   margin-top: auto;
-
-  & button {
-    justify-content: center;
-    width: 100%;
-    padding: 10px;
-  }
 }

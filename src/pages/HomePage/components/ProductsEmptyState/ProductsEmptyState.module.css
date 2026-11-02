@@ -2,21 +2,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 80px;
-  border-radius: 40px;
+  width: var(--space-80);
+  height: var(--space-80);
+  border-radius: 50%;
   background: var(--color-grey-100);
 }
 
-/* Button does not take a className, so the width and the centred label are
-   set on the button inside this wrapper (same pattern as LoginForm). */
 .action {
   width: 218px;
   max-width: 100%;
-
-  & button {
-    justify-content: center;
-    width: 100%;
-    padding: 10px;
-  }
 }

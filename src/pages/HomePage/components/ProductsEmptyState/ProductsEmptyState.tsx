@@ -4,9 +4,8 @@ import ContentState, {
   type ContentStateProps,
 } from '../../../../components/ContentState/ContentState';
 import plusIcon from '../../../../assets/icons/plus.svg';
+import type { EmptyView } from '../../../../lib/productListView';
 import styles from './ProductsEmptyState.module.css';
-
-export type EmptyView = 'loading' | 'error' | 'first-access' | 'no-results';
 
 interface ProductsEmptyStateProps {
   view: EmptyView;
@@ -55,7 +54,12 @@ const ProductsEmptyState = memo(
       <ContentState {...content}>
         {action && (
           <div className={styles.action}>
-            <Button label={action.label} onClick={action.onClick} />
+            <Button
+              label={action.label}
+              onClick={action.onClick}
+              size="large"
+              fullWidth
+            />
           </div>
         )}
       </ContentState>
