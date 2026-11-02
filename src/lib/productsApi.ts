@@ -7,8 +7,12 @@ import {
 } from '../../shared/products';
 import { isObject } from '../../shared/validation';
 
-// Prefix of every products query: invalidating it refreshes all the lists.
+// Prefix of every products query.
 export const PRODUCTS_QUERY_KEY = ['products'] as const;
+
+// Prefix of the list queries, one per search term. Creating a product
+// invalidates this one: the details already loaded do not change with it.
+export const PRODUCTS_LIST_QUERY_KEY = [...PRODUCTS_QUERY_KEY, 'list'] as const;
 
 export interface ProductInput {
   name: string;
@@ -99,6 +103,42 @@ export async function listProducts({
   const body: unknown = await response.json().catch(() => null);
   return isProductListPage(body)
     ? { ok: true, products: body.products, total: body.total }
+    : { ok: false, reason: 'failed' };
+}
+
+// The columns of PRODUCT_COLUMNS the page uses: the detail adds the note.
+export interface Product extends ProductListItem {
+  // null when the user left the note empty.
+  note: string | null;
+}
+
+export const productDetailKey = (id: string | null) =>
+  [...PRODUCTS_QUERY_KEY, 'detail', id] as const;
+
+export type GetProductResult =
+  | { ok: true; product: Product }
+  | { ok: false; reason: 'not-found' }
+  | ApiFailure;
+
+const isProduct = (item: unknown): item is Product =>
+  isObject(item) &&
+  isProductListItem(item) &&
+  (item.note === null || typeof item.note === 'string');
+
+export async function getProduct(id: string): Promise<GetProductResult> {
+  const response = await request(`/api/products/${encodeURIComponent(id)}`);
+  // A 403 (blocked user) is shown like a 404: the user cannot see the product
+  // either way, and the screen never tells whether an id exists.
+  if (response?.status === 404 || response?.status === 403) {
+    return { ok: false, reason: 'not-found' };
+  }
+  if (!response?.ok) {
+    return toFailure(response);
+  }
+
+  const body: unknown = await response.json().catch(() => null);
+  return isObject(body) && isProduct(body.product)
+    ? { ok: true, product: body.product }
     : { ok: false, reason: 'failed' };
 }
 

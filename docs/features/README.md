@@ -23,6 +23,6 @@ Each user-facing feature has one document in this folder. It describes the behav
 | [Add product](add-product.md)         | In progress | Home page drawer to add a product: inline validation, generic and rate-limit errors, empty state on first access.                                        |
 | [Product creation](product-create.md) | In progress | Backend `POST /api/products`: validated product owned by the caller; duplicate name+brand is flagged in the response, not blocked.                       |
 | [Product list](product-list.md)       | In progress | Home page list of the caller's products (cards, "Load more", search on name or brand, states) on top of `GET /api/products`.                             |
-| [Product detail](product-detail.md)   | In progress | Backend `GET /api/products/:id`: one product of the caller with its note; a missing, foreign or malformed id is a `404`.                                 |
+| [Product detail](product-detail.md)   | In progress | Read-only drawer opened from "Detail" on the home page, on top of `GET /api/products/:id`: all fields with the note; `404` and `403` shown as not found. |
 | [Product update](product-update.md)   | In progress | Backend `PUT /api/products/:id`: the whole product is validated like on creation and replaced; a missing, foreign or malformed id is a `404`.            |
 | [Product delete](product-delete.md)   | In progress | Backend `DELETE /api/products/:id`: permanent delete, `204` without body; a missing, foreign or malformed id is a `404`.                                 |

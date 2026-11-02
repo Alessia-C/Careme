@@ -14,6 +14,12 @@ interface DialogProps {
   // 'side' is the layout of the Drawer: the title sits on the left of a header
   // with its own close button, and the box is a panel on the right.
   layout?: 'center' | 'side';
+  // Under the title, in the 'side' layout only. It also describes the dialog,
+  // before the description if there is one.
+  subtitle?: string;
+  // Phones hide the close button of a side panel, because a form has its own
+  // Cancel. A panel without one asks to keep it.
+  showCloseOnMobile?: boolean;
 }
 
 const Dialog = ({
@@ -26,10 +32,20 @@ const Dialog = ({
   className,
   closeOnBackdropClick = true,
   layout = 'center',
+  subtitle,
+  showCloseOnMobile = false,
 }: DialogProps) => {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+  const subtitleId = useId();
+  const sideSubtitle = layout === 'side' ? subtitle : undefined;
+  // In the order they appear on screen: the subtitle is in the header, above
+  // the description.
+  const describedBy =
+    [sideSubtitle && subtitleId, description && descriptionId]
+      .filter(Boolean)
+      .join(' ') || undefined;
   // The native 'close' event also fires when we call dialog.close() ourselves.
   // This flag tells handleClose to ignore that event, so onClose only reports
   // closes the user caused (Esc or backdrop click).
@@ -74,7 +90,7 @@ const Dialog = ({
       ref={ref}
       role={role}
       aria-labelledby={titleId}
-      aria-describedby={description ? descriptionId : undefined}
+      aria-describedby={describedBy}
       onClose={handleClose}
       onClick={handleClick}
       className={[styles.dialog, layout === 'side' && styles.side, className]
@@ -83,12 +99,28 @@ const Dialog = ({
     >
       <div className={styles.content}>
         {layout === 'side' ? (
-          <div className={styles.header}>
-            {heading}
+          <div
+            className={[styles.header, sideSubtitle && styles.headerTop]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <div className={styles.headings}>
+              {heading}
+              {sideSubtitle && (
+                <p id={subtitleId} className={styles.subtitle}>
+                  {sideSubtitle}
+                </p>
+              )}
+            </div>
             <button
               type="button"
               aria-label="Close"
-              className={styles.close}
+              className={[
+                styles.close,
+                showCloseOnMobile && styles.closeOnMobile,
+              ]
+                .filter(Boolean)
+                .join(' ')}
               onClick={onClose}
             >
               <span aria-hidden="true" className={styles.closeIcon} />

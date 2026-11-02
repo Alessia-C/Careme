@@ -58,7 +58,7 @@ describe('ProductCard', () => {
     expect(document.querySelector('img[src="x"]')).toBeNull();
   });
 
-  it('calls onDetail with the product id from the Detail button', async () => {
+  it('calls onDetail with the product from the Detail button', async () => {
     const onDetail = vi.fn();
     render(<ProductCard product={product} onDetail={onDetail} />);
 
@@ -66,7 +66,7 @@ describe('ProductCard', () => {
       screen.getByRole('button', { name: 'Detail Eye Palette' }),
     );
 
-    expect(onDetail).toHaveBeenCalledExactlyOnceWith('p1');
+    expect(onDetail).toHaveBeenCalledExactlyOnceWith(product);
   });
 
   it('shows the Delete button of the design, disabled until it works', () => {

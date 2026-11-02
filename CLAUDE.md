@@ -64,6 +64,14 @@ Security is a top priority: when in doubt, choose the safer option and ask.
 
 - When adding or changing an endpoint, copy `docs/api/_TEMPLATE.md` into `docs/api/<endpoint>.md` and add a row to `docs/api/README.md` in the same PR.
 - When adding or changing a user-facing feature, copy `docs/features/_TEMPLATE.md` into `docs/features/<feature-name>.md` and add a row to `docs/features/README.md` in the same PR. Feature docs are in English.
+- Forms (create/edit drawers and any form that holds user input, except login and signup): when the user has unsaved changes (a value differs from its initial one), every way of leaving asks first.
+  - Closing the form (Cancel, X, Esc, backdrop) opens the shared "Unsaved changes" modal (`role="alertdialog"`, Figma node 185:3099) with "Discard" and "Continue editing".
+  - In-app navigation (Back/Forward, links, logout) is blocked with `useBlocker` and shows the same modal.
+  - Reload or tab close uses the native `beforeunload` prompt, registered only while the form is dirty.
+  - Session expiry/401 redirects are never blocked.
+  - A form with no changes, or one just submitted successfully, leaves without asking.
+  - Reuse the one shared confirmation component and the dirty tracking of `useForm`: do not reimplement them per form.
+  - Every form issue lists these cases in its acceptance criteria.
 - New env vars go in `.env.example` and the README env table.
 - Prettier: single quotes, semicolons, trailing commas, 80 cols, LF.
 - Commit style: Conventional Commits (`feat:`, `docs:`, `test(e2e):`, `chore(deps):`); feature branches named `<issue>-mk-xxx-<slug>` (e.g. `54-mk-019-tech-zustand-store-for-session-role`, issue #54) created from `staging` and merged via PR to `staging`, the integration branch (epics have no container branch; if a feature has BE and FE issues, the BE goes to `staging` first). `main` is production and only receives PRs from `staging`, merged with a merge commit (not squash). Vercel deploys `main` to production and builds previews only for `staging` and `main` (`vercel.json`); CI and E2E run only on PRs and pushes to `staging` and `main`.

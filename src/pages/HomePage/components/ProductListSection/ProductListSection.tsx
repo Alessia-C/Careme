@@ -12,7 +12,7 @@ interface ProductListSectionProps {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   isFetchNextPageError: boolean;
-  onDetail: (productId: string) => void;
+  onDetail: (product: ProductListItem) => void;
   onLoadMore: () => void;
 }
 

@@ -36,7 +36,11 @@ const renderPage = () =>
     </QueryClientProvider>,
   );
 
-const getDrawer = () => screen.getByRole('dialog', { hidden: true });
+// The page has two drawers, in this order: Add product and the product detail.
+// A closed <dialog> has no accessible name, so they are told apart by position.
+const getDialogs = () => screen.getAllByRole('dialog', { hidden: true });
+const getDrawer = () => getDialogs()[0];
+const getDetailDrawer = () => getDialogs()[1];
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -344,5 +348,122 @@ describe('HomePage: errors', () => {
     expect(
       await screen.findByRole('alert', undefined, { timeout: 3000 }),
     ).toHaveTextContent('We couldn’t load your products');
+  });
+});
+
+describe('HomePage: product detail', () => {
+  const list = [
+    {
+      id: 'p1',
+      name: 'Eye Palette',
+      brand: 'MAC',
+      category: 'makeup',
+      status: 'new',
+    },
+    {
+      id: 'p2',
+      name: 'Serum',
+      brand: 'Cerave',
+      category: 'skincare',
+      status: 'used',
+    },
+  ];
+
+  // The list answers /api/products, the detail answers /api/products/:id.
+  const mockDetailApi = () =>
+    mockProductsApi(({ pathname }) => {
+      const product = list.find(({ id }) => pathname === `/api/products/${id}`);
+      return product
+        ? jsonResponse({
+            product: { ...product, note: `Note of ${product.id}` },
+          })
+        : jsonResponse({ products: list, total: list.length });
+    });
+
+  it('keeps the detail drawer closed at first', async () => {
+    mockDetailApi();
+    renderPage();
+    await screen.findByRole('list', { name: 'Products' });
+
+    expect(getDetailDrawer()).not.toHaveAttribute('open');
+  });
+
+  it('opens the detail of the product from its Detail button', async () => {
+    mockDetailApi();
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Detail Serum' }),
+    );
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Serum' }),
+    ).toHaveAccessibleDescription('Cerave');
+    expect(await screen.findByText('Note of p2')).toBeInTheDocument();
+  });
+
+  it('closes the detail from the close button', async () => {
+    mockDetailApi();
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Detail Eye Palette' }),
+    );
+    await screen.findByRole('dialog', { name: 'Eye Palette' });
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(getDetailDrawer()).not.toHaveAttribute('open');
+  });
+
+  it('shows another product when its Detail button is used next', async () => {
+    mockDetailApi();
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Detail Eye Palette' }),
+    );
+    await screen.findByRole('dialog', { name: 'Eye Palette' });
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    await user.click(screen.getByRole('button', { name: 'Detail Serum' }));
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Serum' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Note of p2')).toBeInTheDocument();
+  });
+
+  it('shows the product at once, without asking, when the detail opens again soon', async () => {
+    const fetchMock = mockDetailApi();
+    const detailRequests = () =>
+      fetchMock.mock.calls.filter(([url]) => url === '/api/products/p1').length;
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Detail Eye Palette' }),
+    );
+    await screen.findByRole('dialog', { name: 'Eye Palette' });
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    await user.click(
+      screen.getByRole('button', { name: 'Detail Eye Palette' }),
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Eye Palette' })).toBeVisible();
+    expect(detailRequests()).toBe(1);
+  });
+
+  it('does not open the Add product drawer with the detail', async () => {
+    mockDetailApi();
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Detail Eye Palette' }),
+    );
+
+    expect(getDrawer()).not.toHaveAttribute('open');
   });
 });

@@ -2,11 +2,13 @@ import { useCallback, useState } from 'react';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import VisuallyHiddenStatus from '../../components/VisuallyHiddenStatus/VisuallyHiddenStatus';
 import { useProducts } from '../../hooks/useProducts/useProducts';
+import type { ProductListItem } from '../../lib/productsApi';
 import {
   getProductListAnnouncement,
   getProductListView,
 } from '../../lib/productListView';
 import AddProductDrawer from './components/AddProductDrawer/AddProductDrawer';
+import ProductDetailDrawer from './components/ProductDetailDrawer/ProductDetailDrawer';
 import ProductListSection from './components/ProductListSection/ProductListSection';
 import ProductSearch from './components/ProductSearch/ProductSearch';
 import ProductsEmptyState from './components/ProductsEmptyState/ProductsEmptyState';
@@ -19,9 +21,15 @@ function HomePage() {
   // focus back to this button.
   const [drawerKey, setDrawerKey] = useState(0);
   const [search, setSearch] = useState('');
-  // The product detail drawer is a later issue: for now the Detail button only
-  // records which product was chosen.
-  const [, setSelectedProductId] = useState<string | null>(null);
+  // The product stays after the detail drawer closes, so its content does not
+  // vanish while it slides out. It is the one of the list: its name and brand
+  // are the title while the rest loads. A new key remounts the drawer on every
+  // open, which gives the focus back to the Detail button on close, as for the
+  // Add product drawer.
+  const [selectedProduct, setSelectedProduct] =
+    useState<ProductListItem | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailKey, setDetailKey] = useState(0);
 
   const {
     products,
@@ -42,6 +50,15 @@ function HomePage() {
   }, []);
 
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+
+  // Stable, so the memoized product cards are not rendered again with the page.
+  const openDetail = useCallback((product: ProductListItem) => {
+    setSelectedProduct(product);
+    setDetailKey((key) => key + 1);
+    setIsDetailOpen(true);
+  }, []);
+
+  const closeDetail = useCallback(() => setIsDetailOpen(false), []);
   // Stable, so the memoized empty state is not rendered again with the page.
   const retry = useCallback(() => void refetch(), [refetch]);
 
@@ -89,7 +106,7 @@ function HomePage() {
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
           isFetchNextPageError={isFetchNextPageError}
-          onDetail={setSelectedProductId}
+          onDetail={openDetail}
           onLoadMore={() => void fetchNextPage()}
         />
       ) : (
@@ -100,6 +117,13 @@ function HomePage() {
         key={drawerKey}
         open={isDrawerOpen}
         onClose={closeDrawer}
+      />
+      <ProductDetailDrawer
+        // Prefixed: both drawers count from 0, and sibling keys must differ.
+        key={`detail-${detailKey}`}
+        open={isDetailOpen}
+        selected={selectedProduct}
+        onClose={closeDetail}
       />
     </div>
   );

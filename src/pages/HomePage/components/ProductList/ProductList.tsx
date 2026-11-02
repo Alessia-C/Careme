@@ -5,7 +5,7 @@ import styles from './ProductList.module.css';
 
 interface ProductListProps {
   products: ProductListItem[];
-  onDetail: (productId: string) => void;
+  onDetail: (product: ProductListItem) => void;
 }
 
 // Memoized: the page renders again for the drawer and the announcements, and

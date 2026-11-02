@@ -28,12 +28,12 @@ describe('ProductList', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
   });
 
-  it('passes the id of the chosen product to onDetail', async () => {
+  it('passes the chosen product to onDetail', async () => {
     const onDetail = vi.fn();
     render(<ProductList products={products} onDetail={onDetail} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Detail Serum' }));
 
-    expect(onDetail).toHaveBeenCalledExactlyOnceWith('p2');
+    expect(onDetail).toHaveBeenCalledExactlyOnceWith(products[1]);
   });
 });

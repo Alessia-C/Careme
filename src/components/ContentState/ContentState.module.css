@@ -1,4 +1,5 @@
 .contentState {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--space-32);
@@ -41,5 +42,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
-  align-items: flex-start;
+  /* The message takes the whole width of its container. A caller that wants a
+     narrower action sets the width on the action itself. */
+  align-items: stretch;
 }

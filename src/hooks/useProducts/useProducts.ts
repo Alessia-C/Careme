@@ -3,7 +3,7 @@ import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { UnauthorizedError } from '../../lib/apiFetch';
 import {
   listProducts,
-  PRODUCTS_QUERY_KEY,
+  PRODUCTS_LIST_QUERY_KEY,
   type ProductListItem,
 } from '../../lib/productsApi';
 
@@ -31,7 +31,7 @@ function uniqueById(products: ProductListItem[]) {
 // search means no filter.
 export function useProducts(search: string) {
   const query = useInfiniteQuery({
-    queryKey: [...PRODUCTS_QUERY_KEY, 'list', search],
+    queryKey: [...PRODUCTS_LIST_QUERY_KEY, search],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const result = await listProducts({
