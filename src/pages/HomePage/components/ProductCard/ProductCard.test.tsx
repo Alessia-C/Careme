@@ -69,10 +69,10 @@ describe('ProductCard', () => {
     expect(onDetail).toHaveBeenCalledExactlyOnceWith('p1');
   });
 
-  it('shows the Delete button of the design, which does nothing yet', () => {
+  it('shows the Delete button of the design, disabled until it works', () => {
     render(<ProductCard product={product} onDetail={vi.fn()} />);
     expect(
       screen.getByRole('button', { name: 'Delete Eye Palette' }),
-    ).toBeInTheDocument();
+    ).toBeDisabled();
   });
 });

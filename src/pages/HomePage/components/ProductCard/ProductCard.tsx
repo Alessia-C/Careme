@@ -51,12 +51,14 @@ const ProductCard = ({ product, onDetail }: ProductCardProps) => {
           aria-label={`Detail ${product.name}`}
           onClick={() => onDetail(product.id)}
         />
-        {/* Only the CTA of the design: deleting a product is a later issue. */}
+        {/* Only the CTA of the design, disabled until deleting a product has
+            its own issue: an enabled button that does nothing would mislead. */}
         <Button
           label="Delete"
           aria-label={`Delete ${product.name}`}
           variant="secondary"
           appearance="outline"
+          disabled
         />
       </div>
     </article>

@@ -41,7 +41,9 @@
   color: var(--color-black-60);
 }
 
-/* Colors from the Figma badges. "New" has no token: it is its own green. */
+/* Backgrounds from the Figma badges. The text is darker than in the design: the
+   Figma colors do not reach the 4.5:1 contrast of WCAG AA at 12px. "New" has no
+   background token: it is its own green. */
 .badge {
   flex-shrink: 0;
   padding: var(--space-4) var(--space-12);
@@ -51,17 +53,17 @@
 
   &[data-status='new'] {
     background: #e0f5e5;
-    color: #268540;
+    color: var(--color-green-800);
   }
 
   &[data-status='used'] {
     background: var(--color-grey-100);
-    color: var(--color-grey-600);
+    color: var(--color-grey-900);
   }
 
   &[data-status='finished'] {
     background: color-mix(in srgb, var(--color-primary-50) 70%, transparent);
-    color: var(--color-primary-900);
+    color: color-mix(in srgb, var(--color-primary-900) 60%, black);
   }
 }
 

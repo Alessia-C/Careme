@@ -10,6 +10,53 @@ import ProductList from './components/ProductList/ProductList';
 import ProductSearch from './components/ProductSearch/ProductSearch';
 import styles from './HomePage.module.css';
 
+type View = 'loading' | 'error' | 'first-access' | 'no-results' | 'list';
+
+interface ViewState {
+  isPending: boolean;
+  hasListError: boolean;
+  total: number;
+  // True when the empty list is the answer to "no search", not to an old one.
+  isFirstSearch: boolean;
+}
+
+function getView({
+  isPending,
+  hasListError,
+  total,
+  isFirstSearch,
+}: ViewState): View {
+  if (isPending) {
+    return 'loading';
+  }
+  if (hasListError) {
+    return 'error';
+  }
+  if (total > 0) {
+    return 'list';
+  }
+  // The previous list stays on screen while a new search loads
+  // (isPlaceholderData), so an empty one is not yet the answer for this search.
+  return isFirstSearch ? 'first-access' : 'no-results';
+}
+
+// Read out when a search or "Load more" changes the list: the list itself is
+// not a live region, it would be read again in full.
+function getAnnouncement(
+  view: View,
+  shown: number,
+  total: number,
+  isPlaceholderData: boolean,
+) {
+  if (isPlaceholderData) {
+    return 'Loading products…';
+  }
+  if (view === 'list') {
+    return `Showing ${shown} of ${total} products`;
+  }
+  return view === 'no-results' ? 'No product found' : '';
+}
+
 function HomePage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   // A new key remounts the drawer, so the form starts empty every time it
@@ -39,18 +86,17 @@ function HomePage() {
     setIsDrawerOpen(true);
   };
 
-  // A failed "Load more" keeps the products already shown: only a failure of
-  // the whole list replaces it.
-  const hasListError = isError && !isFetchNextPageError;
-  const isEmpty = !isPending && !hasListError && total === 0;
-  // The previous list stays on screen while a new search loads
-  // (isPlaceholderData), so an empty one is not yet the answer for this search.
-  const isFirstAccess = isEmpty && search === '' && !isPlaceholderData;
-  const isNoResults = isEmpty && !isFirstAccess;
-  const hasProducts = !isPending && !hasListError && total > 0;
+  const view = getView({
+    isPending,
+    // A failed "Load more" keeps the products already shown: only a failure of
+    // the whole list replaces it.
+    hasListError: isError && !isFetchNextPageError,
+    total,
+    isFirstSearch: search === '' && !isPlaceholderData,
+  });
   // The header and the search come after the first load, and not on the first
   // access state, which has its own title and Add product button.
-  const showHeader = !isPending && !isFirstAccess;
+  const showHeader = view !== 'loading' && view !== 'first-access';
 
   return (
     <div className={styles.page}>
@@ -66,16 +112,24 @@ function HomePage() {
         <h1 className={styles.visuallyHidden}>Your products</h1>
       )}
 
-      {showHeader && <ProductSearch onSearch={setSearch} />}
+      {/* Disabled until the search has its own issue: the field is in the design,
+          but its behavior is not part of the product list story. */}
+      {showHeader && <ProductSearch disabled onSearch={setSearch} />}
 
-      {isPending && (
+      {showHeader && (
+        <p className={styles.visuallyHidden} role="status">
+          {getAnnouncement(view, products.length, total, isPlaceholderData)}
+        </p>
+      )}
+
+      {view === 'loading' && (
         <div className={styles.loading} role="status">
           <Loader />
           <p className={styles.loadingText}>Loading products…</p>
         </div>
       )}
 
-      {hasListError && (
+      {view === 'error' && (
         <div className={styles.error}>
           <Feedback
             status="error"
@@ -88,7 +142,7 @@ function HomePage() {
         </div>
       )}
 
-      {isFirstAccess && (
+      {view === 'first-access' && (
         <EmptyState
           title="Add your product"
           text="Start by adding your first product to manage your catalog"
@@ -104,14 +158,14 @@ function HomePage() {
         </EmptyState>
       )}
 
-      {isNoResults && (
+      {view === 'no-results' && (
         <EmptyState
           title="No product found"
-          text="Start by adding your first product to manage your catalog"
+          text="Try a different name or brand"
         />
       )}
 
-      {hasProducts && (
+      {view === 'list' && (
         <div aria-busy={isPlaceholderData}>
           <ProductList products={products} onDetail={setSelectedProductId} />
           {isFetchNextPageError && (
@@ -128,8 +182,13 @@ function HomePage() {
                 label={isFetchingNextPage ? 'Loading…' : 'Load more'}
                 variant="secondary"
                 appearance="outline"
-                disabled={isFetchingNextPage}
-                onClick={() => void fetchNextPage()}
+                // Not `disabled`: the button keeps the focus while it loads.
+                aria-disabled={isFetchingNextPage}
+                onClick={() => {
+                  if (!isFetchingNextPage) {
+                    void fetchNextPage();
+                  }
+                }}
               />
             </div>
           )}

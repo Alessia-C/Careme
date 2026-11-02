@@ -171,6 +171,16 @@ describe('HomePage: product list', () => {
     ).toBeInTheDocument();
   });
 
+  it('announces how many products are shown', async () => {
+    mockProducts(makeProducts(3));
+    renderPage();
+
+    expect(await screen.findByText('Showing 3 of 3 products')).toHaveAttribute(
+      'role',
+      'status',
+    );
+  });
+
   it('opens the drawer from the Add product button of the header', async () => {
     mockProducts(makeProducts(1));
     renderPage();
@@ -222,6 +232,9 @@ describe('HomePage: product list', () => {
     expect(
       screen.queryByRole('button', { name: 'Load more' }),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      `Showing ${total} of ${total} products`,
+    );
   });
 
   it('keeps the products shown when Load more fails, and retries', async () => {
@@ -263,83 +276,13 @@ describe('HomePage: product list', () => {
 });
 
 describe('HomePage: search', () => {
-  it('searches on Enter and shows the matches', async () => {
-    const fetchMock = mockProductsApi((url) =>
-      url.searchParams.get('search') === 'serum'
-        ? jsonResponse({ products: makeProducts(1), total: 1 })
-        : jsonResponse({ products: makeProducts(3), total: 3 }),
-    );
-    const user = userEvent.setup();
+  // The search has its own issue: until then the field is shown, disabled.
+  it('shows the search field disabled', async () => {
+    mockProducts(makeProducts(3));
     renderPage();
     await screen.findAllByRole('article');
 
-    await user.type(screen.getByRole('searchbox'), 'serum{Enter}');
-
-    await vi.waitFor(() =>
-      expect(screen.getAllByRole('article')).toHaveLength(1),
-    );
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      `/api/products?offset=0&limit=${PRODUCTS_PAGE_SIZE}&search=serum`,
-      undefined,
-    );
-  });
-
-  it('restores the full list when the search is cleared', async () => {
-    mockProductsApi((url) =>
-      url.searchParams.get('search') === 'serum'
-        ? jsonResponse({ products: makeProducts(1), total: 1 })
-        : jsonResponse({ products: makeProducts(3), total: 3 }),
-    );
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByRole('article');
-    await user.type(screen.getByRole('searchbox'), 'serum{Enter}');
-    await vi.waitFor(() =>
-      expect(screen.getAllByRole('article')).toHaveLength(1),
-    );
-
-    await user.clear(screen.getByRole('searchbox'));
-
-    await vi.waitFor(() =>
-      expect(screen.getAllByRole('article')).toHaveLength(3),
-    );
-  });
-
-  it('says so when nothing matches, and keeps the search', async () => {
-    mockProductsApi((url) =>
-      url.searchParams.has('search')
-        ? jsonResponse({ products: [], total: 0 })
-        : jsonResponse({ products: makeProducts(3), total: 3 }),
-    );
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByRole('article');
-
-    await user.type(screen.getByRole('searchbox'), 'eyeliner{Enter}');
-
-    expect(
-      await screen.findByRole('heading', { name: 'No product found' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('article')).not.toBeInTheDocument();
-    expect(screen.getByRole('searchbox')).toHaveValue('eyeliner');
-    expect(
-      screen.getByRole('button', { name: 'Add product' }),
-    ).toBeInTheDocument();
-  });
-
-  it('does not call the API for a term with forbidden characters', async () => {
-    const fetchMock = mockProducts(makeProducts(3));
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByRole('article');
-    fetchMock.mockClear();
-
-    await user.type(screen.getByRole('searchbox'), 'Serum (30ml){Enter}');
-
-    expect(screen.getByRole('searchbox')).toHaveAccessibleDescription(
-      'Search contains invalid characters',
-    );
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('searchbox', { name: 'Search' })).toBeDisabled();
   });
 });
 
