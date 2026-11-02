@@ -435,7 +435,7 @@ describe('HomePage: product detail', () => {
     expect(screen.getByText('Note of p2')).toBeInTheDocument();
   });
 
-  it('asks for the product again every time the detail opens', async () => {
+  it('shows the product at once, without asking, when the detail opens again soon', async () => {
     const fetchMock = mockDetailApi();
     const detailRequests = () =>
       fetchMock.mock.calls.filter(([url]) => url === '/api/products/p1').length;
@@ -446,13 +446,13 @@ describe('HomePage: product detail', () => {
     );
     await screen.findByRole('dialog', { name: 'Eye Palette' });
     await user.click(screen.getByRole('button', { name: 'Close' }));
-    expect(detailRequests()).toBe(1);
 
     await user.click(
       screen.getByRole('button', { name: 'Detail Eye Palette' }),
     );
 
-    await waitFor(() => expect(detailRequests()).toBe(2));
+    expect(screen.getByRole('dialog', { name: 'Eye Palette' })).toBeVisible();
+    expect(detailRequests()).toBe(1);
   });
 
   it('does not open the Add product drawer with the detail', async () => {

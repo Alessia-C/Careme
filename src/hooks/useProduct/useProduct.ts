@@ -6,6 +6,11 @@ import { getProduct, productDetailKey } from '../../lib/productsApi';
 // keep the user waiting before the error and its "Try again" button appear.
 const DETAIL_RETRIES = 1;
 
+// The product can change from another tab, so it is not kept for ever like the
+// list. Within this time a drawer that opens again shows the cached product
+// without asking; after it, the cached product is shown and asked again.
+const DETAIL_STALE_TIME_MS = 30_000;
+
 // The product is not there for this user (missing, someone else's, not a valid
 // id). Asking again gives the same answer, so it is not retried.
 class ProductNotFoundError extends Error {
@@ -33,9 +38,8 @@ export function useProduct(id: string | null) {
             }
             return result.product;
           },
-    // The product can change from another tab, so what is in the cache is shown
-    // at once and asked again when the drawer mounts. Focus and reconnect do
-    // not ask: the drawer is open for a short time.
+    staleTime: DETAIL_STALE_TIME_MS,
+    // Focus and reconnect do not ask: the drawer is open for a short time.
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: (failureCount, error) =>

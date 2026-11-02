@@ -64,6 +64,50 @@ describe('useProduct', () => {
     expect(result.current.product).toBeUndefined();
   });
 
+  it('shows the product it has just loaded, without asking again', async () => {
+    const fetchMock = mockFetch(jsonResponse({ product }));
+    const client = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const first = renderHook(() => useProduct('p1'), { wrapper });
+    await waitFor(() => expect(first.result.current.product).toEqual(product));
+    first.unmount();
+
+    const second = renderHook(() => useProduct('p1'), { wrapper });
+
+    expect(second.result.current.product).toEqual(product);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks again, showing the cached product, once 30 seconds have passed', async () => {
+    const fetchMock = mockFetch(
+      jsonResponse({ product }),
+      jsonResponse({ product: { ...product, note: 'Changed elsewhere' } }),
+    );
+    const client = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const first = renderHook(() => useProduct('p1'), { wrapper });
+    await waitFor(() => expect(first.result.current.product).toEqual(product));
+    first.unmount();
+
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(Date.now() + 31_000);
+      const second = renderHook(() => useProduct('p1'), { wrapper });
+
+      expect(second.result.current.product).toEqual(product);
+      await waitFor(() =>
+        expect(second.result.current.product?.note).toBe('Changed elsewhere'),
+      );
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('asks again when the id changes', async () => {
     const fetchMock = mockFetch(
       jsonResponse({ product }),

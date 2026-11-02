@@ -7,8 +7,12 @@ import {
 } from '../../shared/products';
 import { isObject } from '../../shared/validation';
 
-// Prefix of every products query: invalidating it refreshes all the lists.
+// Prefix of every products query.
 export const PRODUCTS_QUERY_KEY = ['products'] as const;
+
+// Prefix of the list queries, one per search term. Creating a product
+// invalidates this one: the details already loaded do not change with it.
+export const PRODUCTS_LIST_QUERY_KEY = [...PRODUCTS_QUERY_KEY, 'list'] as const;
 
 export interface ProductInput {
   name: string;
