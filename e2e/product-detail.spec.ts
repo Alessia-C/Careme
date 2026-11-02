@@ -58,7 +58,7 @@ test('the Detail button opens the product in a drawer', async ({ page }) => {
   await expect(drawer).toContainText('Makeup');
   await expect(drawer).toContainText('New');
   await expect(drawer).toContainText('Warm Neutrals, best seller palette');
-  await expect(drawer.getByRole('button', { name: 'Update' })).toBeDisabled();
+  await expect(drawer.getByRole('button', { name: 'Update' })).toBeEnabled();
   await expect(drawer.getByRole('button', { name: 'Delete' })).toBeDisabled();
 });
 

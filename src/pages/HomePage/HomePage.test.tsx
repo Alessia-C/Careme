@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PRODUCTS_PAGE_SIZE } from '../../hooks/useProducts/useProducts';
 import HomePage from './HomePage';
@@ -32,7 +33,9 @@ const mockProducts = (products: unknown[], total = products.length) =>
 const renderPage = () =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <HomePage />
+      <RouterProvider
+        router={createMemoryRouter([{ path: '/', element: <HomePage /> }])}
+      />
     </QueryClientProvider>,
   );
 

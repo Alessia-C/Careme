@@ -13,6 +13,12 @@ interface ModalProps {
   variant?: ConfirmVariant;
   onConfirm: () => void;
   onCancel: () => void;
+  // The confirm button gets the focus when it opens, instead of the first
+  // button (Cancel): for a question where the safe answer is to confirm.
+  focusConfirm?: boolean;
+  // Esc: by default it is the same as Cancel, but a modal whose safe answer is
+  // the confirm button (e.g. "Continue editing") sends it there.
+  onDismiss?: () => void;
 }
 
 const Modal = ({
@@ -24,13 +30,15 @@ const Modal = ({
   variant = 'primary',
   onConfirm,
   onCancel,
+  focusConfirm = false,
+  onDismiss = onCancel,
 }: ModalProps) => (
   <Dialog
     open={open}
     title={title}
     description={description}
     role="alertdialog"
-    onClose={onCancel}
+    onClose={onDismiss}
     closeOnBackdropClick={false}
     className={styles.modal}
   >
@@ -41,7 +49,12 @@ const Modal = ({
         appearance="outline"
         onClick={onCancel}
       />
-      <Button label={confirmLabel} variant={variant} onClick={onConfirm} />
+      <Button
+        label={confirmLabel}
+        variant={variant}
+        onClick={onConfirm}
+        data-autofocus={focusConfirm || undefined}
+      />
     </div>
   </Dialog>
 );

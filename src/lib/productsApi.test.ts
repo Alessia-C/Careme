@@ -1,9 +1,15 @@
+import { QueryClient } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UnauthorizedError } from './apiFetch';
 import {
+  cacheUpdatedProduct,
   createProduct,
   getProduct,
   listProducts,
+  PRODUCTS_LIST_QUERY_KEY,
+  productDetailKey,
+  updateProduct,
+  type Product,
   type ProductInput,
 } from './productsApi';
 
@@ -268,5 +274,126 @@ describe('getProduct', () => {
   it('lets an expired session through as UnauthorizedError', async () => {
     mockFetch(new Response(null, { status: 401 }));
     await expect(getProduct('p1')).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+});
+
+describe('updateProduct', () => {
+  const product: Product = {
+    id: 'p1',
+    name: 'Eye Palette',
+    brand: 'MAC',
+    category: 'makeup',
+    status: 'new',
+    note: null,
+  };
+
+  it('puts the product as JSON to its encoded id', async () => {
+    const fetchMock = mockFetch(jsonResponse({ product }));
+
+    await updateProduct('a/b c', input);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/products/a%2Fb%20c', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+  });
+
+  it('returns the updated product', async () => {
+    mockFetch(jsonResponse({ product }));
+    expect(await updateProduct('p1', input)).toEqual({ ok: true, product });
+  });
+
+  it.each([404, 403])('reports not found on a %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await updateProduct('p1', input)).toEqual({
+      ok: false,
+      reason: 'not-found',
+    });
+  });
+
+  it('reports the rate limit on 429', async () => {
+    mockFetch(new Response(null, { status: 429 }));
+    expect(await updateProduct('p1', input)).toEqual({
+      ok: false,
+      reason: 'rate-limited',
+    });
+  });
+
+  it.each([400, 500])('fails on a %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await updateProduct('p1', input)).toEqual({
+      ok: false,
+      reason: 'failed',
+    });
+  });
+
+  it('fails on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await updateProduct('p1', input)).toEqual({
+      ok: false,
+      reason: 'failed',
+    });
+  });
+
+  it.each([
+    ['an HTML fallback', new Response('<html></html>', { status: 200 })],
+    ['a body without the product', jsonResponse({})],
+    ['a product without its name', jsonResponse({ product: { id: 'p1' } })],
+  ])('fails on %s', async (_label, response) => {
+    mockFetch(response);
+    expect(await updateProduct('p1', input)).toEqual({
+      ok: false,
+      reason: 'failed',
+    });
+  });
+
+  it('lets an expired session through as UnauthorizedError', async () => {
+    mockFetch(new Response(null, { status: 401 }));
+    await expect(updateProduct('p1', input)).rejects.toBeInstanceOf(
+      UnauthorizedError,
+    );
+  });
+});
+
+describe('cacheUpdatedProduct', () => {
+  const product: Product = {
+    id: 'p1',
+    name: 'New name',
+    brand: 'MAC',
+    category: 'makeup',
+    status: 'used',
+    note: 'Warm Neutrals',
+  };
+
+  it('writes the product in its detail', () => {
+    const queryClient = new QueryClient();
+
+    cacheUpdatedProduct(queryClient, product);
+
+    expect(queryClient.getQueryData(productDetailKey('p1'))).toEqual(product);
+  });
+
+  it('refreshes the lists and leaves the detail alone', () => {
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+
+    cacheUpdatedProduct(queryClient, product);
+
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: PRODUCTS_LIST_QUERY_KEY,
+    });
+  });
+
+  it('cancels a request for the detail that is still on its way', () => {
+    const queryClient = new QueryClient();
+    const cancel = vi.spyOn(queryClient, 'cancelQueries');
+
+    cacheUpdatedProduct(queryClient, product);
+
+    expect(cancel).toHaveBeenCalledWith({
+      queryKey: productDetailKey('p1'),
+    });
   });
 });

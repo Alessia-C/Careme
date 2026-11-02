@@ -86,6 +86,39 @@ describe('Dialog', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('asks to close on Esc without closing the dialog by itself', () => {
+    const onClose = vi.fn();
+    render(dialogElement({ open: true, onClose }));
+    const cancel = new Event('cancel', { cancelable: true });
+
+    getDialog().dispatchEvent(cancel);
+
+    expect(cancel.defaultPrevented).toBe(true);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(getDialog()).toHaveAttribute('open');
+  });
+
+  it('moves the focus to the element marked data-autofocus when it opens', () => {
+    render(
+      <Dialog open title="Remove product" onClose={vi.fn()}>
+        <button>First</button>
+        <button data-autofocus>Safe choice</button>
+      </Dialog>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Safe choice' })).toHaveFocus();
+  });
+
+  it('opens again if the browser closes it while open is still true', () => {
+    const { rerender } = render(dialogElement({ open: true }));
+
+    getDialog().close();
+    expect(getDialog()).not.toHaveAttribute('open');
+
+    rerender(dialogElement({ open: true }));
+    expect(getDialog()).toHaveAttribute('open');
+  });
+
   it('calls onClose when the backdrop is clicked', () => {
     const onClose = vi.fn();
     render(dialogElement({ open: true, onClose }));

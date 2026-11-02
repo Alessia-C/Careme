@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { apiFetch, UnauthorizedError } from './apiFetch';
 import {
   isCategory,
@@ -12,6 +13,7 @@ export const PRODUCTS_QUERY_KEY = ['products'] as const;
 
 // Prefix of the list queries, one per search term. Creating a product
 // invalidates this one: the details already loaded do not change with it.
+// Updating one also refreshes its detail: see cacheUpdatedProduct.
 export const PRODUCTS_LIST_QUERY_KEY = [...PRODUCTS_QUERY_KEY, 'list'] as const;
 
 export interface ProductInput {
@@ -154,4 +156,48 @@ export async function createProduct(
   });
 
   return response?.ok ? { ok: true } : toFailure(response);
+}
+
+export type UpdateProductResult =
+  | { ok: true; product: Product }
+  | { ok: false; reason: 'not-found' }
+  | ApiFailure;
+
+// Replaces every field of the product (the API validates the whole body).
+export async function updateProduct(
+  id: string,
+  input: ProductInput,
+): Promise<UpdateProductResult> {
+  const response = await request(`/api/products/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  // Same as getProduct: a 403 (blocked user) is shown like a 404.
+  if (response?.status === 404 || response?.status === 403) {
+    return { ok: false, reason: 'not-found' };
+  }
+  if (!response?.ok) {
+    return toFailure(response);
+  }
+
+  const body: unknown = await response.json().catch(() => null);
+  return isObject(body) && isProduct(body.product)
+    ? { ok: true, product: body.product }
+    : { ok: false, reason: 'failed' };
+}
+
+// The PUT answers with the whole product, so its detail is written in the
+// cache instead of asked again; only the lists, which show name, brand and
+// the rest of it, are.
+export function cacheUpdatedProduct(
+  queryClient: QueryClient,
+  product: Product,
+) {
+  const detailKey = productDetailKey(product.id);
+  // A request for the detail still on its way would bring the old product
+  // after this one is written. The cancel takes effect right away.
+  void queryClient.cancelQueries({ queryKey: detailKey });
+  queryClient.setQueryData(detailKey, product);
+  void queryClient.invalidateQueries({ queryKey: PRODUCTS_LIST_QUERY_KEY });
 }

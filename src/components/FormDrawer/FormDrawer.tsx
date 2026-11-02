@@ -1,7 +1,6 @@
 import type { ReactNode, SubmitEvent } from 'react';
-import Button from '../Button/Button';
+import DrawerForm from '../DrawerForm/DrawerForm';
 import Drawer from '../Drawer/Drawer';
-import styles from './FormDrawer.module.css';
 
 interface FormDrawerProps {
   open: boolean;
@@ -16,9 +15,8 @@ interface FormDrawerProps {
   children: ReactNode;
 }
 
-// The structure every form drawer shares: the fields scroll on their own,
-// the messages follow them, and the submit and Cancel buttons stay at the
-// bottom. The caller only provides the fields and what happens on submit.
+// A drawer that is only a form: closing it is the same as Cancel. The caller
+// only provides the fields and what happens on submit.
 const FormDrawer = ({
   open,
   title,
@@ -30,21 +28,15 @@ const FormDrawer = ({
   children,
 }: FormDrawerProps) => (
   <Drawer open={open} title={title} onClose={onClose}>
-    <form className={styles.form} onSubmit={onSubmit} noValidate>
-      <div className={styles.fields}>
-        {children}
-        {feedback}
-      </div>
-      <div className={styles.actions}>
-        <Button type="submit" label={submitLabel} disabled={isSubmitDisabled} />
-        <Button
-          label="Cancel"
-          variant="secondary"
-          appearance="outline"
-          onClick={onClose}
-        />
-      </div>
-    </form>
+    <DrawerForm
+      onSubmit={onSubmit}
+      onCancel={onClose}
+      submitLabel={submitLabel}
+      isSubmitDisabled={isSubmitDisabled}
+      feedback={feedback}
+    >
+      {children}
+    </DrawerForm>
   </Drawer>
 );
 
