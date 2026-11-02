@@ -44,6 +44,8 @@ const ProductListSection = ({
           appearance="outline"
           // Not `disabled`: the button keeps the focus while it loads.
           aria-disabled={isFetchingNextPage}
+          // `aria-disabled` does not stop the click, so the guard avoids a second
+          // request while the next page is loading.
           onClick={() => {
             if (!isFetchingNextPage) {
               onLoadMore();
