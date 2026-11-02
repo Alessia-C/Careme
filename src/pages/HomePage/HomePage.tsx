@@ -1,60 +1,16 @@
 import { useCallback, useState } from 'react';
 import PageHeader from '../../components/PageHeader/PageHeader';
+import VisuallyHiddenStatus from '../../components/VisuallyHiddenStatus/VisuallyHiddenStatus';
 import { useProducts } from '../../hooks/useProducts/useProducts';
+import {
+  getProductListAnnouncement,
+  getProductListView,
+} from '../../lib/productListView';
 import AddProductDrawer from './components/AddProductDrawer/AddProductDrawer';
 import ProductListSection from './components/ProductListSection/ProductListSection';
 import ProductSearch from './components/ProductSearch/ProductSearch';
-import ProductsEmptyState, {
-  type EmptyView,
-} from './components/ProductsEmptyState/ProductsEmptyState';
+import ProductsEmptyState from './components/ProductsEmptyState/ProductsEmptyState';
 import styles from './HomePage.module.css';
-
-type View = EmptyView | 'list';
-
-interface ViewState {
-  isPending: boolean;
-  hasListError: boolean;
-  total: number;
-  // True when the empty list is the answer to "no search", not to an old one.
-  isFirstSearch: boolean;
-}
-
-function getView({
-  isPending,
-  hasListError,
-  total,
-  isFirstSearch,
-}: ViewState): View {
-  if (isPending) {
-    return 'loading';
-  }
-  if (hasListError) {
-    return 'error';
-  }
-  if (total > 0) {
-    return 'list';
-  }
-  // The previous list stays on screen while a new search loads
-  // (isPlaceholderData), so an empty one is not yet the answer for this search.
-  return isFirstSearch ? 'first-access' : 'no-results';
-}
-
-// Read out when a search or "Load more" changes the list: the list itself is
-// not a live region, it would be read again in full.
-function getAnnouncement(
-  view: View,
-  shown: number,
-  total: number,
-  isPlaceholderData: boolean,
-) {
-  if (isPlaceholderData) {
-    return 'Loading products…';
-  }
-  if (view === 'list') {
-    return `Showing ${shown} of ${total} products`;
-  }
-  return view === 'no-results' ? 'No product found' : '';
-}
 
 function HomePage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -89,7 +45,7 @@ function HomePage() {
   // Stable, so the memoized empty state is not rendered again with the page.
   const retry = useCallback(() => void refetch(), [refetch]);
 
-  const view = getView({
+  const view = getProductListView({
     isPending,
     // A failed "Load more" keeps the products already shown: only a failure of
     // the whole list replaces it.
@@ -103,7 +59,7 @@ function HomePage() {
 
   return (
     <div className={styles.page}>
-      <title>Careme</title>
+      <title>Your products – Careme</title>
       {showHeader && (
         <>
           <PageHeader
@@ -112,11 +68,19 @@ function HomePage() {
             onAction={openDrawer}
           />
           <ProductSearch disabled onSearch={setSearch} />
-          <p className={styles.visuallyHidden} role="status">
-            {getAnnouncement(view, products.length, total, isPlaceholderData)}
-          </p>
         </>
       )}
+
+      {/* Always in the page, and only its text changes: a live region that
+          appears already filled is not announced by many screen readers. */}
+      <VisuallyHiddenStatus>
+        {getProductListAnnouncement({
+          view,
+          shown: products.length,
+          total,
+          isPlaceholderData,
+        })}
+      </VisuallyHiddenStatus>
 
       {view === 'list' ? (
         <ProductListSection

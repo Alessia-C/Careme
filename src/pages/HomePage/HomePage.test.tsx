@@ -47,7 +47,11 @@ describe('HomePage: loading', () => {
     mockProductsApi(() => jsonResponse({ products: [], total: 0 }));
     renderPage();
 
-    expect(screen.getByRole('status')).toHaveTextContent('Loading products');
+    // The loading state announces itself: the page's own live region is empty.
+    expect(screen.getByText('Loading products…')).toHaveAttribute(
+      'role',
+      'status',
+    );
     expect(
       screen.queryByRole('heading', { level: 1, name: 'Your products' }),
     ).not.toBeInTheDocument();
