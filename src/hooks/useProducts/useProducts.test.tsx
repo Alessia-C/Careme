@@ -148,4 +148,20 @@ describe('useProducts', () => {
     expect(result.current.products).toHaveLength(2);
     await waitFor(() => expect(result.current.products).toHaveLength(1));
   });
+
+  it('does not ask the API again on window focus or reconnect', async () => {
+    const fetchMock = mockFetch(
+      jsonResponse({ products: makeProducts(1), total: 1 }),
+    );
+    const { result } = renderProducts();
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    fetchMock.mockClear();
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+      window.dispatchEvent(new Event('online'));
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

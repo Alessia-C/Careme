@@ -1,4 +1,4 @@
-.emptyState {
+.contentState {
   display: flex;
   flex-direction: column;
   gap: var(--space-32);
@@ -29,4 +29,17 @@
   margin: 0;
   font: var(--text-body);
   color: var(--color-grey-600);
+}
+
+.loadingText {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-grey-600);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  align-items: flex-start;
 }
