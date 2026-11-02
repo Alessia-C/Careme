@@ -49,8 +49,8 @@ describe('HomePage: loading', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading products');
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Your products' }),
-    ).toBeInTheDocument();
+      screen.queryByRole('heading', { level: 1, name: 'Your products' }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -63,8 +63,8 @@ describe('HomePage: first access', () => {
       await screen.findByRole('heading', { name: 'Add your product' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Your products' }),
-    ).toBeInTheDocument();
+      screen.queryByRole('heading', { level: 1, name: 'Your products' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(
         'Start by adding your first product to manage your catalog',

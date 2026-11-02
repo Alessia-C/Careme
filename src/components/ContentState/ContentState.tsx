@@ -5,7 +5,7 @@ import styles from './ContentState.module.css';
 
 export type ContentStatus = 'default' | 'error' | 'loading';
 
-interface ContentStateProps {
+export interface ContentStateProps {
   title: string;
   // 'default' covers the empty and "nothing found" cases, which differ only in
   // the content the caller passes.

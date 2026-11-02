@@ -1,16 +1,15 @@
 import { useCallback, useState } from 'react';
-import Button from '../../components/Button/Button';
-import ContentState from '../../components/ContentState/ContentState';
-import Feedback from '../../components/Feedback/Feedback';
 import PageHeader from '../../components/PageHeader/PageHeader';
-import plusIcon from '../../assets/icons/plus.svg';
 import { useProducts } from '../../hooks/useProducts/useProducts';
 import AddProductDrawer from './components/AddProductDrawer/AddProductDrawer';
-import ProductList from './components/ProductList/ProductList';
+import ProductListSection from './components/ProductListSection/ProductListSection';
 import ProductSearch from './components/ProductSearch/ProductSearch';
+import ProductsEmptyState, {
+  type EmptyView,
+} from './components/ProductsEmptyState/ProductsEmptyState';
 import styles from './HomePage.module.css';
 
-type View = 'loading' | 'error' | 'first-access' | 'no-results' | 'list';
+type View = EmptyView | 'list';
 
 interface ViewState {
   isPending: boolean;
@@ -85,7 +84,10 @@ function HomePage() {
     setDrawerKey((key) => key + 1);
     setIsDrawerOpen(true);
   }, []);
+
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+  // Stable, so the memoized empty state is not rendered again with the page.
+  const retry = useCallback(() => void refetch(), [refetch]);
 
   const view = getView({
     isPending,
@@ -103,90 +105,31 @@ function HomePage() {
     <div className={styles.page}>
       <title>Careme</title>
       {showHeader && (
-        <PageHeader
-          title="Your products"
-          actionLabel="Add product"
-          onAction={openDrawer}
+        <>
+          <PageHeader
+            title="Your products"
+            actionLabel="Add product"
+            onAction={openDrawer}
+          />
+          <ProductSearch disabled onSearch={setSearch} />
+          <p className={styles.visuallyHidden} role="status">
+            {getAnnouncement(view, products.length, total, isPlaceholderData)}
+          </p>
+        </>
+      )}
+
+      {view === 'list' ? (
+        <ProductListSection
+          products={products}
+          isBusy={isPlaceholderData}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          isFetchNextPageError={isFetchNextPageError}
+          onDetail={setSelectedProductId}
+          onLoadMore={() => void fetchNextPage()}
         />
-      )}
-
-      {/* Disabled until the search has its own issue: the field is in the design,
-          but its behavior is not part of the product list story. */}
-      {showHeader && <ProductSearch disabled onSearch={setSearch} />}
-
-      {showHeader && (
-        <p className={styles.visuallyHidden} role="status">
-          {getAnnouncement(view, products.length, total, isPlaceholderData)}
-        </p>
-      )}
-
-      {view === 'loading' && (
-        <ContentState status="loading" title="Loading products…" />
-      )}
-
-      {view === 'error' && (
-        <ContentState
-          status="error"
-          title="We couldn’t load your products"
-          text="Please check your connection and try again."
-        >
-          <div className={styles.action}>
-            <Button label="Try again" onClick={() => void refetch()} />
-          </div>
-        </ContentState>
-      )}
-
-      {view === 'first-access' && (
-        <ContentState
-          title="Add your product"
-          text="Start by adding your first product to manage your catalog"
-          icon={
-            <div className={styles.icon}>
-              <img src={plusIcon} alt="" width={32} height={32} />
-            </div>
-          }
-        >
-          <div className={styles.action}>
-            <Button label="Add product" onClick={openDrawer} />
-          </div>
-        </ContentState>
-      )}
-
-      {view === 'no-results' && (
-        <ContentState
-          title="No product found"
-          text="Try a different name or brand"
-        />
-      )}
-
-      {view === 'list' && (
-        <div aria-busy={isPlaceholderData}>
-          <ProductList products={products} onDetail={setSelectedProductId} />
-          {isFetchNextPageError && (
-            <Feedback
-              status="error"
-              title="We couldn’t load more products"
-              description="Please try again."
-              customClassName={styles.moreError}
-            />
-          )}
-          {hasNextPage && (
-            <div className={styles.more}>
-              <Button
-                label={isFetchingNextPage ? 'Loading…' : 'Load more'}
-                variant="secondary"
-                appearance="outline"
-                // Not `disabled`: the button keeps the focus while it loads.
-                aria-disabled={isFetchingNextPage}
-                onClick={() => {
-                  if (!isFetchingNextPage) {
-                    void fetchNextPage();
-                  }
-                }}
-              />
-            </div>
-          )}
-        </div>
+      ) : (
+        <ProductsEmptyState view={view} onRetry={retry} onAdd={openDrawer} />
       )}
 
       <AddProductDrawer

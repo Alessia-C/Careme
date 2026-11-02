@@ -1,0 +1,15 @@
+.moreError {
+  margin-top: var(--space-16);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-24);
+
+  & button {
+    justify-content: center;
+    min-width: 160px;
+    padding: 10px;
+  }
+}
