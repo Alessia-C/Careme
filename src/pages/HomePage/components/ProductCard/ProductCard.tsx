@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<ProductStatus, string> = {
 
 interface ProductCardProps {
   product: ProductListItem;
-  onDetail: (productId: string) => void;
+  onDetail: (product: ProductListItem) => void;
 }
 
 const ProductCard = ({ product, onDetail }: ProductCardProps) => {
@@ -49,7 +49,7 @@ const ProductCard = ({ product, onDetail }: ProductCardProps) => {
         <Button
           label="Detail"
           aria-label={`Detail ${product.name}`}
-          onClick={() => onDetail(product.id)}
+          onClick={() => onDetail(product)}
           size="large"
           fullWidth
         />

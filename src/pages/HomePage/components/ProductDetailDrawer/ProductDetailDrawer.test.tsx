@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ProductListItem } from '../../../../lib/productsApi';
 import ProductDetailDrawer from './ProductDetailDrawer';
 
 const product = {
@@ -11,6 +12,15 @@ const product = {
   category: 'makeup',
   status: 'new',
   note: 'Warm Neutrals, best seller palette with warm tones',
+};
+
+// What the list shows of the product, without the note.
+const selectedProduct: ProductListItem = {
+  id: 'p1',
+  name: 'Eye Palette',
+  brand: 'MAC',
+  category: 'makeup',
+  status: 'new',
 };
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -32,9 +42,9 @@ const mockFetch = (...responses: Array<() => Response>) => {
 };
 
 const renderDrawer = ({
-  productId = 'p1',
+  selected = selectedProduct,
   onClose = vi.fn(),
-}: { productId?: string | null; onClose?: () => void } = {}) =>
+}: { selected?: ProductListItem | null; onClose?: () => void } = {}) =>
   render(
     // No wait between the attempts, so a retry does not slow the test down.
     <QueryClientProvider
@@ -42,7 +52,7 @@ const renderDrawer = ({
         new QueryClient({ defaultOptions: { queries: { retryDelay: 0 } } })
       }
     >
-      <ProductDetailDrawer open productId={productId} onClose={onClose} />
+      <ProductDetailDrawer open selected={selected} onClose={onClose} />
     </QueryClientProvider>,
   );
 
@@ -51,13 +61,13 @@ afterEach(() => {
 });
 
 describe('ProductDetailDrawer', () => {
-  it('announces the loading state under a neutral title', () => {
+  it('shows the name and the brand of the list while it loads', () => {
     mockFetch(() => jsonResponse({ product }));
     renderDrawer();
 
-    expect(
-      screen.getByRole('dialog', { name: 'Product detail' }),
-    ).toBeVisible();
+    const dialog = screen.getByRole('dialog', { name: 'Eye Palette' });
+    expect(dialog).toBeVisible();
+    expect(dialog).toHaveAccessibleDescription('MAC');
     expect(screen.getByText('Loading product…')).toHaveAttribute(
       'role',
       'status',
@@ -114,6 +124,7 @@ describe('ProductDetailDrawer', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Product not found',
     );
+    expect(screen.getByRole('dialog', { name: 'Eye Palette' })).toBeVisible();
     expect(
       screen.queryByRole('button', { name: 'Try again' }),
     ).not.toBeInTheDocument();
@@ -153,6 +164,40 @@ describe('ProductDetailDrawer', () => {
     expect(fetchMock).toHaveBeenCalled();
   });
 
+  it('keeps the focus in the drawer after Try again', async () => {
+    let fail = true;
+    mockFetch(() =>
+      fail ? new Response(null, { status: 500 }) : jsonResponse({ product }),
+    );
+    const user = userEvent.setup();
+    renderDrawer();
+    const tryAgain = await screen.findByRole('button', { name: 'Try again' });
+    fail = false;
+    await user.click(tryAgain);
+
+    // The button is gone once the request starts: the focus must not fall to
+    // the page.
+    const dialog = screen.getByRole('dialog', { hidden: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).not.toBe(dialog);
+    expect(document.activeElement?.tagName).not.toBe('BUTTON');
+
+    await screen.findByRole('dialog', { name: 'Eye Palette' });
+  });
+
+  it('announces the product when it is loaded, in a region that was already there', async () => {
+    mockFetch(() => jsonResponse({ product }));
+    renderDrawer();
+    const region = screen
+      .getAllByRole('status')
+      .find((status) => status.textContent === '');
+    expect(region).toBeDefined();
+
+    await screen.findByRole('dialog', { name: 'Eye Palette' });
+
+    expect(region).toHaveTextContent('Eye Palette, MAC, loaded');
+  });
+
   it('shows the error for a network failure', async () => {
     vi.stubGlobal(
       'fetch',
@@ -170,7 +215,7 @@ describe('ProductDetailDrawer', () => {
 
   it('asks for nothing without a product', () => {
     const fetchMock = mockFetch(() => jsonResponse({ product }));
-    renderDrawer({ productId: null });
+    renderDrawer({ selected: null });
 
     expect(fetchMock).not.toHaveBeenCalled();
   });

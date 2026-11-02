@@ -16,7 +16,7 @@ Lets a logged-in user open one of their own products from the [product list](pro
 
 - The "Detail" button of a product card opens a side drawer ([`ProductDetailDrawer`](../../src/pages/HomePage/components/ProductDetailDrawer/ProductDetailDrawer.tsx)). The drawer is a `<dialog>` (via `Drawer` and `Dialog`), so it is announced as a dialog, traps the focus, and closes with Esc, a click on the overlay or the close button (X).
 - On close, the focus goes back to the "Detail" button that opened it. The page gives the drawer a new `key` on every open, so it mounts again each time.
-- The title is the product name and the subtitle is the brand. The subtitle also describes the dialog for screen readers (`aria-describedby`). Until the product is loaded, and when it fails, the title is "Product detail".
+- The title is the product name and the subtitle is the brand. The subtitle also describes the dialog for screen readers (`aria-describedby`). The name and the brand come from the product card that opened the drawer, so they are the title from the first moment, while the product loads and when it fails. Once loaded, the name and brand of the product replace them. When the product loads, a visually hidden live region in the drawer says "<name>, <brand>, loaded", because the new title is not announced by itself.
 - The body is a description list with Category (Skincare or Makeup), Status (New, Used or Finished) and Note. A missing note shows "No note" in a muted style, with no empty value. Long text wraps.
 - The footer has the "Update" and "Delete" buttons, shown only once the product is loaded. Both are **disabled**: updating and deleting from the drawer have their own issue.
 - There is no Cancel button, so on a phone the close button (X) stays visible (`showCloseOnMobile`). In the add product drawer it is hidden on phones, where the form has its own Cancel.
@@ -25,11 +25,11 @@ Lets a logged-in user open one of their own products from the [product list](pro
 
 ### States
 
-- Loading: a `ContentState` with a loader and "Loading product…". If the product is already in the cache (for example it was opened before), it is shown at once while it is asked again.
+- Loading: a `ContentState` with a loader and "Loading product…". If the product is already in the cache (for example it was opened before), it is shown at once.
 - Not found: a red `ContentState` "Product not found" with "It may no longer be available.", and no "Try again". It is shown for `404` and for `403`, so the screen never tells whether an id exists or why it cannot be read.
-- Error (network, server, `429`, a body that is not a product): a red `ContentState` "We couldn’t load the product" with "Please check your connection and try again." and a "Try again" button that repeats the request. A failed request hides the cached product, so a product removed from another tab is not kept on screen.
+- Error (network, server, `429`, a body that is not a product): a red `ContentState` "We couldn’t load the product" with "Please check your connection and try again." and a "Try again" button that repeats the request. A failed request hides the cached product, so a product removed from another tab is not kept on screen. "Try again" moves the focus to the content of the drawer, because the button is replaced by the loader as soon as the request starts.
 - The request is retried once automatically before the error is shown. A `401` and a not found are not retried; a `401` ends the session (see [Session expiry](session-expiry.md)).
-- The product is asked again every time the drawer opens. It is not asked again on window focus or on reconnect.
+- A product loaded in the last 30 seconds is not asked again when the drawer opens: the cached one is shown. After that it is shown at once and asked again, so a change made from another tab appears. It is not asked again on window focus or on reconnect. Creating a product refreshes the list only, not the details already loaded.
 
 ### API contract
 
@@ -74,7 +74,9 @@ Reads one row of `products` by `id` ([migration](../../supabase/migrations/20260
 
 ## Changelog
 
-| Date       | Change                                                 | PR  |
-| ---------- | ------------------------------------------------------ | --- |
-| 2026-11-01 | Initial implementation (backend)                       | TBD |
-| 2026-11-02 | Read-only detail drawer on the home page, `useProduct` | TBD |
+| Date       | Change                                                                                                                                              | PR  |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| 2026-11-01 | Initial implementation (backend)                                                                                                                    | TBD |
+| 2026-11-02 | Read-only detail drawer on the home page, `useProduct`                                                                                              | TBD |
+| 2026-11-02 | Title and subtitle are the name and brand of the product card from the first moment, not "Product detail"                                           | TBD |
+| 2026-11-02 | Loaded product announced to screen readers; focus kept after "Try again"; product cached for 30 seconds; creating a product refreshes the list only | TBD |

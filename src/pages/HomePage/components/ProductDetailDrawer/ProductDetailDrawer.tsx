@@ -1,7 +1,10 @@
+import { useRef } from 'react';
 import Button from '../../../../components/Button/Button';
 import ContentState from '../../../../components/ContentState/ContentState';
 import Drawer from '../../../../components/Drawer/Drawer';
+import VisuallyHiddenStatus from '../../../../components/VisuallyHiddenStatus/VisuallyHiddenStatus';
 import { useProduct } from '../../../../hooks/useProduct/useProduct';
+import type { ProductListItem } from '../../../../lib/productsApi';
 import type { Category, ProductStatus } from '../../../../../shared/products';
 import styles from './ProductDetailDrawer.module.css';
 
@@ -17,28 +20,37 @@ const STATUS_LABELS: Record<ProductStatus, string> = {
   finished: 'Finished',
 };
 
-// The name is the title once the product is loaded: until then the drawer
-// still needs a name for screen readers.
-const FALLBACK_TITLE = 'Product detail';
-
 interface ProductDetailDrawerProps {
   open: boolean;
-  productId: string | null;
+  // The product as the list shows it: its name and brand are the title and
+  // the subtitle from the first moment, and what is loaded takes over.
+  selected: ProductListItem | null;
   onClose: () => void;
 }
 
 // Read-only detail of one product. The page gives it a new key on every open,
-// so it asks for the product again each time and shows the cached one meanwhile.
+// so the cached product is shown at once and asked again when it is stale.
 const ProductDetailDrawer = ({
   open,
-  productId,
+  selected,
   onClose,
 }: ProductDetailDrawerProps) => {
-  const { product, isPending, isError, isNotFound, refetch } =
-    useProduct(productId);
+  const { product, isPending, isError, isNotFound, refetch } = useProduct(
+    selected?.id ?? null,
+  );
   // A failed request wins over the cached product: if it was removed from
   // another tab, the drawer must not keep showing it.
   const loaded = isError ? undefined : product;
+  // The loaded product is the newest, if its name or brand changed elsewhere.
+  const shown = loaded ?? selected;
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // "Try again" is replaced by the loader as soon as the request starts, and
+  // the focus would fall to the page. It goes to the content, which stays.
+  const retry = () => {
+    void refetch();
+    contentRef.current?.focus();
+  };
 
   let content;
   if (isError) {
@@ -54,12 +66,7 @@ const ProductDetailDrawer = ({
         title="We couldn’t load the product"
         text="Please check your connection and try again."
       >
-        <Button
-          label="Try again"
-          onClick={() => void refetch()}
-          size="large"
-          fullWidth
-        />
+        <Button label="Try again" onClick={retry} size="large" fullWidth />
       </ContentState>
     );
   } else if (loaded) {
@@ -88,8 +95,8 @@ const ProductDetailDrawer = ({
   return (
     <Drawer
       open={open}
-      title={loaded ? loaded.name : FALLBACK_TITLE}
-      subtitle={loaded?.brand}
+      title={shown?.name ?? ''}
+      subtitle={shown?.brand}
       onClose={onClose}
       // No Cancel button here: on a phone the X is the only way to close it.
       showCloseOnMobile
@@ -110,7 +117,15 @@ const ProductDetailDrawer = ({
         )
       }
     >
-      {content}
+      <div ref={contentRef} tabIndex={-1} className={styles.content}>
+        {content}
+      </div>
+      {/* Always in the drawer, and only its text changes: the loader and the
+          error say themselves what they are, but the product appears without
+          a word to a screen reader. */}
+      <VisuallyHiddenStatus>
+        {loaded ? `${loaded.name}, ${loaded.brand}, loaded` : ''}
+      </VisuallyHiddenStatus>
     </Drawer>
   );
 };

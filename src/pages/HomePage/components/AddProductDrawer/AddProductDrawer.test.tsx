@@ -161,7 +161,9 @@ describe('AddProductDrawer', () => {
       status: 'used',
       note: 'Warm neutrals',
     });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['products'] });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['products', 'list'],
+    });
   });
 
   it('can be submitted with the Enter key', async () => {

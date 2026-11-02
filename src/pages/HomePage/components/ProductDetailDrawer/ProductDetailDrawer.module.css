@@ -1,3 +1,15 @@
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+
+  /* Only a target for the focus after "Try again": it is not a control. */
+  &:focus {
+    outline: none;
+  }
+}
+
 .details {
   display: flex;
   flex: 1;

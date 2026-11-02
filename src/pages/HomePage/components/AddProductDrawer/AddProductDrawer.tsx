@@ -8,7 +8,7 @@ import { useForm } from '../../../../hooks/useForm/useForm';
 import { useSubmit } from '../../../../hooks/useSubmit/useSubmit';
 import {
   createProduct,
-  PRODUCTS_QUERY_KEY,
+  PRODUCTS_LIST_QUERY_KEY,
   type CreateProductResult,
 } from '../../../../lib/productsApi';
 import {
@@ -77,7 +77,9 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       return createProduct({ ...values, category, status });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
+      void queryClient.invalidateQueries({
+        queryKey: PRODUCTS_LIST_QUERY_KEY,
+      });
       onClose();
     },
   });
