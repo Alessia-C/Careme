@@ -39,4 +39,18 @@ describe('SearchInput', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'serum');
     expect(onChange).toHaveBeenCalledTimes(5);
   });
+
+  it('shows an error state, described by the helper', () => {
+    render(<SearchInput status="error" helperText="Invalid characters" />);
+    const input = screen.getByRole('searchbox');
+    expect(input).toBeInvalid();
+    expect(input).toHaveAccessibleDescription('Invalid characters');
+  });
+
+  it('has no description when the helper is empty', () => {
+    render(<SearchInput helperText="" />);
+    expect(screen.getByRole('searchbox')).not.toHaveAttribute(
+      'aria-describedby',
+    );
+  });
 });

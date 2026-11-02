@@ -1,11 +1,31 @@
-/* The design has no visible page title in this state, but the page needs an h1. */
-.pageTitle {
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* The first access and loading states have no visible page title in the
+   design, but the page needs an h1. */
+.visuallyHidden {
   position: absolute;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.header {
+  display: flex;
+  gap: var(--space-16);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pageTitle {
+  margin: 0;
+  font: var(--text-h3);
+  color: var(--color-black-100);
 }
 
 .icon {
@@ -27,6 +47,43 @@
   & button {
     justify-content: center;
     width: 100%;
+    padding: 10px;
+  }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  align-items: center;
+  padding: var(--space-48) var(--space-24);
+}
+
+.loadingText {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-grey-600);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  align-items: flex-start;
+}
+
+.moreError {
+  margin-top: var(--space-16);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-24);
+
+  & button {
+    justify-content: center;
+    min-width: 160px;
     padding: 10px;
   }
 }
