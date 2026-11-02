@@ -14,7 +14,7 @@ Lets a logged-in user add a product (name, brand, category, status, optional not
 
 ### The page
 
-- `/` shows the title "Your products" and the [product list](product-list.md). When the user has no products and is not searching, it shows the first-access empty state instead: an `EmptyState` with a plus icon, the title "Add your product", the text "Start by adding your first product to manage your catalog" and an "Add product" button.
+- `/` shows the title "Your products" and the [product list](product-list.md). When the user has no products and is not searching, it shows the first-access empty state instead: an `ContentState` with a plus icon, the title "Add your product", the text "Start by adding your first product to manage your catalog" and an "Add product" button.
 - The button opens the "Add Product" drawer, a side panel built on the native `<dialog>`: `AddProductDrawer` provides the fields and the submit logic, `FormDrawer` the structure shared by form drawers (title, scrolling fields, messages, and the submit and Cancel buttons).
 - After a successful creation the drawer closes and the list refreshes, so the new product appears (the first one replaces the empty state).
 
@@ -80,7 +80,7 @@ Reads and writes `products` only through the API (the frontend never talks to Su
   - [`src/lib/productsApi.test.ts`](../../src/lib/productsApi.test.ts)
   - [`src/components/FormDrawer/FormDrawer.test.tsx`](../../src/components/FormDrawer/FormDrawer.test.tsx)
   - [`src/components/Drawer/Drawer.test.tsx`](../../src/components/Drawer/Drawer.test.tsx)
-  - [`src/pages/HomePage/components/EmptyState/EmptyState.test.tsx`](../../src/pages/HomePage/components/EmptyState/EmptyState.test.tsx)
+  - [`src/components/ContentState/ContentState.test.tsx`](../../src/components/ContentState/ContentState.test.tsx)
 - E2E tests: [`e2e/add-product.spec.ts`](../../e2e/add-product.spec.ts) (first product added from the empty state; Cancel closes the drawer without creating anything)
 
 ## Open decisions

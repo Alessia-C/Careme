@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { UnauthorizedError } from '../../lib/apiFetch';
 import {
@@ -12,10 +13,6 @@ export const PRODUCTS_PAGE_SIZE = 12;
 // The default is 3 retries with backoff, which would keep the user waiting
 // several seconds before the error and its "Try again" button appear.
 const LIST_RETRIES = 1;
-
-// Coming back to the page or to the window does not ask the API again for
-// every page already loaded. Creating a product invalidates the list anyway.
-const LIST_STALE_TIME_MS = 30_000;
 
 // Products created between two "Load more" shift the offsets, so a product can
 // come in two pages: keep the first one, or React sees a duplicate key.
@@ -56,7 +53,12 @@ export function useProducts(search: string) {
       );
       return loaded < lastPage.total ? loaded : undefined;
     },
-    staleTime: LIST_STALE_TIME_MS,
+    // No polling: the list changes only when this user changes it, so it is
+    // never stale by time. Creating a product invalidates it, and "Try again"
+    // and a new search ask the API on their own. Focus and reconnect do not.
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: (failureCount, error) =>
       !(error instanceof UnauthorizedError) && failureCount < LIST_RETRIES,
     // The old list stays on screen while a new search loads: the page does not
@@ -64,11 +66,19 @@ export function useProducts(search: string) {
     placeholderData: keepPreviousData,
   });
 
-  const pages = query.data?.pages ?? [];
+  // Memoized on the query data: the list keeps its identity between renders
+  // that do not change it, so the memoized ProductList is not rendered again.
+  const { products, total } = useMemo(() => {
+    const pages = query.data?.pages ?? [];
+    return {
+      products: uniqueById(pages.flatMap((page) => page.products)),
+      total: pages[pages.length - 1]?.total ?? 0,
+    };
+  }, [query.data]);
 
   return {
-    products: uniqueById(pages.flatMap((page) => page.products)),
-    total: pages[pages.length - 1]?.total ?? 0,
+    products,
+    total,
     isPending: query.isPending,
     isError: query.isError,
     isFetchNextPageError: query.isFetchNextPageError,
