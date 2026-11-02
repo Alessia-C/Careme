@@ -71,22 +71,32 @@ const ProductDetailDrawer = ({
     );
   } else if (loaded) {
     content = (
-      <dl className={styles.details}>
-        <div className={styles.row}>
-          <dt className={styles.label}>Category</dt>
-          <dd className={styles.value}>{CATEGORY_LABELS[loaded.category]}</dd>
-        </div>
-        <div className={styles.row}>
-          <dt className={styles.label}>Status</dt>
-          <dd className={styles.value}>{STATUS_LABELS[loaded.status]}</dd>
-        </div>
-        <div className={styles.row}>
-          <dt className={styles.label}>Note</dt>
-          <dd className={styles.value} data-empty={!loaded.note || undefined}>
-            {loaded.note || 'No note'}
-          </dd>
-        </div>
-      </dl>
+      // A long note makes this area scroll. Safari does not let the keyboard
+      // reach a scrolling area with nothing to focus in it, so it is a
+      // focusable region, with a name for screen readers.
+      <div
+        className={styles.scroll}
+        role="region"
+        aria-label="Product details"
+        tabIndex={0}
+      >
+        <dl className={styles.details}>
+          <div className={styles.row}>
+            <dt className={styles.label}>Category</dt>
+            <dd className={styles.value}>{CATEGORY_LABELS[loaded.category]}</dd>
+          </div>
+          <div className={styles.row}>
+            <dt className={styles.label}>Status</dt>
+            <dd className={styles.value}>{STATUS_LABELS[loaded.status]}</dd>
+          </div>
+          <div className={styles.row}>
+            <dt className={styles.label}>Note</dt>
+            <dd className={styles.value} data-empty={!loaded.note || undefined}>
+              {loaded.note || 'No note'}
+            </dd>
+          </div>
+        </dl>
+      </div>
     );
   } else if (isPending) {
     content = <ContentState status="loading" title="Loading product…" />;

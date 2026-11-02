@@ -160,7 +160,7 @@ describe('Dialog', () => {
       expect(getDialog()).toHaveAccessibleDescription('MAC');
     });
 
-    it('prefers the description to the subtitle for describing the dialog', () => {
+    it('describes the dialog with the subtitle and then the description', () => {
       render(
         <Dialog
           open
@@ -174,7 +174,7 @@ describe('Dialog', () => {
         </Dialog>,
       );
 
-      expect(getDialog()).toHaveAccessibleDescription('Read only');
+      expect(getDialog()).toHaveAccessibleDescription('MAC Read only');
     });
 
     it('ignores the subtitle in the default layout', () => {

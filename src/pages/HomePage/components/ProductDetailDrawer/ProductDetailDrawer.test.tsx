@@ -96,6 +96,18 @@ describe('ProductDetailDrawer', () => {
     );
   });
 
+  it('puts the details in a region that the keyboard can reach and scroll', async () => {
+    mockFetch(() => jsonResponse({ product }));
+    renderDrawer();
+
+    const region = await screen.findByRole('region', {
+      name: 'Product details',
+    });
+
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(region).toContainElement(screen.getByText('Category'));
+  });
+
   it.each([
     ['null', null],
     ['empty', ''],

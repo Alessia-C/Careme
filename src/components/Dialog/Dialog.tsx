@@ -14,8 +14,8 @@ interface DialogProps {
   // 'side' is the layout of the Drawer: the title sits on the left of a header
   // with its own close button, and the box is a panel on the right.
   layout?: 'center' | 'side';
-  // Under the title, in the 'side' layout only. It also describes the dialog
-  // when there is no description.
+  // Under the title, in the 'side' layout only. It also describes the dialog,
+  // before the description if there is one.
   subtitle?: string;
   // Phones hide the close button of a side panel, because a form has its own
   // Cancel. A panel without one asks to keep it.
@@ -40,11 +40,12 @@ const Dialog = ({
   const descriptionId = useId();
   const subtitleId = useId();
   const sideSubtitle = layout === 'side' ? subtitle : undefined;
-  const describedBy = description
-    ? descriptionId
-    : sideSubtitle
-      ? subtitleId
-      : undefined;
+  // In the order they appear on screen: the subtitle is in the header, above
+  // the description.
+  const describedBy =
+    [sideSubtitle && subtitleId, description && descriptionId]
+      .filter(Boolean)
+      .join(' ') || undefined;
   // The native 'close' event also fires when we call dialog.close() ourselves.
   // This flag tells handleClose to ignore that event, so onClose only reports
   // closes the user caused (Esc or backdrop click).
