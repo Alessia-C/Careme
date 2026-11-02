@@ -12,7 +12,7 @@ const PageHeader = ({ title, actionLabel, onAction }: PageHeaderProps) => (
   <div className={styles.header}>
     <h1 className={styles.title}>{title}</h1>
     <div className={styles.action}>
-      <Button label={actionLabel} onClick={onAction} />
+      <Button label={actionLabel} onClick={onAction} size="large" fullWidth />
     </div>
   </div>
 );

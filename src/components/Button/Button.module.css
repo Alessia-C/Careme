@@ -95,3 +95,12 @@
     color: var(--color-grey-400);
   }
 }
+
+.large {
+  padding: 10px;
+}
+
+.fullWidth {
+  justify-content: center;
+  width: 100%;
+}
