@@ -15,7 +15,7 @@ Lets a logged-in user add a product (name, brand, category, status, optional not
 ### The page
 
 - `/` shows the title "Your products" and the [product list](product-list.md). When the user has no products and is not searching, it shows the first-access empty state instead, without the title (the page has no `h1` there): a `ContentState` with a plus icon, the title "Add your product", the text "Start by adding your first product to manage your catalog" and an "Add product" button.
-- The button opens the "Add Product" drawer, a side panel built on the native `<dialog>`: `AddProductDrawer` provides the fields and the submit logic, `FormDrawer` the structure shared by form drawers (title, scrolling fields, messages, and the submit and Cancel buttons).
+- The button opens the "Add Product" drawer, a side panel built on the native `<dialog>`: `AddProductDrawer` provides the fields and the submit logic, `FormDrawer` the drawer around the form and `DrawerForm` the structure shared with the edit mode of the [product detail](product-detail.md) (scrolling fields, messages, and the submit and Cancel buttons). The fields come from `ProductFields`, shared with [Product update](product-update.md), and the rules from [`src/lib/productForm.ts`](../../src/lib/productForm.ts).
 - After a successful creation the drawer closes and the list refreshes, so the new product appears (the first one replaces the empty state).
 
 ### The drawer
@@ -27,7 +27,7 @@ Lets a logged-in user add a product (name, brand, category, status, optional not
   - Brand\* (text, required, up to 100 characters, placeholder "Enter brand name").
   - Category\* (select: Makeup, Skincare). Default: Makeup.
   - Status\* (select: New, Used, Finished). Default: New.
-  - Note (textarea, optional, up to 500 characters, placeholder "Enter notes…").
+  - Note (textarea, optional, up to 500 characters, enforced with `maxLength` on the field as well as by the validation, placeholder "Enter notes…").
 - The two selects always hold a valid value, so the form can never be sent with an empty category or status.
 - Validation is inline, next to each field, on the same rules as the API ([`shared/products.ts`](../../shared/products.ts)): a blank Name shows "Name is required", a blank Brand shows "Brand is required", a Note longer than 500 characters shows "Note must be at most 500 characters". The "Add Product" button is disabled while the form is invalid.
 - The form always starts empty with the defaults: the page remounts the drawer every time it opens, so nothing typed before is shown again.
@@ -78,6 +78,8 @@ Reads and writes `products` only through the API (the frontend never talks to Su
   - [`src/pages/HomePage/HomePage.test.tsx`](../../src/pages/HomePage/HomePage.test.tsx)
   - [`src/pages/HomePage/components/AddProductDrawer/AddProductDrawer.test.tsx`](../../src/pages/HomePage/components/AddProductDrawer/AddProductDrawer.test.tsx)
   - [`src/lib/productsApi.test.ts`](../../src/lib/productsApi.test.ts)
+  - [`src/components/DrawerForm/DrawerForm.test.tsx`](../../src/components/DrawerForm/DrawerForm.test.tsx)
+  - [`src/lib/productForm.test.ts`](../../src/lib/productForm.test.ts)
   - [`src/components/FormDrawer/FormDrawer.test.tsx`](../../src/components/FormDrawer/FormDrawer.test.tsx)
   - [`src/components/Drawer/Drawer.test.tsx`](../../src/components/Drawer/Drawer.test.tsx)
   - [`src/components/ContentState/ContentState.test.tsx`](../../src/components/ContentState/ContentState.test.tsx)
@@ -91,7 +93,8 @@ Reads and writes `products` only through the API (the frontend never talks to Su
 
 ## Changelog
 
-| Date       | Change                                        | PR  |
-| ---------- | --------------------------------------------- | --- |
-| 2026-11-01 | Initial implementation (drawer, phone layout) | TBD |
-| 2026-11-01 | The list refreshes after a creation (#67)     | TBD |
+| Date       | Change                                                                                                         | PR  |
+| ---------- | -------------------------------------------------------------------------------------------------------------- | --- |
+| 2026-11-01 | Initial implementation (drawer, phone layout)                                                                  | TBD |
+| 2026-11-01 | The list refreshes after a creation (#67)                                                                      | TBD |
+| 2026-11-02 | Fields shared with the edit mode (`ProductFields`); the Note has `maxLength` 500; `DrawerForm` extracted (#69) | TBD |

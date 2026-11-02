@@ -91,4 +91,31 @@ describe('Drawer', () => {
       /closeOnMobile/,
     );
   });
+
+  it('closes on a click outside by default', () => {
+    const onClose = vi.fn();
+    renderDrawer({ onClose });
+
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a click outside when closeOnBackdropClick is false', () => {
+    const onClose = vi.fn();
+    render(
+      <Drawer
+        open
+        title="Eye Palette"
+        onClose={onClose}
+        closeOnBackdropClick={false}
+      >
+        <p>Body text</p>
+      </Drawer>,
+    );
+
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

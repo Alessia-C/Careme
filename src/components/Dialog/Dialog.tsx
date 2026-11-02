@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
-import type { MouseEvent, ReactNode } from 'react';
+import type { MouseEvent, ReactNode, SyntheticEvent } from 'react';
 import styles from './Dialog.module.css';
 
 interface DialogProps {
@@ -48,9 +48,13 @@ const Dialog = ({
       .join(' ') || undefined;
   // The native 'close' event also fires when we call dialog.close() ourselves.
   // This flag tells handleClose to ignore that event, so onClose only reports
-  // closes the user caused (Esc or backdrop click).
+  // closes the user caused.
   const closingFromProp = useRef(false);
 
+  // Runs after every render, not only when `open` changes: if the browser
+  // closed the dialog by itself while the parent still wants it open (Esc
+  // twice in a row in Chrome ignores preventDefault), the next render opens
+  // it again instead of leaving the page without a dialog.
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
@@ -61,7 +65,15 @@ const Dialog = ({
       closingFromProp.current = true;
       dialog.close();
     }
-  }, [open]);
+  });
+
+  // Esc asks to close, it does not close: the parent decides, and it can
+  // refuse (e.g. to ask first about unsaved changes) by keeping `open`. The
+  // dialog only closes when `open` becomes false.
+  const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
+    event.preventDefault();
+    onClose();
+  };
 
   const handleClose = () => {
     if (closingFromProp.current) {
@@ -91,6 +103,7 @@ const Dialog = ({
       role={role}
       aria-labelledby={titleId}
       aria-describedby={describedBy}
+      onCancel={handleCancel}
       onClose={handleClose}
       onClick={handleClick}
       className={[styles.dialog, layout === 'side' && styles.side, className]

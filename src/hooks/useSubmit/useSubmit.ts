@@ -18,7 +18,7 @@ export function useSubmit<Result extends SubmitResult>({
   action,
   onSuccess,
 }: UseSubmitOptions<Result>) {
-  const { mutate, isPending, data } = useMutation({
+  const { mutate, isPending, data, reset } = useMutation({
     mutationFn: action,
     onSuccess: (result) => {
       if (result.ok) {
@@ -42,5 +42,6 @@ export function useSubmit<Result extends SubmitResult>({
       ? (data.reason as Extract<Result, { ok: false }>['reason'])
       : null;
 
-  return { isSubmitting: isPending, errorReason, handleSubmit };
+  // `reset` forgets the last failure, for a form that is shown again.
+  return { isSubmitting: isPending, errorReason, handleSubmit, reset };
 }

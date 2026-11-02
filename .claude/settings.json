@@ -8,7 +8,15 @@
       "Bash(gh repo *)",
       "mcp__claude_ai_Figma__get_metadata",
       "mcp__claude_ai_Figma__get_screenshot",
-      "mcp__claude_ai_Figma__create_session"
+      "mcp__claude_ai_Figma__create_session",
+      "Bash(grep -E '^\\\\s{0,4}<')",
+      "Bash(cd /Users/alessia/dev/Careme/src && cat components/Dialog/Dialog.tsx components/Drawer/Drawer.tsx components/FormDrawer/FormDrawer.tsx; grep -n \"key=\\\\|Drawer\\\\|selected\" pages/HomePage/HomePage.tsx; cat ../docs/api/products-update.md | head -60; grep -rn \"useBlocker\\\\|beforeunload\" . | head; cat lib/queryClient.ts | head -60; cat ../shared/products.ts | head -40)",
+      "Read(//Users/alessia/dev/docs/api/**)",
+      "Read(//Users/alessia/dev/shared/**)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(cd /Users/alessia/dev/Careme/src/pages/HomePage/components/ProductDetailDrawer && cat ProductDetailDrawer.module.css; sed -n 60,400p ProductDetailDrawer.test.tsx; grep -n \"ProductDetailDrawer\" -B3 -A8 ../../HomePage.tsx | head -60)",
+      "Read(//Users/alessia/**)"
     ]
   }
 }

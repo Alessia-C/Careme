@@ -82,6 +82,16 @@ describe('Modal', () => {
     expect(props.onConfirm).not.toHaveBeenCalled();
   });
 
+  it('sends Esc to onDismiss when it is given, not to onCancel', () => {
+    const onDismiss = vi.fn();
+    const props = renderModal({ onDismiss });
+
+    getDialog().close();
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
   it('does not close on a backdrop click', () => {
     const props = renderModal();
 

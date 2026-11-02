@@ -12,6 +12,9 @@ interface DrawerProps {
   footer?: ReactNode;
   // For a drawer with no Cancel button: see Dialog.
   showCloseOnMobile?: boolean;
+  // Set to false when a click outside must not close it (e.g. it holds a form
+  // or a product being read): the X and Esc still ask to close.
+  closeOnBackdropClick?: boolean;
   children: ReactNode;
 }
 
@@ -25,6 +28,7 @@ const Drawer = ({
   onClose,
   footer,
   showCloseOnMobile,
+  closeOnBackdropClick,
   children,
 }: DrawerProps) => (
   <Dialog
@@ -33,6 +37,7 @@ const Drawer = ({
     subtitle={subtitle}
     onClose={onClose}
     showCloseOnMobile={showCloseOnMobile}
+    closeOnBackdropClick={closeOnBackdropClick}
     layout="side"
   >
     <div className={styles.body}>

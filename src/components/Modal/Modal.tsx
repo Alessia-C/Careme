@@ -13,6 +13,9 @@ interface ModalProps {
   variant?: ConfirmVariant;
   onConfirm: () => void;
   onCancel: () => void;
+  // Esc: by default it is the same as Cancel, but a modal whose safe answer is
+  // the confirm button (e.g. "Continue editing") sends it there.
+  onDismiss?: () => void;
 }
 
 const Modal = ({
@@ -24,13 +27,14 @@ const Modal = ({
   variant = 'primary',
   onConfirm,
   onCancel,
+  onDismiss = onCancel,
 }: ModalProps) => (
   <Dialog
     open={open}
     title={title}
     description={description}
     role="alertdialog"
-    onClose={onCancel}
+    onClose={onDismiss}
     closeOnBackdropClick={false}
     className={styles.modal}
   >
