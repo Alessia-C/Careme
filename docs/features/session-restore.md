@@ -13,7 +13,7 @@ a| | |
 ## Behavior
 
 1. On every page load of `/login` and of the protected pages `SessionRestore` calls `GET /api/auth/me` through `fetchSession()` in [`src/lib/authApi.ts`](../../src/lib/authApi.ts), using React Query (`useQuery`, no retries). The browser sends the HttpOnly cookie by itself.
-2. While it waits, the page shows only the spinner ([`Loader`](../../src/components/Loader/Loader.tsx), from the Figma "Loader" component, size Giant, drawn with HTML and CSS only, no image) inside a `<main>`. The spinner is decorative (`aria-hidden`) and stops rotating with `prefers-reduced-motion`; a visually hidden `role="status"` text "Loading" announces the state. Nothing else is rendered, so `ProtectedRoute` does not redirect a logged-in user to `/login`.
+2. While it waits, the page shows only the spinner ([`Loader`](../../src/components/Loader/Loader.tsx), from the Figma "Loader" component, size Giant, drawn with HTML and CSS only, no image) inside a `<main>`. The spinner is decorative (`aria-hidden`) and stops rotating with `prefers-reduced-motion`; a visually hidden `role="status"` text "Loading" ([`VisuallyHiddenStatus`](../../src/components/VisuallyHiddenStatus/VisuallyHiddenStatus.tsx)) announces the state. Nothing else is rendered, so `ProtectedRoute` does not redirect a logged-in user to `/login`.
 3. Outcome:
    - **`200`**: user, role and `expires_at` go into the store and the requested page is rendered. A logged-in user opening `/login` is sent to `/`.
    - **`401` / `403`** (no cookie, expired or revoked session, blocked user): no session. Protected pages redirect to `/login?next=...` as usual, with no message and no `signedOut` state.

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PRODUCTS_PAGE_SIZE } from '../../hooks/useProducts/useProducts';
@@ -56,6 +56,25 @@ describe('HomePage: loading', () => {
       screen.queryByRole('heading', { level: 1, name: 'Your products' }),
     ).not.toBeInTheDocument();
   });
+
+  it('keeps its own live region in the page, empty', () => {
+    mockProductsApi(() => jsonResponse({ products: [], total: 0 }));
+    renderPage();
+
+    const regions = screen.getAllByRole('status');
+    expect(regions.filter((region) => region.textContent === '')).toHaveLength(
+      1,
+    );
+  });
+});
+
+describe('HomePage: document title', () => {
+  it('names the page', async () => {
+    mockProducts([]);
+    renderPage();
+
+    await waitFor(() => expect(document.title).toBe('Your products – Careme'));
+  });
 });
 
 describe('HomePage: first access', () => {
@@ -75,6 +94,7 @@ describe('HomePage: first access', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('search')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
   it('keeps the drawer closed at first', async () => {
