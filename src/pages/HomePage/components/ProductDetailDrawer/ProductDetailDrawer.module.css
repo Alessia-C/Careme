@@ -1,0 +1,44 @@
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+
+  /* Only a target for the focus after "Try again": it is not a control. */
+  &:focus {
+    outline: none;
+  }
+}
+
+/* Same proportions as the buttons of FormDrawer. Button does not take a
+   className, so the buttons are reached from here. */
+.actions {
+  display: flex;
+  gap: var(--space-16);
+  padding-top: var(--space-16);
+}
+
+.actions button {
+  justify-content: center;
+}
+
+.actions button:first-child {
+  flex: 2;
+}
+
+.actions button:last-child {
+  flex: 1;
+}
+
+/* Phones: the buttons stack and both fill the width. */
+@media (max-width: 767px) {
+  .actions {
+    flex-direction: column;
+    gap: var(--space-12);
+  }
+
+  .actions button:first-child,
+  .actions button:last-child {
+    flex: none;
+  }
+}

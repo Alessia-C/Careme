@@ -1,0 +1,59 @@
+.form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-height: 0;
+}
+
+.fields {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-20);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-16);
+}
+
+/* Button does not take a className, so the buttons are reached from here. The
+   submit button, the first one, is twice as wide as Cancel. */
+.actions button {
+  justify-content: center;
+}
+
+.actions button:first-child {
+  flex: 2;
+}
+
+.actions button:last-child {
+  flex: 1;
+}
+
+/* Phones: the buttons stack and both fill the width; Cancel keeps its outline
+   look. The buttons follow the fields instead of sitting at the bottom. */
+@media (max-width: 767px) {
+  .form {
+    gap: var(--space-24);
+  }
+
+  /* The fields still shrink and scroll when they do not fit. */
+  .fields {
+    flex: 0 1 auto;
+    gap: var(--space-16);
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: var(--space-12);
+  }
+
+  .actions button:first-child,
+  .actions button:last-child {
+    flex: none;
+  }
+}

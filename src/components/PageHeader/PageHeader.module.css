@@ -1,0 +1,19 @@
+.header {
+  display: flex;
+  gap: var(--space-16);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font: var(--text-h3);
+  color: var(--color-black-100);
+}
+
+@media (min-width: 768px) {
+  .action {
+    width: 218px;
+    max-width: 100%;
+  }
+}

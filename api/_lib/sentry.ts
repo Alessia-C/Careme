@@ -58,6 +58,24 @@ const BODY_PARSER_ERRORS: Record<string, { status: number; message: string }> =
     },
   };
 
+// A database error (PostgrestError) carries `details` and `hint`, which can
+// echo the row that failed (e.g. "Failing row contains (...)"), that is the
+// user's own data. Sentry gets the message, the code and the stack only.
+function scrubDatabaseError(err: unknown): unknown {
+  if (
+    !(err instanceof Error) ||
+    !('details' in err) ||
+    !('hint' in err) ||
+    !('code' in err)
+  ) {
+    return err;
+  }
+  const scrubbed = new Error(`${err.message} (code ${String(err.code)})`);
+  scrubbed.name = err.name;
+  scrubbed.stack = err.stack;
+  return scrubbed;
+}
+
 function getBodyParserError(err: unknown) {
   if (typeof err !== 'object' || err === null || !('type' in err)) {
     return undefined;
@@ -86,7 +104,7 @@ export async function errorHandler(
 
   // originalUrl without the query string, which may hold personal data.
   const route = req.originalUrl.split('?')[0];
-  Sentry.captureException(err, { tags: { route } });
+  Sentry.captureException(scrubDatabaseError(err), { tags: { route } });
   try {
     await Sentry.flush(2000);
   } catch {

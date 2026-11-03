@@ -10,3 +10,8 @@
 .actions > * {
   flex: 1;
 }
+
+/* Button does not take a className, so the buttons are reached from here. */
+.actions button {
+  justify-content: center;
+}

@@ -29,6 +29,11 @@ export const validateInput = (input: string): boolean => {
   return isNonEmpty;
 };
 
+// Postgres text cannot hold a NUL character: it would fail at the query and
+// become a 500 reported to Sentry, so it is rejected up front with a 400.
+export const hasNulCharacter = (value: string): boolean =>
+  value.includes('\u0000');
+
 export const normalizeEmail = (email: string): string =>
   email.trim().toLowerCase();
 

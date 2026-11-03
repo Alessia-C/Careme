@@ -26,6 +26,31 @@ describe('useForm', () => {
     expect(result.current.isValid).toBe(false);
   });
 
+  it('starts a field from its initial value when one is given', () => {
+    const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));
+    expect(result.current.values).toEqual({
+      name: 'Jane',
+      password: '',
+      confirm: '',
+    });
+  });
+
+  it('accepts a change event from a select or a textarea', () => {
+    const { result } = renderHook(() => useForm(rules));
+    const selectEvent = {
+      target: { value: 'makeup' },
+    } as ChangeEvent<HTMLSelectElement>;
+    const textareaEvent = {
+      target: { value: 'a note' },
+    } as ChangeEvent<HTMLTextAreaElement>;
+
+    act(() => result.current.field('name').onChange(selectEvent));
+    act(() => result.current.field('password').onChange(textareaEvent));
+
+    expect(result.current.values.name).toBe('makeup');
+    expect(result.current.values.password).toBe('a note');
+  });
+
   it('updates a single value on change', () => {
     const { result } = renderHook(() => useForm(rules));
     act(() => result.current.field('name').onChange(changeEvent('Jane')));
@@ -76,5 +101,63 @@ describe('useForm', () => {
 
     act(() => result.current.field('confirm').onChange(changeEvent('abc')));
     expect(result.current.isValid).toBe(true);
+  });
+
+  describe('isDirty', () => {
+    it('is false until a value differs from the initial one', () => {
+      const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));
+      expect(result.current.isDirty).toBe(false);
+
+      act(() => result.current.field('name').onChange(changeEvent('Janet')));
+      expect(result.current.isDirty).toBe(true);
+    });
+
+    it('goes back to false when the initial value is typed again', () => {
+      const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));
+      act(() => result.current.field('name').onChange(changeEvent('Janet')));
+      act(() => result.current.field('name').onChange(changeEvent('Jane')));
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it('ignores the spaces around a value', () => {
+      const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));
+      act(() => result.current.field('name').onChange(changeEvent(' Jane  ')));
+      expect(result.current.isDirty).toBe(false);
+    });
+  });
+
+  describe('reset', () => {
+    it('starts over from the given values, with nothing dirty or touched', () => {
+      const { result } = renderHook(() => useForm(rules));
+      act(() => result.current.field('name').onBlur());
+      act(() => result.current.field('password').onChange(changeEvent('abc')));
+
+      act(() => result.current.reset({ name: 'Jane', password: 'xyz' }));
+
+      expect(result.current.values).toEqual({
+        name: 'Jane',
+        password: 'xyz',
+        confirm: '',
+      });
+      expect(result.current.isDirty).toBe(false);
+      expect(result.current.field('confirm').hasError).toBe(false);
+    });
+
+    it('goes back to the last baseline when called with no values', () => {
+      const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));
+      act(() => result.current.field('name').onChange(changeEvent('Janet')));
+
+      act(() => result.current.reset());
+
+      expect(result.current.values.name).toBe('Jane');
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it('takes the new values as the baseline for isDirty', () => {
+      const { result } = renderHook(() => useForm(rules, { name: 'Jane' }));
+      act(() => result.current.reset({ name: 'Mary' }));
+      act(() => result.current.field('name').onChange(changeEvent('Jane')));
+      expect(result.current.isDirty).toBe(true);
+    });
   });
 });

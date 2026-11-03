@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import VisuallyHiddenStatus from '../../../../components/VisuallyHiddenStatus/VisuallyHiddenStatus';
 import Button from '../../../../components/Button/Button';
 import { useEndSession } from '../../../../hooks/useEndSession/useEndSession';
 import { logout } from '../../../../lib/authApi';
@@ -28,9 +29,9 @@ function AppHeader() {
       <span role="img" aria-label="Careme" className={styles.logo} />
       {/* Always in the DOM: screen readers announce text changes of a live
           region that already exists, not one that appears with its text. */}
-      <p role="status" className={styles.status}>
+      <VisuallyHiddenStatus>
         {isPending ? 'Logging out…' : ''}
-      </p>
+      </VisuallyHiddenStatus>
       <div className={styles.actions}>
         <Button
           label="Logout"

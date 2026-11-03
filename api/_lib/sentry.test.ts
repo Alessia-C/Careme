@@ -47,6 +47,24 @@ describe('errorHandler', () => {
     });
   });
 
+  it('should not send the details or the hint of a database error to Sentry', async () => {
+    const { asExpress } = makeRes();
+    const dbError = Object.assign(new Error('violates check constraint'), {
+      code: '23514',
+      details: 'Failing row contains (1, Secret cream, Secret brand)',
+      hint: 'Secret hint',
+    });
+
+    await errorHandler(dbError, makeReq('POST'), asExpress, vi.fn());
+
+    const [reported] = captureException.mock.calls[0];
+    expect(reported).toBeInstanceOf(Error);
+    expect(reported.message).toBe('violates check constraint (code 23514)');
+    expect(JSON.stringify(reported)).not.toContain('Secret');
+    expect(reported).not.toHaveProperty('details');
+    expect(reported).not.toHaveProperty('hint');
+  });
+
   it('should still answer 500 when flushing Sentry fails', async () => {
     flush.mockRejectedValue(new Error('network down'));
     const { res, asExpress } = makeRes();

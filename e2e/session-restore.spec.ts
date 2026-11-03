@@ -1,10 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
+import { mockEmptyProducts } from './helpers';
 
 // Fake API with a session that lives as long as the "cookie" (a flag here):
 // login sets it, logout and a server failure leave it as the test decides.
 async function mockApi(page: Page, options: { meStatus?: number } = {}) {
   let hasSession = false;
 
+  await mockEmptyProducts(page);
   await page.route('**/api/auth/login', (route) => {
     hasSession = true;
     return route.fulfill({

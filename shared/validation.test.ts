@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  hasNulCharacter,
   isObject,
   normalizeEmail,
   validateEmail,
@@ -105,4 +106,17 @@ describe('validation isObject', () => {
     const result = isObject(value);
     expect(result).toBe(false);
   });
+});
+
+describe('validation hasNulCharacter', () => {
+  it('should return true when the text contains a NUL character', () => {
+    expect(hasNulCharacter('a\u0000b')).toBe(true);
+  });
+
+  it.each(['', 'plain text', 'àèì ✓'])(
+    'should return false for "%s"',
+    (value) => {
+      expect(hasNulCharacter(value)).toBe(false);
+    },
+  );
 });

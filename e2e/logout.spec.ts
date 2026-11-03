@@ -1,8 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
-import { mockNoSession } from './helpers';
+import { mockEmptyProducts, mockNoSession } from './helpers';
 
 async function mockApi(page: Page) {
   await mockNoSession(page);
+  await mockEmptyProducts(page);
   await page.route('**/api/auth/login', (route) =>
     route.fulfill({
       status: 200,
@@ -90,9 +91,12 @@ test('the signed out message can be closed before it disappears', async ({
 
   await page.getByRole('button', { name: 'Logout' }).click();
 
-  await expect(page.getByRole('status')).toContainText(
-    'You have been signed out',
-  );
+  // Other live regions can be in the page at the same time (the header's and
+  // the home page's), so the message is told apart by its text.
+  const signedOutMessage = page
+    .getByRole('status')
+    .filter({ hasText: 'You have been signed out' });
+  await expect(signedOutMessage).toBeVisible();
   await page.getByRole('button', { name: 'Close message' }).click();
-  await expect(page.getByRole('status')).toHaveCount(0);
+  await expect(signedOutMessage).toHaveCount(0);
 });

@@ -95,4 +95,38 @@ describe('Button', () => {
     render(<Button label="Logout" icon={<span aria-hidden="true" />} />);
     expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
   });
+
+  it('is medium and not full width by default', () => {
+    render(<Button label="Save" />);
+    const { className } = screen.getByRole('button');
+    expect(className).not.toContain('large');
+    expect(className).not.toContain('fullWidth');
+  });
+
+  it('accepts the large size and full width', () => {
+    render(<Button label="Save" size="large" fullWidth />);
+    const { className } = screen.getByRole('button');
+    expect(className).toContain('large');
+    expect(className).toContain('fullWidth');
+  });
+
+  it('keeps the focus and ignores the click when aria-disabled', async () => {
+    const onClick = vi.fn();
+    render(<Button label="Save" aria-disabled onClick={onClick} />);
+    const button = screen.getByRole('button', { name: 'Save' });
+
+    await userEvent.click(button);
+
+    expect(onClick).not.toHaveBeenCalled();
+    expect(button).toHaveFocus();
+  });
+
+  it('calls onClick when aria-disabled is false', async () => {
+    const onClick = vi.fn();
+    render(<Button label="Save" aria-disabled={false} onClick={onClick} />);
+
+    await userEvent.click(screen.getByRole('button'));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
 });

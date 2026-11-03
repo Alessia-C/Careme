@@ -35,3 +35,176 @@ body:has(dialog[open]) {
   color: var(--color-grey-600);
   text-align: center;
 }
+
+/* Side panel (Drawer): under the 64px app header, down to the bottom of the
+   screen, pinned to the right edge. The UA style of a modal dialog already has
+   inset 0, so only the start and the top insets are changed: no margin is
+   needed to move it. height: auto lets the two block insets set the height. */
+.side {
+  inset-block-start: 64px;
+  inset-inline-start: auto;
+  width: min(586px, 100%);
+  max-width: none;
+  height: auto;
+  max-height: none;
+  border-width: 0;
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+}
+
+/* The overlay starts under the header too, so the header is not dimmed. */
+.side::backdrop {
+  background: linear-gradient(
+    to bottom,
+    transparent 64px,
+    var(--color-black-60) 64px
+  );
+}
+
+/* Slides in from the right and slides out the same way. A closed <dialog> is
+   display: none, so the transition has to be allowed on display and overlay
+   too, or the exit would be cut short. @starting-style gives the opening
+   transition its first frame. */
+.side {
+  transition:
+    transform 250ms ease-out,
+    overlay 250ms ease-out allow-discrete,
+    display 250ms ease-out allow-discrete;
+}
+
+.side:not([open]) {
+  transform: translateX(100%);
+}
+
+.side[open] {
+  @starting-style {
+    transform: translateX(100%);
+  }
+}
+
+.side::backdrop {
+  transition:
+    opacity 250ms ease-out,
+    overlay 250ms ease-out allow-discrete,
+    display 250ms ease-out allow-discrete;
+}
+
+.side:not([open])::backdrop {
+  opacity: 0;
+}
+
+.side[open]::backdrop {
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side,
+  .side::backdrop {
+    transition: none;
+  }
+}
+
+.side .content {
+  box-sizing: border-box;
+  height: 100%;
+  gap: var(--space-16);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--color-grey-200);
+}
+
+.side .title {
+  font: var(--text-h4);
+  text-align: left;
+}
+
+.headings {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-grey-600);
+}
+
+/* With a subtitle the header is taller than the close button: the button
+   stays level with the title instead of the middle of both lines. */
+.headerTop {
+  align-items: flex-start;
+}
+
+.headerTop .close {
+  margin-block-start: var(--space-4);
+}
+
+/* 24px is the minimum target size (WCAG 2.5.8): base.css resets the padding,
+   so the size is set here and the 14px icon is centered in it. */
+.close {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  background: transparent;
+  color: var(--color-black-100);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+  }
+}
+
+.closeIcon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  mask: url('../../assets/icons/close.svg') no-repeat center / contain;
+}
+
+/* Forced colors ignore background-color, which would hide the masked icon. */
+@media (forced-colors: active) {
+  .closeIcon {
+    background-color: ButtonText;
+  }
+}
+
+/* Phones: the panel takes the whole width under the header, flat on the grey
+   page background, with a bigger title. There is no close button unless the
+   panel asks for it: a form has its own Cancel, and nothing is left to tap
+   outside the panel. */
+@media (max-width: 767px) {
+  .side {
+    width: 100%;
+    border-radius: 0;
+    background: var(--color-grey-100);
+  }
+
+  .side .content {
+    gap: var(--space-24);
+  }
+
+  .side .header {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .side .title {
+    font: var(--text-h3);
+  }
+
+  .side .close:not(.closeOnMobile) {
+    display: none;
+  }
+}

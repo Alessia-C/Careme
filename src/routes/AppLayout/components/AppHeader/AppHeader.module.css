@@ -1,6 +1,10 @@
-/* Mobile first. From 768px the desktop design applies. */
+/* Mobile first. From 768px (tablet) the larger design applies. */
 
 .header {
+  /* Stays on top while the page scrolls. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -18,15 +22,6 @@
   flex-shrink: 0;
   background-color: var(--color-primary-800);
   mask: url('../../../../assets/icons/logo.svg') no-repeat center / contain;
-}
-
-.status {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 
 .actions button {

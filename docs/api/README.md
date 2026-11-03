@@ -1,22 +1,27 @@
 # API documentation
 
-The backend is a set of Vercel serverless functions in [`api/`](../../api/). A standalone endpoint is a file `api/<name>.ts`, served at `/api/<name>`. A domain with several endpoints (today `auth`) is one Express app exposed as a catch-all function (`api/auth/[...path].ts`): its router, handlers and tests live in files and folders starting with `_` (`api/auth/_app.ts`, `_router.ts`, `_routes/<endpoint>.ts`), which Vercel does not deploy as functions.
+The backend is a set of Vercel serverless functions in [`api/`](../../api/). A standalone endpoint is a file `api/<name>.ts`, served at `/api/<name>`. A domain with several endpoints (today `auth` and `products`) is one Express app exposed as a catch-all function (`api/auth/[...path].ts`, `api/products/index.ts` and `api/products/[...path].ts`): its router, handlers and tests live in files and folders starting with `_` (`api/auth/_app.ts`, `_router.ts`, `_routes/<endpoint>.ts`), which Vercel does not deploy as functions.
 
 - **Local base URL:** `http://localhost:3000` (run with `vercel dev`, see the [README](../../README.md#running-the-app))
 - **Preview/production base URL:** the Vercel deployment URL
 
 ## Endpoints
 
-| Method | Path                                     | Auth           | Description                                              |
-| ------ | ---------------------------------------- | -------------- | -------------------------------------------------------- |
-| `GET`  | [`/api/health`](health.md)               | None           | Liveness check for the serverless runtime                |
-| `GET`  | [`/api/supabase-ping`](supabase-ping.md) | None           | Checks the connection to Supabase                        |
-| `GET`  | [`/api/sentry-test`](sentry-test.md)     | None           | Throws a deliberate error to verify Sentry error capture |
-| `POST` | [`/api/auth/signup`](auth-signup.md)     | None           | Registers a new user via Supabase Auth                   |
-| `POST` | [`/api/auth/login`](auth-login.md)       | None           | Authenticates a user and sets the session cookies        |
-| `POST` | [`/api/auth/refresh`](auth-refresh.md)   | Refresh cookie | Renews the session and rotates both cookies              |
-| `POST` | [`/api/auth/logout`](auth-logout.md)     | JWT            | Revokes the caller's current session                     |
-| `GET`  | [`/api/auth/me`](auth-me.md)             | JWT            | Returns the current user, to restore the session on load |
+| Method   | Path                                      | Auth           | Description                                              |
+| -------- | ----------------------------------------- | -------------- | -------------------------------------------------------- |
+| `GET`    | [`/api/health`](health.md)                | None           | Liveness check for the serverless runtime                |
+| `GET`    | [`/api/supabase-ping`](supabase-ping.md)  | None           | Checks the connection to Supabase                        |
+| `GET`    | [`/api/sentry-test`](sentry-test.md)      | None           | Throws a deliberate error to verify Sentry error capture |
+| `POST`   | [`/api/auth/signup`](auth-signup.md)      | None           | Registers a new user via Supabase Auth                   |
+| `POST`   | [`/api/auth/login`](auth-login.md)        | None           | Authenticates a user and sets the session cookies        |
+| `POST`   | [`/api/auth/refresh`](auth-refresh.md)    | Refresh cookie | Renews the session and rotates both cookies              |
+| `POST`   | [`/api/auth/logout`](auth-logout.md)      | JWT            | Revokes the caller's current session                     |
+| `GET`    | [`/api/auth/me`](auth-me.md)              | JWT            | Returns the current user, to restore the session on load |
+| `POST`   | [`/api/products`](products-create.md)     | JWT            | Creates a product for the caller, flagging a duplicate   |
+| `GET`    | [`/api/products`](products-list.md)       | JWT            | Lists the caller's products, with search and pagination  |
+| `GET`    | [`/api/products/:id`](products-detail.md) | JWT            | Returns one of the caller's products, with its note      |
+| `PUT`    | [`/api/products/:id`](products-update.md) | JWT            | Replaces one of the caller's products                    |
+| `DELETE` | [`/api/products/:id`](products-delete.md) | JWT            | Deletes one of the caller's products                     |
 
 ## Conventions
 

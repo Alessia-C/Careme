@@ -82,11 +82,62 @@ describe('Modal', () => {
     expect(props.onConfirm).not.toHaveBeenCalled();
   });
 
+  it('focuses the confirm button when focusConfirm is set', () => {
+    renderModal({ focusConfirm: true });
+    expect(screen.getByRole('button', { name: 'Remove' })).toHaveFocus();
+  });
+
+  it('sends Esc to onDismiss when it is given, not to onCancel', () => {
+    const onDismiss = vi.fn();
+    const props = renderModal({ onDismiss });
+
+    getDialog().close();
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
   it('does not close on a backdrop click', () => {
     const props = renderModal();
 
     fireEvent.click(getDialog());
 
     expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
+  it('shows the feedback above the buttons', () => {
+    renderModal({ feedback: <p>Something went wrong</p> });
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+  });
+
+  it('ignores the confirm click while confirming', () => {
+    const { onConfirm } = renderModal({ isConfirming: true });
+
+    const confirm = screen.getByRole('button', { name: 'Remove' });
+    expect(confirm).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(confirm);
+
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('disables Cancel while confirming', () => {
+    renderModal({ isConfirming: true });
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  });
+
+  it('ignores Esc while confirming', () => {
+    const props = renderModal({ isConfirming: true });
+
+    fireEvent(getDialog(), new Event('cancel', { cancelable: true }));
+
+    expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
+  it('sends Esc to onCancel when not confirming', () => {
+    const props = renderModal();
+
+    fireEvent(getDialog(), new Event('cancel', { cancelable: true }));
+
+    expect(props.onCancel).toHaveBeenCalledTimes(1);
   });
 });
