@@ -1,6 +1,9 @@
 .button {
   display: inline-flex;
   align-items: center;
+  /* A button stretched by its container (a flex child, a grid cell) keeps
+     its label in the middle, as in the design. */
+  justify-content: center;
   padding: 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -101,6 +104,5 @@
 }
 
 .fullWidth {
-  justify-content: center;
   width: 100%;
 }

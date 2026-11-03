@@ -20,6 +20,8 @@ interface DialogProps {
   // Phones hide the close button of a side panel, because a form has its own
   // Cancel. A panel without one asks to keep it.
   showCloseOnMobile?: boolean;
+  // Esc does not close it: an action that cannot be abandoned is running.
+  preventClose?: boolean;
 }
 
 const Dialog = ({
@@ -34,6 +36,7 @@ const Dialog = ({
   layout = 'center',
   subtitle,
   showCloseOnMobile = false,
+  preventClose = false,
 }: DialogProps) => {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();

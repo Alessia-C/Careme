@@ -4,6 +4,7 @@ import { UnauthorizedError } from './apiFetch';
 import {
   cacheUpdatedProduct,
   createProduct,
+  deleteProduct,
   getProduct,
   listProducts,
   PRODUCTS_LIST_QUERY_KEY,
@@ -395,5 +396,50 @@ describe('cacheUpdatedProduct', () => {
     expect(cancel).toHaveBeenCalledWith({
       queryKey: productDetailKey('p1'),
     });
+  });
+});
+
+describe('deleteProduct', () => {
+  it('sends a DELETE with the encoded id', async () => {
+    const fetchMock = mockFetch(new Response(null, { status: 204 }));
+
+    await deleteProduct('a/b');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/products/a%2Fb', {
+      method: 'DELETE',
+    });
+  });
+
+  it('returns ok on 204', async () => {
+    mockFetch(new Response(null, { status: 204 }));
+    expect(await deleteProduct('p1')).toEqual({ ok: true });
+  });
+
+  it('treats a 404 as deleted', async () => {
+    mockFetch(new Response(null, { status: 404 }));
+    expect(await deleteProduct('p1')).toEqual({ ok: true });
+  });
+
+  it('reports the rate limit on 429', async () => {
+    mockFetch(new Response(null, { status: 429 }));
+    expect(await deleteProduct('p1')).toEqual({
+      ok: false,
+      reason: 'rate-limited',
+    });
+  });
+
+  it.each([403, 500])('fails on a %i', async (status) => {
+    mockFetch(new Response(null, { status }));
+    expect(await deleteProduct('p1')).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('fails on a network error', async () => {
+    mockFetch(new TypeError('Failed to fetch'));
+    expect(await deleteProduct('p1')).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('lets an expired session through as UnauthorizedError', async () => {
+    mockFetch(new Response(null, { status: 401 }));
+    await expect(deleteProduct('p1')).rejects.toBeInstanceOf(UnauthorizedError);
   });
 });

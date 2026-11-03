@@ -201,3 +201,16 @@ export function cacheUpdatedProduct(
   queryClient.setQueryData(detailKey, product);
   void queryClient.invalidateQueries({ queryKey: PRODUCTS_LIST_QUERY_KEY });
 }
+
+export type DeleteProductResult = { ok: true } | ApiFailure;
+
+export async function deleteProduct(id: string): Promise<DeleteProductResult> {
+  const response = await request(`/api/products/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  // A 404 is a success for the user: the product is already gone (deleted from
+  // another tab) or is not theirs, and either way it is not in their list.
+  return response?.ok || response?.status === 404
+    ? { ok: true }
+    : toFailure(response);
+}

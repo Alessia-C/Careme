@@ -470,3 +470,294 @@ describe('HomePage: product detail', () => {
     expect(getDrawer()).not.toHaveAttribute('open');
   });
 });
+
+describe('HomePage: delete product', () => {
+  const initialList = [
+    {
+      id: 'p1',
+      name: 'Eye Palette',
+      brand: 'MAC',
+      category: 'makeup',
+      status: 'new',
+    },
+    {
+      id: 'p2',
+      name: 'Serum',
+      brand: 'Cerave',
+      category: 'skincare',
+      status: 'used',
+    },
+  ];
+
+  // The list drops the deleted products, like the API after a DELETE. Each
+  // DELETE answers with the next of `deleteResponses`, 204 when none is left.
+  const mockDeleteApi = (...deleteResponses: Response[]) => {
+    const deleted = new Set<string>();
+    const remaining = [...deleteResponses];
+    const fetchMock = vi.fn((input: string, init?: RequestInit) => {
+      const { pathname } = new URL(input, 'http://localhost');
+      if (init?.method === 'DELETE') {
+        const response =
+          remaining.shift() ?? new Response(null, { status: 204 });
+        if (response.ok) {
+          deleted.add(pathname.split('/').pop() ?? '');
+        }
+        return Promise.resolve(response);
+      }
+      const detail = initialList.find(({ id }) => pathname.endsWith(id));
+      if (detail) {
+        return Promise.resolve(
+          jsonResponse({ product: { ...detail, note: 'A note' } }),
+        );
+      }
+      const products = initialList.filter(({ id }) => !deleted.has(id));
+      return Promise.resolve(
+        jsonResponse({ products, total: products.length }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  };
+
+  const deleteCalls = (fetchMock: ReturnType<typeof mockDeleteApi>) =>
+    fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE');
+
+  const findConfirmModal = () =>
+    screen.findByRole('alertdialog', { name: 'Delete product' });
+
+  it('asks to confirm before deleting from the list', async () => {
+    const fetchMock = mockDeleteApi();
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+
+    const modal = await findConfirmModal();
+    expect(
+      within(modal).getByText('Are you sure you want to remove this product?'),
+    ).toBeInTheDocument();
+    expect(deleteCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it('deletes the product, refreshes the list and shows the message', async () => {
+    const fetchMock = mockDeleteApi();
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+
+    await user.click(
+      within(await findConfirmModal()).getByRole('button', { name: 'Delete' }),
+    );
+
+    expect(
+      await screen.findByText('Product deleted successfully'),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Delete Serum' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Delete Eye Palette' }),
+    ).toBeInTheDocument();
+    expect(deleteCalls(fetchMock)).toEqual([
+      ['/api/products/p2', { method: 'DELETE' }],
+    ]);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('moves the focus to the page after deleting', async () => {
+    mockDeleteApi();
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+
+    await user.click(
+      within(await findConfirmModal()).getByRole('button', { name: 'Delete' }),
+    );
+
+    await screen.findByText('Product deleted successfully');
+    expect(container.firstElementChild).toHaveFocus();
+  });
+
+  it('keeps the product when the user cancels', async () => {
+    const fetchMock = mockDeleteApi();
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+
+    await user.click(
+      within(await findConfirmModal()).getByRole('button', { name: 'Cancel' }),
+    );
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Delete Serum' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Product deleted successfully')).toBeNull();
+    expect(deleteCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it('keeps the modal open on a failure and deletes on "Try again"', async () => {
+    const fetchMock = mockDeleteApi(new Response(null, { status: 500 }));
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+    const modal = await findConfirmModal();
+    await user.click(within(modal).getByRole('button', { name: 'Delete' }));
+
+    expect(await within(modal).findByRole('alert')).toHaveTextContent(
+      'We couldn’t delete the product. Please try again.',
+    );
+    expect(screen.queryByText('Product deleted successfully')).toBeNull();
+
+    await user.click(within(modal).getByRole('button', { name: 'Try again' }));
+
+    expect(
+      await screen.findByText('Product deleted successfully'),
+    ).toBeInTheDocument();
+    expect(deleteCalls(fetchMock)).toHaveLength(2);
+  });
+
+  it('does not show a failure again after the user cancels', async () => {
+    mockDeleteApi(new Response(null, { status: 500 }));
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+    const modal = await findConfirmModal();
+    await user.click(within(modal).getByRole('button', { name: 'Delete' }));
+    await within(modal).findByRole('alert');
+    await user.click(within(modal).getByRole('button', { name: 'Cancel' }));
+
+    await user.click(screen.getByRole('button', { name: 'Delete Serum' }));
+
+    expect(
+      within(await findConfirmModal()).queryByRole('alert'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(await findConfirmModal()).getByRole('button', { name: 'Delete' }),
+    ).toBeInTheDocument();
+  });
+
+  it('treats a product that is already gone as deleted', async () => {
+    mockDeleteApi(new Response(null, { status: 404 }));
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+
+    await user.click(
+      within(await findConfirmModal()).getByRole('button', { name: 'Delete' }),
+    );
+
+    expect(
+      await screen.findByText('Product deleted successfully'),
+    ).toBeInTheDocument();
+  });
+
+  it('opens the confirmation over the detail drawer and closes both', async () => {
+    mockDeleteApi();
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Detail Serum' }),
+    );
+    const drawer = await screen.findByRole('dialog', { name: 'Serum' });
+    await user.click(
+      await within(drawer).findByRole('button', { name: 'Delete' }),
+    );
+
+    const modal = await findConfirmModal();
+    expect(drawer).toHaveAttribute('open');
+    await user.click(within(modal).getByRole('button', { name: 'Delete' }));
+
+    expect(
+      await screen.findByText('Product deleted successfully'),
+    ).toBeInTheDocument();
+    expect(getDetailDrawer()).not.toHaveAttribute('open');
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Detail Serum' }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('keeps the detail drawer open when the user cancels', async () => {
+    mockDeleteApi();
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Detail Serum' }),
+    );
+    const drawer = await screen.findByRole('dialog', { name: 'Serum' });
+    await user.click(
+      await within(drawer).findByRole('button', { name: 'Delete' }),
+    );
+
+    await user.click(
+      within(await findConfirmModal()).getByRole('button', { name: 'Cancel' }),
+    );
+
+    expect(drawer).toHaveAttribute('open');
+  });
+
+  it('shows the empty state after deleting the last product', async () => {
+    mockDeleteApi();
+    const user = userEvent.setup();
+    renderPage();
+    for (const name of ['Serum', 'Eye Palette']) {
+      await user.click(
+        await screen.findByRole('button', { name: `Delete ${name}` }),
+      );
+      await user.click(
+        within(await findConfirmModal()).getByRole('button', {
+          name: 'Delete',
+        }),
+      );
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('button', { name: `Delete ${name}` }),
+        ).not.toBeInTheDocument(),
+      );
+    }
+
+    expect(screen.queryByRole('list', { name: 'Products' })).toBeNull();
+    expect(
+      screen.getByText('Product deleted successfully'),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the message after a few seconds', async () => {
+    mockDeleteApi();
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete Serum' }),
+    );
+    await user.click(
+      within(await findConfirmModal()).getByRole('button', { name: 'Delete' }),
+    );
+    await screen.findByText('Product deleted successfully');
+
+    await waitFor(
+      () =>
+        expect(
+          screen.queryByText('Product deleted successfully'),
+        ).not.toBeInTheDocument(),
+      { timeout: 6000 },
+    );
+  }, 10000);
+});
