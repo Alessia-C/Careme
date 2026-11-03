@@ -66,11 +66,7 @@ const Modal = ({
         // Not `disabled`: the button keeps the focus while the action runs.
         aria-disabled={isConfirming}
         data-autofocus={focusConfirm || undefined}
-        onClick={() => {
-          if (!isConfirming) {
-            onConfirm();
-          }
-        }}
+        onClick={onConfirm}
       />
     </div>
   </Dialog>

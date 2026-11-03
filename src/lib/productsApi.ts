@@ -208,6 +208,12 @@ export async function deleteProduct(id: string): Promise<DeleteProductResult> {
   const response = await request(`/api/products/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
+  // A 403 means the account was blocked after the session started: retrying
+  // cannot help, so it ends the session like a 401 (the MutationCache sends
+  // the user to /login), as the session restore does for 401 and 403.
+  if (response?.status === 403) {
+    throw new UnauthorizedError();
+  }
   // A 404 is a success for the user: the product is already gone (deleted from
   // another tab) or is not theirs, and either way it is not in their list.
   return response?.ok || response?.status === 404

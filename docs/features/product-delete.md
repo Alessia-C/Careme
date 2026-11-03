@@ -52,7 +52,7 @@ Deletes one row of `products` by `id` ([migration](../../supabase/migrations/202
 ## Security and access
 
 - Runs as the caller, so the RLS delete policy applies (`auth.uid() = user_id` and an `active` profile), see [`20261018120000_harden_profiles_security.sql`](../../supabase/migrations/20261018120000_harden_profiles_security.sql). The query filters `user_id` as well. There is no admin bypass.
-- A `blocked` user gets `403` from `withAuth`.
+- A `blocked` user gets `403` from `withAuth`. The client treats it like a `401`: retrying cannot help, so the session ends and the user goes to `/login` (see [Session expiry](session-expiry.md)). Nothing is deleted.
 - Without a session the answer is `401`.
 - The id sent comes from the product the user chose in their own list.
 

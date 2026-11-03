@@ -1,3 +1,5 @@
+/* `aria-disabled` looks like `disabled`: the button keeps the focus, but the
+   click does nothing (see Button.tsx). */
 .button {
   display: inline-flex;
   align-items: center;
@@ -16,7 +18,7 @@
     outline-offset: -2px;
   }
 
-  &:disabled {
+  &:is(:disabled, [aria-disabled='true']) {
     cursor: not-allowed;
   }
 }
@@ -46,15 +48,15 @@
   background: var(--btn-base);
   color: var(--color-white-100);
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled, [aria-disabled='true']) {
     background: var(--btn-hover);
   }
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled, [aria-disabled='true']) {
     background: var(--btn-press);
   }
 
-  &:disabled {
+  &:is(:disabled, [aria-disabled='true']) {
     background: var(--color-grey-200);
     color: var(--color-grey-400);
   }
@@ -63,38 +65,38 @@
 .outline {
   border-color: var(--btn-base);
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled, [aria-disabled='true']) {
     border-color: var(--btn-hover);
     color: var(--btn-hover);
   }
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled, [aria-disabled='true']) {
     border-color: var(--btn-press);
     color: var(--btn-press);
   }
 
-  &:disabled {
+  &:is(:disabled, [aria-disabled='true']) {
     border-color: var(--color-grey-200);
     color: var(--color-grey-400);
   }
 }
 
 .text {
-  &:hover:not(:disabled),
+  &:hover:not(:disabled, [aria-disabled='true']),
   &:focus-visible {
     text-decoration: underline;
   }
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled, [aria-disabled='true']) {
     color: var(--btn-hover);
   }
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled, [aria-disabled='true']) {
     color: var(--btn-press);
     text-decoration: none;
   }
 
-  &:disabled {
+  &:is(:disabled, [aria-disabled='true']) {
     color: var(--color-grey-400);
   }
 }

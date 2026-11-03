@@ -109,4 +109,24 @@ describe('Button', () => {
     expect(className).toContain('large');
     expect(className).toContain('fullWidth');
   });
+
+  it('keeps the focus and ignores the click when aria-disabled', async () => {
+    const onClick = vi.fn();
+    render(<Button label="Save" aria-disabled onClick={onClick} />);
+    const button = screen.getByRole('button', { name: 'Save' });
+
+    await userEvent.click(button);
+
+    expect(onClick).not.toHaveBeenCalled();
+    expect(button).toHaveFocus();
+  });
+
+  it('calls onClick when aria-disabled is false', async () => {
+    const onClick = vi.fn();
+    render(<Button label="Save" aria-disabled={false} onClick={onClick} />);
+
+    await userEvent.click(screen.getByRole('button'));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
 });

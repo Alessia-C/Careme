@@ -428,9 +428,14 @@ describe('deleteProduct', () => {
     });
   });
 
-  it.each([403, 500])('fails on a %i', async (status) => {
-    mockFetch(new Response(null, { status }));
+  it('fails on a 500', async () => {
+    mockFetch(new Response(null, { status: 500 }));
     expect(await deleteProduct('p1')).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('ends the session on a 403 (blocked account)', async () => {
+    mockFetch(new Response(null, { status: 403 }));
+    await expect(deleteProduct('p1')).rejects.toBeInstanceOf(UnauthorizedError);
   });
 
   it('fails on a network error', async () => {
