@@ -97,6 +97,7 @@ describe('DeleteProductModal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
     const busy = await screen.findByRole('button', { name: 'Deleting…' });
     await userEvent.click(busy);
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     finish(new Response(null, { status: 204 }));

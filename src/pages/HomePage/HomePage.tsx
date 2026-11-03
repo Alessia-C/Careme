@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Feedback from '../../components/Feedback/Feedback';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import VisuallyHiddenStatus from '../../components/VisuallyHiddenStatus/VisuallyHiddenStatus';
 import { useProducts } from '../../hooks/useProducts/useProducts';
@@ -8,11 +9,15 @@ import {
   getProductListView,
 } from '../../lib/productListView';
 import AddProductDrawer from './components/AddProductDrawer/AddProductDrawer';
+import DeleteProductModal from './components/DeleteProductModal/DeleteProductModal';
 import ProductDetailDrawer from './components/ProductDetailDrawer/ProductDetailDrawer';
 import ProductListSection from './components/ProductListSection/ProductListSection';
 import ProductSearch from './components/ProductSearch/ProductSearch';
 import ProductsEmptyState from './components/ProductsEmptyState/ProductsEmptyState';
 import styles from './HomePage.module.css';
+
+// Long enough to read the message, short enough not to stay on the page.
+const DELETE_NOTICE_MS = 5000;
 
 function HomePage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -30,6 +35,16 @@ function HomePage() {
     useState<ProductListItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailKey, setDetailKey] = useState(0);
+  // Asked to confirm: the modal is open while there is one. It opens over the
+  // detail drawer too, which stays below until the product is deleted.
+  const [productToDelete, setProductToDelete] =
+    useState<ProductListItem | null>(null);
+  // A new object on every deletion, so the message restarts its timer.
+  const [deleteNotice, setDeleteNotice] = useState<object | null>(null);
+  // The card or the drawer that had the focus is gone after a deletion: the
+  // focus goes to the page, counted so that a second deletion moves it again.
+  const [focusPageCount, setFocusPageCount] = useState(0);
+  const pageRef = useRef<HTMLDivElement>(null);
 
   const {
     products,
@@ -59,6 +74,37 @@ function HomePage() {
   }, []);
 
   const closeDetail = useCallback(() => setIsDetailOpen(false), []);
+
+  // Stable, so the memoized product cards are not rendered again with the page.
+  const requestDelete = useCallback(
+    (product: ProductListItem) => setProductToDelete(product),
+    [],
+  );
+  const cancelDelete = useCallback(() => setProductToDelete(null), []);
+  const handleDeleted = useCallback(() => {
+    setProductToDelete(null);
+    // The product is gone: the drawer closes and stops asking for it.
+    setIsDetailOpen(false);
+    setSelectedProduct(null);
+    setDeleteNotice({});
+    setFocusPageCount((count) => count + 1);
+  }, []);
+
+  useEffect(() => {
+    if (deleteNotice === null) {
+      return;
+    }
+    const timer = setTimeout(() => setDeleteNotice(null), DELETE_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [deleteNotice]);
+
+  // After the dialogs, whose effects run first and give the focus back to the
+  // button that opened them.
+  useEffect(() => {
+    if (focusPageCount > 0) {
+      pageRef.current?.focus();
+    }
+  }, [focusPageCount]);
   // Stable, so the memoized empty state is not rendered again with the page.
   const retry = useCallback(() => void refetch(), [refetch]);
 
@@ -75,7 +121,7 @@ function HomePage() {
   const showHeader = view !== 'loading' && view !== 'first-access';
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} tabIndex={-1} className={styles.page}>
       <title>Your products – Careme</title>
       {showHeader && (
         <>
@@ -107,6 +153,7 @@ function HomePage() {
           isFetchingNextPage={isFetchingNextPage}
           isFetchNextPageError={isFetchNextPageError}
           onDetail={openDetail}
+          onDelete={requestDelete}
           onLoadMore={() => void fetchNextPage()}
         />
       ) : (
@@ -124,7 +171,22 @@ function HomePage() {
         open={isDetailOpen}
         selected={selectedProduct}
         onClose={closeDetail}
+        onDelete={requestDelete}
       />
+      <DeleteProductModal
+        product={productToDelete}
+        onCancel={cancelDelete}
+        onDeleted={handleDeleted}
+      />
+
+      {/* Always in the page, and only its content changes, like the status
+          above: a live region that appears already filled is not announced by
+          many screen readers. */}
+      <div className={styles.notice} aria-live="polite">
+        {deleteNotice && (
+          <Feedback status="success" title="Product deleted successfully" />
+        )}
+      </div>
     </div>
   );
 }
