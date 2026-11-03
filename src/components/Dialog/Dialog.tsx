@@ -20,7 +20,7 @@ interface DialogProps {
   // Phones hide the close button of a side panel, because a form has its own
   // Cancel. A panel without one asks to keep it.
   showCloseOnMobile?: boolean;
-  // Esc does not close it: an action that cannot be abandoned is running.
+  // Esc is ignored: an action that cannot be abandoned is running.
   preventClose?: boolean;
 }
 
@@ -75,10 +75,13 @@ const Dialog = ({
 
   // Esc asks to close, it does not close: the parent decides, and it can
   // refuse (e.g. to ask first about unsaved changes) by keeping `open`. The
-  // dialog only closes when `open` becomes false.
+  // dialog only closes when `open` becomes false. While `preventClose` is set
+  // it does not even ask.
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault();
-    onClose();
+    if (!preventClose) {
+      onClose();
+    }
   };
 
   const handleClose = () => {

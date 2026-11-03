@@ -68,11 +68,11 @@ const renderDrawer = ({
       path: '/',
       element: (
         <ProductDetailDrawer
-        open
-        selected={selected}
-        onClose={onClose}
-        onDelete={onDelete}
-      />
+          open
+          selected={selected}
+          onClose={onClose}
+          onDelete={onDelete}
+        />
       ),
     },
     { path: '/other', element: <p>Other page</p> },
@@ -151,13 +151,12 @@ describe('ProductDetailDrawer', () => {
     );
   });
 
-  it('shows Update enabled and Delete disabled', async () => {
+  it('shows Update and Delete enabled', async () => {
     mockFetch(() => jsonResponse({ product }));
     renderDrawer();
 
-    expect(
-      await screen.findByRole('button', { name: 'Update' }),
-    ).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Update' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
   });
 
   it('calls onDelete with the loaded product from the Delete button', async () => {

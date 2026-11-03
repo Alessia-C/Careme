@@ -125,25 +125,19 @@ describe('Modal', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
   });
 
-  it('does not close on Esc while confirming', () => {
-    renderModal({ isConfirming: true });
+  it('ignores Esc while confirming', () => {
+    const props = renderModal({ isConfirming: true });
 
-    const notPrevented = fireEvent(
-      getDialog(),
-      new Event('cancel', { cancelable: true }),
-    );
+    fireEvent(getDialog(), new Event('cancel', { cancelable: true }));
 
-    expect(notPrevented).toBe(false);
+    expect(props.onCancel).not.toHaveBeenCalled();
   });
 
-  it('lets Esc close it when not confirming', () => {
-    renderModal();
+  it('sends Esc to onCancel when not confirming', () => {
+    const props = renderModal();
 
-    const notPrevented = fireEvent(
-      getDialog(),
-      new Event('cancel', { cancelable: true }),
-    );
+    fireEvent(getDialog(), new Event('cancel', { cancelable: true }));
 
-    expect(notPrevented).toBe(true);
+    expect(props.onCancel).toHaveBeenCalledTimes(1);
   });
 });
