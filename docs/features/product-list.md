@@ -17,7 +17,7 @@ Lets a logged-in user see their own products on the home page, newest first, and
 - `/` shows the title "Your products", an "Add product" button, the search field and the list. The title, the button and the search appear after the first load; until then (loading) and in the first access state the page has no `h1`: the design has no title there, and the state's own heading (an `h2`) and the `<title>` identify the page. The document `<title>` is always "Your products – Careme".
 - The list is a grid of cards: 1 column below 768px (mobile), 2 columns from 768px (tablet), 3 columns from 1024px (desktop). Each card shows the name, the category (Skincare or Makeup), a status badge (New, Used or Finished), the brand and two buttons, both `Button` with `size="large"` and `fullWidth` (as the "Load more" button and the state actions). The badge text is darker than in the Figma design so it reaches the 4.5:1 contrast of WCAG AA; the backgrounds are the design ones.
 - "Detail" opens the read-only detail drawer of the product (see [Product detail](product-detail.md)); the chosen id is kept in `selectedProductId`.
-- "Delete" is only the call to action of the design: it is disabled until deleting a product has its own issue.
+- "Delete" opens the confirmation modal of [Product delete](product-delete.md). After a deletion the list is asked again and "Product deleted successfully" appears at the bottom left for 5 seconds.
 - The user text (name, brand) is rendered as text by React.
 
 ### Pagination
@@ -45,8 +45,8 @@ The page picks one view from the request state (`getProductListView` in [`src/li
 - First access (no products and no search): the `ContentState` "Add your product" with an "Add product" button, as described in [Add product](add-product.md).
 - No results (a search with no matches): the `ContentState` "No product found" with the text "Try a different name or brand".
 - A visually hidden `role="status"` region (`VisuallyHiddenStatus`) is always in the page, and only its text changes, because many screen readers do not announce a region that appears already filled. The text comes from `getProductListAnnouncement` (same file): "Loading products…" while a new search loads, "Showing N of M products" when the list is shown (after a search or a "Load more"), "No product found" in the no results state. It is empty while loading, on error and on first access: the `ContentState` of those views announces itself.
-- No polling: the list is never read again by time, on window focus or on reconnect. It refreshes only when a product is added, on "Try again" and on a new search.
-- After a product is added, the `['products']` queries are invalidated and the list refreshes (see [Add product](add-product.md)).
+- No polling: the list is never read again by time, on window focus or on reconnect. It refreshes only when a product is added or deleted, on "Try again" and on a new search.
+- After a product is added, the `['products']` queries are invalidated and the list refreshes (see [Add product](add-product.md)). After a product is deleted the list queries are invalidated too (see [Product delete](product-delete.md)).
 
 ### API contract
 
@@ -98,7 +98,6 @@ The page keeps the pages in the React Query cache under `['products', 'list', <s
 ## Open decisions
 
 - Category filter: the API supports `category`, but the page has no filter (All, Skincare, Makeup, Reset Filter). It is out of scope for #67 and postponed.
-- Delete: the "Delete" button is disabled; it comes with a later issue.
 - The Figma frame of the "No product found" state has the first-access text "Start by adding your first product to manage your catalog", which does not fit a search without results. The page uses "Try a different name or brand" instead; the design needs to confirm it.
 - Badge colors: the Figma colors of the status badges do not reach the 4.5:1 contrast at 12px, so the text is darker. "Used" and "Finished" colors are not in the design; the page uses the gray and primary variants of its badges. The design needs to confirm them.
 - Search: the field is disabled until the search issue. The search tests of the page and of the E2E spec come back with it.
@@ -113,3 +112,4 @@ The page keeps the pages in the React Query cache under `['products', 'list', <s
 | 2026-11-02 | Accessibility: badge contrast, search error and results announced, "Delete" disabled | TBD |
 | 2026-11-02 | Page `<title>`, always-present status region, view logic moved to `src/lib`          | TBD |
 | 2026-11-02 | "Detail" opens the detail drawer                                                     | TBD |
+| 2026-11-02 | "Delete" enabled: opens the confirmation modal, list refreshed after a deletion      | TBD |

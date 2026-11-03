@@ -55,6 +55,7 @@ interface ProductDetailDrawerProps {
   // the subtitle from the first moment, and what is loaded takes over.
   selected: ProductListItem | null;
   onClose: () => void;
+  onDelete: (product: ProductListItem) => void;
 }
 
 // Fills the focus on the field as soon as it is on screen, so the user who
@@ -71,6 +72,7 @@ const ProductDetailDrawer = ({
   open,
   selected,
   onClose,
+  onDelete,
 }: ProductDetailDrawerProps) => {
   const queryClient = useQueryClient();
   const { product, isPending, isError, isNotFound, refetch } = useProduct(
@@ -265,13 +267,11 @@ const ProductDetailDrawer = ({
                 ref={updateButtonRef}
                 onClick={startEdit}
               />
-              {/* Disabled until deleting a product has its own issue: an
-                  enabled button that does nothing would mislead. */}
               <Button
                 label="Delete"
                 variant="error"
                 appearance="outline"
-                disabled
+                onClick={() => onDelete(loaded)}
               />
             </div>
           )

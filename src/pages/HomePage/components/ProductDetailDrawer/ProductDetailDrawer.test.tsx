@@ -53,7 +53,12 @@ const mockFetch = (...responses: Array<() => Response>) => {
 const renderDrawer = ({
   selected = selectedProduct,
   onClose = vi.fn(),
-}: { selected?: ProductListItem | null; onClose?: () => void } = {}) => {
+  onDelete = vi.fn(),
+}: {
+  selected?: ProductListItem | null;
+  onClose?: () => void;
+  onDelete?: (product: ProductListItem) => void;
+} = {}) => {
   const queryClient = new QueryClient({
     // No wait between the attempts, so a retry does not slow the test down.
     defaultOptions: { queries: { retryDelay: 0 } },
@@ -62,7 +67,12 @@ const renderDrawer = ({
     {
       path: '/',
       element: (
-        <ProductDetailDrawer open selected={selected} onClose={onClose} />
+        <ProductDetailDrawer
+          open
+          selected={selected}
+          onClose={onClose}
+          onDelete={onDelete}
+        />
       ),
     },
     { path: '/other', element: <p>Other page</p> },
@@ -141,12 +151,26 @@ describe('ProductDetailDrawer', () => {
     );
   });
 
-  it('shows Update enabled and Delete disabled', async () => {
+  it('shows Update and Delete enabled', async () => {
     mockFetch(() => jsonResponse({ product }));
     renderDrawer();
 
     expect(await screen.findByRole('button', { name: 'Update' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
+  });
+
+  it('calls onDelete with the loaded product from the Delete button', async () => {
+    mockFetch(() => jsonResponse({ product }));
+    const onDelete = vi.fn();
+    renderDrawer({ onDelete });
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete' }),
+    );
+
+    expect(onDelete).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ id: product.id }),
+    );
   });
 
   it('shows a product that is not found, without a way to try again', async () => {

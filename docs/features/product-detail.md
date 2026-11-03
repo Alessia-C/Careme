@@ -18,10 +18,10 @@ Lets a logged-in user open one of their own products from the [product list](pro
 - On close, the focus goes back to the "Detail" button that opened it. The page gives the drawer a new `key` on every open, so it mounts again each time.
 - The title is the product name and the subtitle is the brand. The subtitle also describes the dialog for screen readers (`aria-describedby`, before the description if a dialog has both). The name and the brand come from the product card that opened the drawer, so they are the title from the first moment, while the product loads and when it fails. Once loaded, the name and brand of the product replace them. When the product loads, a visually hidden live region in the drawer says "<name>, <brand>, loaded", because the new title is not announced by itself.
 - The body is a description list with Category (Skincare or Makeup), Status (New, Used or Finished) and Note. A missing note shows "No note" in a muted style, with no empty value. Long text wraps. A long note scrolls inside the body while the buttons stay at the bottom. The body is a focusable region named "Product details", so the keyboard can scroll it in Safari too.
-- The footer has the "Update" and "Delete" buttons, shown only once the product is loaded. "Update" switches the drawer to edit mode (see [Product update](product-update.md)): the title becomes "Update Product", the fields are editable and "Delete" is hidden. "Delete" is **disabled**: deleting from the drawer has its own issue.
+- The footer has the "Update" and "Delete" buttons, shown only once the product is loaded. "Update" switches the drawer to edit mode (see [Product update](product-update.md)): the title becomes "Update Product", the fields are editable and "Delete" is hidden. "Delete" opens the confirmation modal of [Product delete](product-delete.md) on top of the drawer; after a successful deletion the drawer closes and stops asking for the product. Cancelling the modal leaves the drawer as it was.
 - After a save the drawer is back in view mode with the updated product, a success message "Product updated successfully" with no close button, and the focus on "Update". The success message is the only one announced: the live region says "<name>, <brand>, loaded" once and does not repeat it.
 - There is no Cancel button, so on a phone the close button (X) stays visible (`showCloseOnMobile`). In the add product drawer it is hidden on phones, where the form has its own Cancel.
-- Opening another product shows the newly selected one. The selected id lives in the state of the home page (`selectedProductId`), not in the URL.
+- A product deleted from the drawer closes it. Opening another product shows the newly selected one. The selected id lives in the state of the home page (`selectedProductId`), not in the URL.
 - The user text (name, brand, note) is rendered as text by React.
 
 ### States
@@ -42,7 +42,7 @@ The client calls `GET /api/products/:id` with the id encoded in the path (`getPr
 - The `404` is the same for a missing product, a product of another user and an id that is not a uuid, so the answer never tells whether an id exists for someone else. The drawer shows the same "Product not found" for those and for a `403`.
 - A malformed id is answered without calling the database.
 - The product has `id`, `name`, `brand`, `category`, `status`, `note` (`null` when there is none) and `created_at`. The drawer shows name, brand, category, status and note.
-- In view mode nothing can be changed; changes are made in edit mode, described in [Product update](product-update.md).
+- In view mode the only change the drawer can start besides editing is the deletion, which asks for a confirmation first; changes are made in edit mode, described in [Product update](product-update.md).
 
 ## Data
 
@@ -52,7 +52,7 @@ Reads one row of `products` by `id` ([migration](../../supabase/migrations/20260
 
 - Runs as the caller, so the RLS select policy applies (`auth.uid() = user_id` and an `active` profile), see [`20261018120000_harden_profiles_security.sql`](../../supabase/migrations/20261018120000_harden_profiles_security.sql). The query filters `user_id` as well.
 - A `blocked` user gets `403` from `withAuth`; the drawer shows it as "Product not found".
-- View mode writes nothing. Saving an edit is covered in [Product update](product-update.md). "Delete" is disabled.
+- View mode writes nothing by itself. Saving an edit is covered in [Product update](product-update.md). "Delete" calls `DELETE /api/products/:id` only after the user confirms (see [Product delete](product-delete.md)), and a deletion removes the cached detail of the product.
 
 ## Tests
 
@@ -61,6 +61,7 @@ Reads one row of `products` by `id` ([migration](../../supabase/migrations/20260
 - Unit tests (UI):
   - [`src/pages/HomePage/components/ProductDetailDrawer/ProductDetailDrawer.test.tsx`](../../src/pages/HomePage/components/ProductDetailDrawer/ProductDetailDrawer.test.tsx)
   - [`src/pages/HomePage/HomePage.test.tsx`](../../src/pages/HomePage/HomePage.test.tsx)
+  - [`src/pages/HomePage/components/DeleteProductModal/DeleteProductModal.test.tsx`](../../src/pages/HomePage/components/DeleteProductModal/DeleteProductModal.test.tsx) (delete from the drawer)
   - [`src/hooks/useProduct/useProduct.test.tsx`](../../src/hooks/useProduct/useProduct.test.tsx)
   - [`src/lib/productsApi.test.ts`](../../src/lib/productsApi.test.ts)
   - [`src/components/Drawer/Drawer.test.tsx`](../../src/components/Drawer/Drawer.test.tsx) (`subtitle`, `footer`, `showCloseOnMobile`)
@@ -70,7 +71,6 @@ Reads one row of `products` by `id` ([migration](../../supabase/migrations/20260
 
 ## Open decisions
 
-- Delete: the button is shown but disabled; it comes with a separate issue.
 - The issue says the selected product "lives only in the store", but the code keeps `selectedProductId` in the `useState` of `HomePage`. Confirm whether it must move to a Zustand store.
 - Figma frame "product-detail": the docs could not check the code against the design; the design needs to confirm the layout and the "No note" text.
 
@@ -84,3 +84,4 @@ Reads one row of `products` by `id` ([migration](../../supabase/migrations/20260
 | 2026-11-02 | Title and subtitle are the name and brand of the product card from the first moment, not "Product detail"                                           | TBD |
 | 2026-11-02 | Loaded product announced to screen readers; focus kept after "Try again"; product cached for 30 seconds; creating a product refreshes the list only | TBD |
 | 2026-11-02 | The drawer has an edit mode (#69): "Update" enabled, backdrop click no longer closes it; "Delete" still disabled                                    | TBD |
+| 2026-11-02 | "Delete" enabled: opens the confirmation modal, the drawer closes after a deletion                                                                  | TBD |

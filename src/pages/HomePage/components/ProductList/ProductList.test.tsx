@@ -23,17 +23,40 @@ const products: ProductListItem[] = [
 
 describe('ProductList', () => {
   it('renders a list with one item per product', () => {
-    render(<ProductList products={products} onDetail={vi.fn()} />);
+    render(
+      <ProductList products={products} onDetail={vi.fn()} onDelete={vi.fn()} />,
+    );
     expect(screen.getByRole('list', { name: 'Products' })).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
   });
 
   it('passes the chosen product to onDetail', async () => {
     const onDetail = vi.fn();
-    render(<ProductList products={products} onDetail={onDetail} />);
+    render(
+      <ProductList
+        products={products}
+        onDetail={onDetail}
+        onDelete={vi.fn()}
+      />,
+    );
 
     await userEvent.click(screen.getByRole('button', { name: 'Detail Serum' }));
 
     expect(onDetail).toHaveBeenCalledExactlyOnceWith(products[1]);
+  });
+
+  it('passes the chosen product to onDelete', async () => {
+    const onDelete = vi.fn();
+    render(
+      <ProductList
+        products={products}
+        onDetail={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Serum' }));
+
+    expect(onDelete).toHaveBeenCalledExactlyOnceWith(products[1]);
   });
 });

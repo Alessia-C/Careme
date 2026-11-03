@@ -14,7 +14,9 @@ const product: ProductListItem = {
 
 describe('ProductCard', () => {
   it('shows name, category, status and brand', () => {
-    render(<ProductCard product={product} onDetail={vi.fn()} />);
+    render(
+      <ProductCard product={product} onDetail={vi.fn()} onDelete={vi.fn()} />,
+    );
 
     const card = screen.getByRole('article', { name: 'Eye Palette' });
     expect(
@@ -31,7 +33,11 @@ describe('ProductCard', () => {
     ['makeup', 'Makeup'],
   ] as const)('labels the %s category', (category, label) => {
     render(
-      <ProductCard product={{ ...product, category }} onDetail={vi.fn()} />,
+      <ProductCard
+        product={{ ...product, category }}
+        onDetail={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
     expect(screen.getByText(label)).toBeInTheDocument();
   });
@@ -41,7 +47,13 @@ describe('ProductCard', () => {
     ['used', 'Used'],
     ['finished', 'Finished'],
   ] as const)('labels the %s status', (status, label) => {
-    render(<ProductCard product={{ ...product, status }} onDetail={vi.fn()} />);
+    render(
+      <ProductCard
+        product={{ ...product, status }}
+        onDetail={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
     expect(screen.getByText(label)).toHaveAttribute('data-status', status);
   });
 
@@ -50,6 +62,7 @@ describe('ProductCard', () => {
       <ProductCard
         product={{ ...product, name: '<img src=x onerror=alert(1)>' }}
         onDetail={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(
@@ -60,7 +73,9 @@ describe('ProductCard', () => {
 
   it('calls onDetail with the product from the Detail button', async () => {
     const onDetail = vi.fn();
-    render(<ProductCard product={product} onDetail={onDetail} />);
+    render(
+      <ProductCard product={product} onDetail={onDetail} onDelete={vi.fn()} />,
+    );
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Detail Eye Palette' }),
@@ -69,10 +84,16 @@ describe('ProductCard', () => {
     expect(onDetail).toHaveBeenCalledExactlyOnceWith(product);
   });
 
-  it('shows the Delete button of the design, disabled until it works', () => {
-    render(<ProductCard product={product} onDetail={vi.fn()} />);
-    expect(
+  it('calls onDelete with the product from the Delete button', async () => {
+    const onDelete = vi.fn();
+    render(
+      <ProductCard product={product} onDetail={vi.fn()} onDelete={onDelete} />,
+    );
+
+    await userEvent.click(
       screen.getByRole('button', { name: 'Delete Eye Palette' }),
-    ).toBeDisabled();
+    );
+
+    expect(onDelete).toHaveBeenCalledExactlyOnceWith(product);
   });
 });

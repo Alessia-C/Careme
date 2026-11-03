@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, MouseEvent, ReactNode } from 'react';
 import styles from './Button.module.css';
 
 type Variant = 'primary' | 'secondary' | 'error';
@@ -23,8 +23,19 @@ const Button = ({
   size = 'medium',
   fullWidth = false,
   type = 'button',
+  onClick,
   ...rest
 }: ButtonProps) => {
+  // Unlike `disabled`, `aria-disabled` keeps the focus on the button, but it
+  // does not stop the click: it is ignored here, so no caller needs a guard.
+  const isAriaDisabled =
+    rest['aria-disabled'] === true || rest['aria-disabled'] === 'true';
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (!isAriaDisabled) {
+      onClick?.(event);
+    }
+  };
+
   const className = [
     styles.button,
     styles[variant],
@@ -36,7 +47,7 @@ const Button = ({
     .join(' ');
 
   return (
-    <button {...rest} type={type} className={className}>
+    <button {...rest} type={type} className={className} onClick={handleClick}>
       {icon}
       <span>{label}</span>
     </button>

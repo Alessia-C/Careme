@@ -104,4 +104,40 @@ describe('Modal', () => {
 
     expect(props.onCancel).not.toHaveBeenCalled();
   });
+
+  it('shows the feedback above the buttons', () => {
+    renderModal({ feedback: <p>Something went wrong</p> });
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+  });
+
+  it('ignores the confirm click while confirming', () => {
+    const { onConfirm } = renderModal({ isConfirming: true });
+
+    const confirm = screen.getByRole('button', { name: 'Remove' });
+    expect(confirm).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(confirm);
+
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('disables Cancel while confirming', () => {
+    renderModal({ isConfirming: true });
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  });
+
+  it('ignores Esc while confirming', () => {
+    const props = renderModal({ isConfirming: true });
+
+    fireEvent(getDialog(), new Event('cancel', { cancelable: true }));
+
+    expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
+  it('sends Esc to onCancel when not confirming', () => {
+    const props = renderModal();
+
+    fireEvent(getDialog(), new Event('cancel', { cancelable: true }));
+
+    expect(props.onCancel).toHaveBeenCalledTimes(1);
+  });
 });

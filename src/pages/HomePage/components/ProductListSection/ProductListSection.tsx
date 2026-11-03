@@ -13,6 +13,7 @@ interface ProductListSectionProps {
   isFetchingNextPage: boolean;
   isFetchNextPageError: boolean;
   onDetail: (product: ProductListItem) => void;
+  onDelete: (product: ProductListItem) => void;
   onLoadMore: () => void;
 }
 
@@ -24,10 +25,11 @@ const ProductListSection = ({
   isFetchingNextPage,
   isFetchNextPageError,
   onDetail,
+  onDelete,
   onLoadMore,
 }: ProductListSectionProps) => (
   <div aria-busy={isBusy}>
-    <ProductList products={products} onDetail={onDetail} />
+    <ProductList products={products} onDetail={onDetail} onDelete={onDelete} />
     {isFetchNextPageError && (
       <Feedback
         status="error"
@@ -46,13 +48,7 @@ const ProductListSection = ({
           fullWidth
           // Not `disabled`: the button keeps the focus while it loads.
           aria-disabled={isFetchingNextPage}
-          // `aria-disabled` does not stop the click, so the guard avoids a second
-          // request while the next page is loading.
-          onClick={() => {
-            if (!isFetchingNextPage) {
-              onLoadMore();
-            }
-          }}
+          onClick={onLoadMore}
         />
       </div>
     )}
