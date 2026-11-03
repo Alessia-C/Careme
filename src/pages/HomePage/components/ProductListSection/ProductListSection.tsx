@@ -13,6 +13,7 @@ interface ProductListSectionProps {
   isFetchingNextPage: boolean;
   isFetchNextPageError: boolean;
   onDetail: (product: ProductListItem) => void;
+  onDelete: (product: ProductListItem) => void;
   onLoadMore: () => void;
 }
 
@@ -24,10 +25,11 @@ const ProductListSection = ({
   isFetchingNextPage,
   isFetchNextPageError,
   onDetail,
+  onDelete,
   onLoadMore,
 }: ProductListSectionProps) => (
   <div aria-busy={isBusy}>
-    <ProductList products={products} onDetail={onDetail} />
+    <ProductList products={products} onDetail={onDetail} onDelete={onDelete} />
     {isFetchNextPageError && (
       <Feedback
         status="error"

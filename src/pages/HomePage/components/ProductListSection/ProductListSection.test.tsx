@@ -25,6 +25,7 @@ const renderSection = (
       isFetchingNextPage={false}
       isFetchNextPageError={false}
       onDetail={vi.fn()}
+      onDelete={vi.fn()}
       onLoadMore={onLoadMore}
       {...props}
     />,

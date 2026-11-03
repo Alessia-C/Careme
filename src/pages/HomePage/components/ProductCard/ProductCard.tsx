@@ -18,9 +18,10 @@ const STATUS_LABELS: Record<ProductStatus, string> = {
 interface ProductCardProps {
   product: ProductListItem;
   onDetail: (product: ProductListItem) => void;
+  onDelete: (product: ProductListItem) => void;
 }
 
-const ProductCard = ({ product, onDetail }: ProductCardProps) => {
+const ProductCard = ({ product, onDetail, onDelete }: ProductCardProps) => {
   const titleId = useId();
 
   return (
@@ -53,8 +54,6 @@ const ProductCard = ({ product, onDetail }: ProductCardProps) => {
           size="large"
           fullWidth
         />
-        {/* Only the CTA of the design, disabled until deleting a product has
-            its own issue: an enabled button that does nothing would mislead. */}
         <Button
           label="Delete"
           aria-label={`Delete ${product.name}`}
@@ -62,7 +61,7 @@ const ProductCard = ({ product, onDetail }: ProductCardProps) => {
           appearance="outline"
           size="large"
           fullWidth
-          disabled
+          onClick={() => onDelete(product)}
         />
       </div>
     </article>
