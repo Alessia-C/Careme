@@ -12,7 +12,7 @@ Efficiency: start from `git diff staging...HEAD --stat` and audit the changed su
 Steps:
 
 1. Establish the scope: `git diff staging...HEAD --stat` and `git diff staging...HEAD` (read-only). If the user names a scope (a file, an endpoint, a migration), audit that scope. Otherwise audit the whole changed surface and, when the diff is small, the auth path (`api/_lib/auth.ts`, `api/_lib/supabase.ts`, `api/_lib/http.ts`) it depends on.
-2. Read `CLAUDE.md`, especially "Architecture" and "Security rules". Those rules are the baseline. A violation of them is at least high severity.
+2. Read `CLAUDE.md`, especially "Security rules" and "Environment", plus `docs/architecture/backend.md` and `docs/architecture/database.md` for the layers involved. Those rules are the baseline. A violation of them is at least high severity.
 3. Check the areas below with Read, Grep and Glob. Use read-only Bash only (for example `git`, `npm audit --audit-level=critical`, `npm ls`). Never run `supabase db push`, seed scripts, migrations, or anything that writes to the database or to GitHub.
 
 Checklist:

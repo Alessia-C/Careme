@@ -11,7 +11,7 @@ Efficiency: start from the approved plan (if the user gives an issue number, rea
 
 Steps:
 
-1. Read `CLAUDE.md` ("Conventions") and the templates: `docs/features/_TEMPLATE.md` and `docs/api/_TEMPLATE.md`. Follow their structure exactly, keep every section, and write "None" where a section does not apply.
+1. Read `docs/conventions/workflow.md` (documentation rules) and the templates: `docs/features/_TEMPLATE.md` and `docs/api/_TEMPLATE.md`. Follow their structure exactly, keep every section, and write "None" where a section does not apply.
 2. Decide what to document:
    - a new or changed user-facing feature: `docs/features/<feature-name>.md` (kebab-case, matching the feature);
    - a new or changed endpoint in `api/`: `docs/api/<endpoint>.md`, using the same name as the file in `api/`.
