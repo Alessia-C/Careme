@@ -141,3 +141,14 @@
   --tracking-label: 0.2px;
   --tracking-overline: 1.5px;
 }
+
+/*
+ * Touch screens: iOS Safari zooms the page when a focused input has a font
+ * size below 16px. Keyed on the pointer, not the width, so tablets in
+ * landscape (wider than the mobile breakpoint) are covered too.
+ */
+@media (pointer: coarse) {
+  :root {
+    --text-input: var(--font-weight-light) 16px/24px var(--font-family-base);
+  }
+}

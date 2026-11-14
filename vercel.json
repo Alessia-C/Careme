@@ -4,7 +4,7 @@
     "deploymentEnabled": {
       "staging": true,
       "main": true,
-      "*": false
+      "*": true
     }
   }
 }
