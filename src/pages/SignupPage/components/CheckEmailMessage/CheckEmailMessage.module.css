@@ -1,0 +1,8 @@
+/* Mobile card height. flex: none stops the card from growing to fill the page
+   (the page is at least 100dvh tall). */
+@media (max-width: 900px) {
+  .checkEmailPanel {
+    flex: none;
+    height: 65vh;
+  }
+}

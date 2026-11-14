@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import AuthLayout from '../../../../components/AuthLayout/AuthLayout';
+import styles from './CheckEmailMessage.module.css';
 
 const CheckEmailMessage = () => {
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -13,6 +14,7 @@ const CheckEmailMessage = () => {
   return (
     <AuthLayout
       headingRef={headingRef}
+      panelClassName={styles.checkEmailPanel}
       info={{
         title: 'Account created – Careme',
         heading: 'Account created successfully!',
