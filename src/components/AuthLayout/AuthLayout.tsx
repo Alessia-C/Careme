@@ -9,6 +9,9 @@ interface AuthLayoutProps {
   headingRef?: Ref<HTMLHeadingElement>;
   // Id of a message to read together with the heading when it gets focus.
   headingDescribedBy?: string;
+  // Page-specific class on the form panel, so each page (or view) can set its
+  // own card height from its CSS module.
+  panelClassName?: string;
   info?: {
     title: string;
     description?: string;
@@ -21,11 +24,12 @@ const AuthLayout = ({
   info,
   headingRef,
   headingDescribedBy,
+  panelClassName,
   children,
 }: AuthLayoutProps) => (
   <main className={styles.page}>
     {info?.title && <title>{info.title}</title>}
-    <div className={styles.formPanel}>
+    <div className={`${styles.formPanel} ${panelClassName || ''}`}>
       {info && (
         <div className={styles.brand}>
           <img src={logo} alt="Careme" className={styles.logo} />

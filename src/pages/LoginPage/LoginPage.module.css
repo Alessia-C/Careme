@@ -1,3 +1,12 @@
+/* Mobile card height. flex: none stops the card from growing to fill the page
+   (the page is at least 100dvh tall). */
+@media (max-width: 900px) {
+  .loginPanel {
+    flex: none;
+    height: 65vh;
+  }
+}
+
 /* Placed by the login page only: the shared Feedback stays unpositioned. */
 .loginFeedback {
   position: absolute;
@@ -5,4 +14,14 @@
   left: var(--space-24);
   /* Never wider than the form panel: 24px of margin on each side. */
   max-width: calc(100% - var(--space-48));
+}
+
+/* On mobile the form panel is as tall as its content and can exceed a short
+   screen: pinned to the bottom, the notice would cover the form. In the flow
+   it sits right after the form instead. */
+@media (max-width: 900px) {
+  .loginFeedback {
+    position: static;
+    max-width: none;
+  }
 }

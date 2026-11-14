@@ -3,15 +3,16 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import AuthLayout from '../../components/AuthLayout/AuthLayout';
 import Feedback from '../../components/Feedback/Feedback';
 import { isAuthenticated } from '../../lib/auth';
-import { getSignOutNotice, type SignOutNotice } from '../../lib/signedOut';
+import { getSignOutNotice } from '../../lib/signedOut';
 import useAuthStore from '../../stores/authStore';
 import LoginForm from './components/LoginForm/LoginForm';
 import styles from './LoginPage.module.css';
-
-type LoginNotice = SignOutNotice | 'restore-failed';
-
-const SIGNED_OUT_MESSAGE_MS = 5000;
-const NOTICE_ID = 'login-notice';
+import {
+  NOTICE_CONTENT,
+  NOTICE_ID,
+  SIGNED_OUT_MESSAGE_MS,
+  type LoginNotice,
+} from './loginNotices';
 
 const PAGE_INFO = {
   title: 'Login – Careme',
@@ -82,49 +83,22 @@ function LoginPage() {
     return <Navigate to="/" replace />;
   }
 
+  const noticeContent = notice ? NOTICE_CONTENT[notice] : null;
+
   return (
     <AuthLayout
       info={PAGE_INFO}
       headingRef={headingRef}
       headingDescribedBy={notice ? NOTICE_ID : undefined}
+      panelClassName={styles.loginPanel}
     >
       <LoginForm />
       {/* After the form in the DOM: it is positioned at the bottom, so the
           tab order matches what is seen (WCAG 2.4.3). */}
-      {notice === 'signed-out' && (
+      {noticeContent && (
         <Feedback
           id={NOTICE_ID}
-          status="info"
-          title="You have been signed out"
-          customClassName={styles.loginFeedback}
-          onClose={() => closeNotice()}
-        />
-      )}
-      {notice === 'expired' && (
-        <Feedback
-          id={NOTICE_ID}
-          status="info"
-          title="Your session expired due to inactivity"
-          customClassName={styles.loginFeedback}
-          onClose={() => closeNotice()}
-        />
-      )}
-      {notice === 'restore-failed' && (
-        <Feedback
-          id={NOTICE_ID}
-          status="error"
-          title="We couldn't restore your session"
-          description="Check your connection and sign in again."
-          customClassName={styles.loginFeedback}
-          onClose={() => closeNotice()}
-        />
-      )}
-      {notice === 'unconfirmed' && (
-        <Feedback
-          id={NOTICE_ID}
-          status="error"
-          title="We couldn't confirm the sign out"
-          description="Your session may still be active on this device. Close this browser window, or sign in and sign out again."
+          {...noticeContent}
           customClassName={styles.loginFeedback}
           onClose={() => closeNotice()}
         />
