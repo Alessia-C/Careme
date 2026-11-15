@@ -40,9 +40,15 @@ beforeEach(() => {
   logout.mockReset();
   broadcastLogout.mockReset();
   logout.mockResolvedValue({ ok: true });
-  useAuthStore
-    .getState()
-    .setSession({ id: 'user-1', email: 'jane@example.com' }, 'user');
+  useAuthStore.getState().setSession(
+    {
+      id: 'user-1',
+      email: 'jane@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    'user',
+  );
 });
 
 afterEach(() => {

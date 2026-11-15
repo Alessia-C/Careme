@@ -71,7 +71,13 @@ async function handleLogin(
 
   return res.status(200).json({
     message: 'Login successful',
-    user: { id: data.user.id, email: data.user.email, role: account.role },
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      role: account.role,
+      first_name: account.firstName,
+      last_name: account.lastName,
+    },
     expires_at: getSessionExpiry(data.session),
   });
 }

@@ -76,7 +76,10 @@ beforeEach(() => {
   signOut.mockResolvedValue({ error: null });
   signInWithPassword.mockResolvedValue(signedIn);
   rpc.mockResolvedValue({ data: true, error: null });
-  single.mockResolvedValue({ data: { role: 'user' }, error: null });
+  single.mockResolvedValue({
+    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+    error: null,
+  });
 });
 
 afterEach(() => {
@@ -132,9 +135,30 @@ describe('POST /api/auth/login - successful login', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Login successful',
-      user: { id: 'user-1', email: 'test@example.com', role: 'user' },
+      user: {
+        id: 'user-1',
+        email: 'test@example.com',
+        role: 'user',
+        first_name: 'Jane',
+        last_name: 'Doe',
+      },
       expires_at: 1790000000,
     });
+  });
+
+  it('should return empty strings for names that are null in the database', async () => {
+    single.mockResolvedValue({
+      data: { role: 'user', first_name: null, last_name: null },
+      error: null,
+    });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: expect.objectContaining({ first_name: '', last_name: '' }),
+      }),
+    );
   });
 
   it('should return the session expiry so the page can renew in time', async () => {
@@ -167,7 +191,10 @@ describe('POST /api/auth/login - successful login', () => {
   });
 
   it('should return the admin role for an admin profile', async () => {
-    single.mockResolvedValue({ data: { role: 'admin' }, error: null });
+    single.mockResolvedValue({
+      data: { role: 'admin', first_name: 'Ada', last_name: 'Lovelace' },
+      error: null,
+    });
 
     const res = await callHandler('POST', validBody);
 
@@ -179,11 +206,11 @@ describe('POST /api/auth/login - successful login', () => {
     );
   });
 
-  it('should read only the role of the logged-in user', async () => {
+  it('should read only the role and the names of the logged-in user', async () => {
     await callHandler('POST', validBody);
 
     expect(from).toHaveBeenCalledWith('profiles');
-    expect(from().select).toHaveBeenCalledWith('role');
+    expect(from().select).toHaveBeenCalledWith('role, first_name, last_name');
     expect(from().eq).toHaveBeenCalledWith('id', 'user-1');
   });
 

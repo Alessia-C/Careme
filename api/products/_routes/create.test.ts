@@ -87,7 +87,10 @@ beforeEach(() => {
   // withAuth reads the role with single(); the insert reads the new row with
   // it too, so the first call is the role and the next one the product.
   single
-    .mockResolvedValueOnce({ data: { role: 'user' }, error: null })
+    .mockResolvedValueOnce({
+      data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+      error: null,
+    })
     .mockResolvedValue({ data: createdProduct, error: null });
   maybeSingle.mockResolvedValue({ data: null, error: null });
 });
@@ -265,7 +268,10 @@ describe('POST /api/products', () => {
   it('should return 429 on a Supabase rate limit', async () => {
     single.mockReset();
     single
-      .mockResolvedValueOnce({ data: { role: 'user' }, error: null })
+      .mockResolvedValueOnce({
+        data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+        error: null,
+      })
       .mockResolvedValue({
         data: null,
         error: new AuthApiError('slow down', 429, 'over_request_rate_limit'),
@@ -292,7 +298,10 @@ describe('POST /api/products', () => {
   it('should return the generic 500 when the insert fails (e.g. RLS refuses it)', async () => {
     single.mockReset();
     single
-      .mockResolvedValueOnce({ data: { role: 'user' }, error: null })
+      .mockResolvedValueOnce({
+        data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+        error: null,
+      })
       .mockResolvedValue({
         data: null,
         error: new Error('new row violates row-level security policy'),

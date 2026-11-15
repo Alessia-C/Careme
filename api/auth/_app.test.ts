@@ -71,7 +71,10 @@ beforeEach(() => {
     error: null,
   });
   rpc.mockResolvedValue({ data: true, error: null });
-  single.mockResolvedValue({ data: { role: 'user' }, error: null });
+  single.mockResolvedValue({
+    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+    error: null,
+  });
   signOut.mockResolvedValue({ error: null });
 });
 

@@ -46,13 +46,15 @@ None.
 
 ### `200 OK`
 
-| Field        | Type     | Description                                                                                                                                      |
-| ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `message`    | `string` | Always `"Login successful"`                                                                                                                      |
-| `user.id`    | `string` | User id (same as `profiles.id`)                                                                                                                  |
-| `user.email` | `string` | User email                                                                                                                                       |
-| `user.role`  | `string` | `user` or `admin`. A UI hint only, see Notes                                                                                                     |
-| `expires_at` | `number` | Unix time in seconds when the access token expires. The page uses it to renew the session, see [Session renewal](../features/session-renewal.md) |
+| Field             | Type     | Description                                                                                                                                      |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `message`         | `string` | Always `"Login successful"`                                                                                                                      |
+| `user.id`         | `string` | User id (same as `profiles.id`)                                                                                                                  |
+| `user.email`      | `string` | User email                                                                                                                                       |
+| `user.role`       | `string` | `user` or `admin`. A UI hint only, see Notes                                                                                                     |
+| `user.first_name` | `string` | `profiles.first_name`. `""` when the profile has no first name, see Notes                                                                        |
+| `user.last_name`  | `string` | `profiles.last_name`. `""` when the profile has no last name, see Notes                                                                          |
+| `expires_at`      | `number` | Unix time in seconds when the access token expires. The page uses it to renew the session, see [Session renewal](../features/session-renewal.md) |
 
 The body contains no `session` and no tokens. Both tokens are sent only in one `Set-Cookie` header (an array of two cookies):
 
@@ -69,7 +71,9 @@ The access token `Max-Age` is its lifetime in seconds (`expires_in`); the refres
   "user": {
     "id": "0b6c...",
     "email": "anna.rossi@example.com",
-    "role": "user"
+    "role": "user",
+    "first_name": "Jane",
+    "last_name": "Doe"
   },
   "expires_at": 1793000000
 }
@@ -111,6 +115,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 - **Generic credentials error:** unknown email and wrong password return the same `400`, so the endpoint does not reveal which emails are registered.
 - **Blocked users (revoke):** the session Supabase just created is revoked (`signOut`, scope `local`) before the `403`, so no valid token is left on Supabase. It is best effort: if the revoke fails the answer is still `403` and the error is reported to Sentry.
 - **Blocked users:** Supabase Auth ignores `profiles.status` and issues a token anyway. The endpoint then calls the `is_active()` database function with the new token (RLS applies) and returns `403` without the tokens when the profile is not active. Existing sessions of a user blocked later stay valid until the access token expires, and the refresh token works until [`/api/auth/refresh`](auth-refresh.md) is called, which then answers `403` and clears the cookies. RLS blocks their data access in the meantime. See the DoS note in the project docs for the planned ban and session revocation.
+- **Names:** `profiles.first_name` and `profiles.last_name` are read in the same query as the role, with the caller's JWT. They are nullable in the database: a `null` is returned as `""`, so the page never has to handle `null`. Any other type makes the endpoint return `500`. They are only used for display (the header badge), never for authorization.
 - **Role:** read from `profiles.role` with the caller's JWT (RLS applies). The client can use it to show or hide UI, but it is never an authorization: the API and RLS check the role in the database on every request. An unexpected value makes the endpoint return `500` instead of passing it on.
 - **Cookie name and CSRF:** the cookie is named `__Host-sb-access-token` (browsers reject a `__Host-` cookie set with a wider `Domain`, which prevents cookie tossing from sibling subdomains). Under `vercel dev` (plain http) it is `sb-access-token` without `Secure`. Because `SameSite` does not stop a cross-site request from _setting_ a cookie, the endpoint accepts only `Content-Type: application/json` (`415` otherwise): a cross-site HTML form cannot send it without a CORS preflight, so it cannot log a victim into the attacker's account.
 - **Requires** `SUPABASE_URL` and `SUPABASE_ANON_KEY` (see the [README](../../README.md#environment-variables)). The service role key is not used.

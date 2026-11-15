@@ -60,7 +60,13 @@ describe('login', () => {
   const credentials = { email: 'jane@example.com', password: 'secret' };
   const loginBody = {
     message: 'Login successful',
-    user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
+    user: {
+      id: 'user-1',
+      email: 'jane@example.com',
+      role: 'user',
+      first_name: 'Jane',
+      last_name: 'Doe',
+    },
     expires_at: 1790000000,
   };
 
@@ -85,7 +91,12 @@ describe('login', () => {
 
     expect(await login(credentials)).toEqual({
       ok: true,
-      user: { id: 'user-1', email: 'jane@example.com' },
+      user: {
+        id: 'user-1',
+        email: 'jane@example.com',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      },
       role: 'user',
       expiresAt: 1790000000,
     });
@@ -179,14 +190,25 @@ describe('fetchSession', () => {
   it('returns the user and role on 200', async () => {
     mockFetch(
       Response.json({
-        user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+        user: {
+          id: 'user-1',
+          email: 'jane@example.com',
+          role: 'admin',
+          first_name: 'Ada',
+          last_name: 'Lovelace',
+        },
         expires_at: 1790000000,
       }),
     );
 
     expect(await fetchSession()).toEqual({
       ok: true,
-      user: { id: 'user-1', email: 'jane@example.com' },
+      user: {
+        id: 'user-1',
+        email: 'jane@example.com',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      },
       role: 'admin',
       expiresAt: 1790000000,
     });
@@ -204,7 +226,14 @@ describe('fetchSession', () => {
 
   it.each([
     ['an unknown role', { id: 'u', email: 'a@b.c', role: 'superuser' }],
-    ['a missing email', { id: 'u', role: 'user' }],
+    [
+      'a missing email',
+      { id: 'u', role: 'user', first_name: 'J', last_name: 'D' },
+    ],
+    [
+      'a missing first name',
+      { id: 'u', email: 'a@b.c', role: 'user', last_name: 'D' },
+    ],
   ])('returns failed when the body has %s', async (_label, user) => {
     mockFetch(Response.json({ user, expires_at: 1790000000 }));
     expect(await fetchSession()).toEqual({ ok: false, reason: 'failed' });

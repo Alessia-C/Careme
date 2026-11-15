@@ -74,7 +74,10 @@ beforeEach(() => {
   });
   rpc.mockResolvedValue({ data: true, error: null });
   // withAuth reads the role with single().
-  single.mockResolvedValue({ data: { role: 'user' }, error: null });
+  single.mockResolvedValue({
+    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+    error: null,
+  });
   // The deleted row, returned by select('id').
   maybeSingle.mockResolvedValue({ data: { id: productId }, error: null });
 });

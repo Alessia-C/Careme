@@ -1,0 +1,16 @@
+/* Provisional style: to be replaced with the Figma frame when it is available. */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-primary-900);
+  color: var(--color-white-100);
+  font: var(--text-body-small);
+  white-space: nowrap;
+  user-select: none;
+}

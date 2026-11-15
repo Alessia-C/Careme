@@ -88,7 +88,10 @@ beforeEach(() => {
   });
   rpc.mockResolvedValue({ data: true, error: null });
   // withAuth reads the role with single().
-  single.mockResolvedValue({ data: { role: 'user' }, error: null });
+  single.mockResolvedValue({
+    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+    error: null,
+  });
   range.mockResolvedValue({
     data: listedProducts,
     count: 2,

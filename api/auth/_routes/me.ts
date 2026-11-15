@@ -21,7 +21,13 @@ function handleMe(req: Request, res: Response, auth: AuthContext) {
     throw new Error('Unexpected request without token');
   }
   return res.status(200).json({
-    user: { id: auth.id, email: auth.email, role: auth.role },
+    user: {
+      id: auth.id,
+      email: auth.email,
+      role: auth.role,
+      first_name: auth.firstName,
+      last_name: auth.lastName,
+    },
     expires_at: getTokenExpiry(token),
   });
 }

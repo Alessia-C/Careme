@@ -9,7 +9,13 @@ import LoginPage from './LoginPage';
 const loginResponse = () =>
   Response.json({
     message: 'Login successful',
-    user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+    user: {
+      id: 'user-1',
+      email: 'jane@example.com',
+      role: 'admin',
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+    },
     expires_at: 1790000000,
   });
 
@@ -361,7 +367,12 @@ describe('LoginPage', () => {
       password: 'any-password',
     });
     const { user: sessionUser, role } = useAuthStore.getState();
-    expect(sessionUser).toEqual({ id: 'user-1', email: 'jane@example.com' });
+    expect(sessionUser).toEqual({
+      id: 'user-1',
+      email: 'jane@example.com',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+    });
     expect(role).toBe('admin');
   });
 
@@ -384,9 +395,15 @@ describe('LoginPage', () => {
   });
 
   it('redirects an already authenticated user to the homepage', () => {
-    useAuthStore
-      .getState()
-      .setSession({ id: 'user-1', email: 'jane@example.com' }, 'user');
+    useAuthStore.getState().setSession(
+      {
+        id: 'user-1',
+        email: 'jane@example.com',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      },
+      'user',
+    );
     renderPage();
 
     expect(screen.getByText('at /')).toBeInTheDocument();
