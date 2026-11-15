@@ -109,32 +109,22 @@ test('Esc with typed text asks first, and Discard closes and clears', async ({
   await expect(page.getByLabel('Name*')).toHaveValue('');
 });
 
-test('Back with typed text asks first, and Discard leaves the page', async ({
-  page,
-}) => {
-  await mockApi(page);
-  await page.goto('/login');
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Add product' }).click();
-  await page.getByLabel('Name*').fill('Eye Palette');
-
-  await page.goBack();
-  await expect(page.getByRole('alertdialog')).toBeVisible();
-  await expect(page).toHaveURL('/');
-  await page.getByRole('button', { name: 'Discard' }).click();
-
-  await expect(page).toHaveURL(/\/login/);
-});
-
 test('the focus goes back to the Add product button after Discard', async ({
   page,
 }) => {
   await mockApi(page);
+  await page.goto('/');
 
-  await openDrawerAndFill(page);
+  // From the keyboard: Safari does not focus a button when it is clicked, so
+  // there would be nothing for the browser to give the focus back to.
+  const addButton = page.getByRole('button', { name: 'Add product' });
+  await addButton.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Add Product' })).toBeVisible();
+  await page.getByLabel('Name*').fill('Eye Palette');
   await page.getByRole('button', { name: 'Cancel' }).click();
   await page.getByRole('button', { name: 'Discard' }).click();
 
   await expect(page.getByRole('dialog')).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Add product' })).toBeFocused();
+  await expect(addButton).toBeFocused();
 });

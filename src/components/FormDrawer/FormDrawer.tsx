@@ -67,6 +67,16 @@ const FormDrawer = ({
 
   return (
     <>
+      {/* Before the drawer on purpose: the effects of the dialogs run in this
+          order, so on Discard the modal closes first and gives the focus back
+          to the button in the drawer, and then the drawer closes and gives it
+          to the button that opened it. The other way round, the modal would
+          take it back to a button that is already gone. */}
+      <UnsavedChangesModal
+        open={isAsking || guard.isBlocked}
+        onDiscard={discardChanges}
+        onContinue={keepEditing}
+      />
       <Drawer open={open} title={title} onClose={requestClose}>
         <DrawerForm
           onSubmit={onSubmit}
@@ -80,11 +90,6 @@ const FormDrawer = ({
           {children}
         </DrawerForm>
       </Drawer>
-      <UnsavedChangesModal
-        open={isAsking || guard.isBlocked}
-        onDiscard={discardChanges}
-        onContinue={keepEditing}
-      />
     </>
   );
 };
