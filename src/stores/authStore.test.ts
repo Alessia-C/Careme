@@ -7,7 +7,12 @@ beforeEach(() => {
 
 describe('authStore', () => {
   it('should set the session correctly', () => {
-    const user = { id: 'user-1', email: 'test@example.com' };
+    const user = {
+      id: 'user-1',
+      email: 'test@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    };
     const role = 'user';
     useAuthStore.getState().setSession(user, role);
 
@@ -17,7 +22,12 @@ describe('authStore', () => {
   });
 
   it('should clear the session correctly', () => {
-    const user = { id: 'user-1', email: 'test@example.com' };
+    const user = {
+      id: 'user-1',
+      email: 'test@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    };
     const role = 'user';
     useAuthStore.getState().setSession(user, role);
 
@@ -29,7 +39,12 @@ describe('authStore', () => {
   });
 
   it('should keep the session expiry and drop it on clear', () => {
-    const user = { id: 'user-1', email: 'test@example.com' };
+    const user = {
+      id: 'user-1',
+      email: 'test@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    };
     useAuthStore.getState().setSession(user, 'user', 1790000000);
     expect(useAuthStore.getState().expiresAt).toBe(1790000000);
 
@@ -41,7 +56,12 @@ describe('authStore', () => {
   });
 
   it('should derive isAuthenticated from the user in the store', () => {
-    const user = { id: 'user-1', email: 'test@example.com' };
+    const user = {
+      id: 'user-1',
+      email: 'test@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    };
     const role = 'user';
     useAuthStore.getState().setSession(user, role);
 

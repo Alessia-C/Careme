@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { mockSession } from './helpers';
 
 const product = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -15,16 +16,7 @@ const detail = { ...product, note: 'Warm Neutrals, best seller palette' };
 async function mockApi(page: Page, detailStatus = () => 200) {
   const detailRequests: string[] = [];
 
-  await page.route('**/api/auth/me', (route) =>
-    route.fulfill({
-      status: 200,
-      json: {
-        user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
-        // Far in the future, so the renewal timer never fires during the test.
-        expires_at: 4102444800,
-      },
-    }),
-  );
+  await mockSession(page);
   await page.route(
     (url) => url.pathname === '/api/products',
     (route) =>

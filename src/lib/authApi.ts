@@ -1,5 +1,14 @@
 import { isRole, type Role } from '../../shared/validation';
 
+// The signed-in user as the page sees it: never a token, only identity and
+// the names shown in the header.
+export interface SessionUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface SignupInput {
   firstName: string;
   lastName: string;
@@ -51,13 +60,20 @@ function parseSession(body: unknown) {
   if (
     typeof user?.id !== 'string' ||
     typeof user.email !== 'string' ||
+    typeof user.first_name !== 'string' ||
+    typeof user.last_name !== 'string' ||
     !isRole(user.role) ||
     expiresAt === null
   ) {
     return null;
   }
   return {
-    user: { id: user.id, email: user.email },
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+    },
     role: user.role,
     expiresAt,
   };
@@ -73,7 +89,7 @@ export interface LoginInput {
 export type LoginResult =
   | {
       ok: true;
-      user: { id: string; email: string };
+      user: SessionUser;
       role: Role;
       expiresAt: number;
     }
@@ -136,7 +152,7 @@ export async function logout(): Promise<LogoutResult> {
 export type SessionResult =
   | {
       ok: true;
-      user: { id: string; email: string };
+      user: SessionUser;
       role: Role;
       expiresAt: number;
     }

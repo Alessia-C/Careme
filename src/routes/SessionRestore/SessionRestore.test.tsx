@@ -7,7 +7,13 @@ import useAuthStore from '../../stores/authStore';
 
 const meResponse = () =>
   Response.json({
-    user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
+    user: {
+      id: 'user-1',
+      email: 'jane@example.com',
+      role: 'user',
+      first_name: 'Jane',
+      last_name: 'Doe',
+    },
     // Far in the future, so the renewal timer never fires during the test.
     expires_at: 4102444800,
   });
@@ -54,6 +60,8 @@ describe('SessionRestore', () => {
     expect(useAuthStore.getState().user).toEqual({
       id: 'user-1',
       email: 'jane@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
     });
     expect(useAuthStore.getState().role).toBe('user');
   });

@@ -151,40 +151,70 @@ export async function isAccountActive(
   return data === true;
 }
 
-export type AccountState = { isActive: false } | { isActive: true; role: Role };
+export type AccountState =
+  | { isActive: false }
+  | {
+      isActive: true;
+      role: Role;
+      firstName: string;
+      lastName: string;
+    };
 
-// Reads the status and the role of the caller with their own JWT (RLS
-// applies). The two are independent, so they run in parallel: one round trip
-// to Supabase less on every login and protected request. For a blocked user
-// RLS hides the profile, so the role result is only looked at after the
-// status: a blocked user gets { isActive: false }, never an error.
+// The profile names are nullable in the database: a missing name becomes ''
+// so the UI never has to handle null. Anything else than a string or null is
+// an unexpected value and fails like a bad role.
+function readProfileName(value: unknown): string {
+  if (value === null) {
+    return '';
+  }
+  if (typeof value !== 'string') {
+    throw new Error('Unexpected profile name');
+  }
+  return value;
+}
+
+// Reads the status, the role and the names of the caller with their own JWT
+// (RLS applies). The two are independent, so they run in parallel: one round
+// trip to Supabase less on every login and protected request. For a blocked
+// user RLS hides the profile, so the profile result is only looked at after
+// the status: a blocked user gets { isActive: false }, never an error.
 export async function readAccountState(
   userClient: ReturnType<typeof createUserClient>,
   userId: string,
 ): Promise<AccountState> {
   // The cast is the same justified exception as the other 'profiles' ones: the
   // generated DB types are still empty.
-  const [isActive, { data: profile, error: roleError }] = await Promise.all([
+  const [isActive, { data: profile, error: profileError }] = await Promise.all([
     isAccountActive(userClient),
     userClient
       .from('profiles' as never)
-      .select('role')
+      .select('role, first_name, last_name')
       .eq('id', userId)
       .single(),
   ]);
   if (!isActive) {
     return { isActive: false };
   }
-  if (roleError) {
-    throw roleError;
+  if (profileError) {
+    throw profileError;
   }
   // Same reason as above: without generated DB types `profile` has no type.
-  // The value is validated by isRole right below, so nothing is trusted blindly.
-  const role = (profile as { role?: unknown } | null)?.role;
+  // The values are validated right below, so nothing is trusted blindly.
+  const fields = profile as {
+    role?: unknown;
+    first_name?: unknown;
+    last_name?: unknown;
+  } | null;
+  const role = fields?.role;
   if (!isRole(role)) {
     throw new Error('Unexpected profile role');
   }
-  return { isActive: true, role };
+  return {
+    isActive: true,
+    role,
+    firstName: readProfileName(fields?.first_name),
+    lastName: readProfileName(fields?.last_name),
+  };
 }
 
 // Browsers send the cookie; API clients (curl, tests) can still use the
@@ -202,7 +232,13 @@ export function requireAccessToken(req: Request): string {
   return token;
 }
 
-export type AuthContext = { id: string; email: string; role: Role };
+export type AuthContext = {
+  id: string;
+  email: string;
+  role: Role;
+  firstName: string;
+  lastName: string;
+};
 
 type AuthHandler = (
   req: Request,
@@ -303,6 +339,12 @@ export function withAuth(handler: AuthHandler): Handler {
       return res.status(403).json({ message: 'Account blocked' });
     }
 
-    return handler(req, res, { id: data.user.id, email, role: account.role });
+    return handler(req, res, {
+      id: data.user.id,
+      email,
+      role: account.role,
+      firstName: account.firstName,
+      lastName: account.lastName,
+    });
   };
 }
