@@ -5,6 +5,7 @@ Moved from CLAUDE.md. Read it when building or changing any form with user input
 - Forms (create/edit drawers and any form that holds user input, except login and signup): when the user has unsaved changes (a value differs from its initial one), every way of leaving asks first.
   - Closing the form (Cancel, X, Esc, backdrop) opens the shared "Unsaved changes" modal (`role="alertdialog"`, Figma node 185:3099) with "Discard" and "Continue editing".
   - In-app navigation (Back/Forward, links, logout) is blocked with `useBlocker` and shows the same modal.
+  - Logout is blocked only where it can be reached: a modal drawer makes the header inert, so there closing the drawer is what asks (see [Add product](../features/add-product.md)).
   - Reload or tab close uses the native `beforeunload` prompt, registered only while the form is dirty.
   - Session expiry/401 redirects are never blocked.
   - A form with no changes, or one just submitted successfully, leaves without asking.

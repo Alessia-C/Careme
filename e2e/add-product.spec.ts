@@ -108,3 +108,33 @@ test('Esc with typed text asks first, and Discard closes and clears', async ({
   await page.getByRole('button', { name: 'Add product' }).click();
   await expect(page.getByLabel('Name*')).toHaveValue('');
 });
+
+test('Back with typed text asks first, and Discard leaves the page', async ({
+  page,
+}) => {
+  await mockApi(page);
+  await page.goto('/login');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Add product' }).click();
+  await page.getByLabel('Name*').fill('Eye Palette');
+
+  await page.goBack();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await expect(page).toHaveURL('/');
+  await page.getByRole('button', { name: 'Discard' }).click();
+
+  await expect(page).toHaveURL(/\/login/);
+});
+
+test('the focus goes back to the Add product button after Discard', async ({
+  page,
+}) => {
+  await mockApi(page);
+
+  await openDrawerAndFill(page);
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: 'Discard' }).click();
+
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Add product' })).toBeFocused();
+});

@@ -176,7 +176,10 @@ describe('FormDrawer', () => {
       const onClose = vi.fn();
       renderDrawer({ onClose, isDirty: true, isSubmitting: true });
 
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
       fireEvent(
         screen.getByRole('dialog', { name: 'Add Product' }),
         new Event('cancel', { cancelable: true }),

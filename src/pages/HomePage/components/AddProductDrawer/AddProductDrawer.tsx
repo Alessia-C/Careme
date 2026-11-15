@@ -42,6 +42,9 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       void queryClient.invalidateQueries({
         queryKey: PRODUCTS_LIST_QUERY_KEY,
       });
+      // Straight to onClose, not through the drawer's own close request: the
+      // values are still there (the form is dirty), but they were just saved,
+      // so there is nothing to ask about.
       onClose();
     },
   });

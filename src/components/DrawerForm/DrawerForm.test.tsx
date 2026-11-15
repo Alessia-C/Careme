@@ -68,9 +68,18 @@ describe('DrawerForm', () => {
     expect(button).toBeEnabled();
   });
 
-  it('can disable Cancel while the form is being sent', () => {
-    renderForm({ isCancelDisabled: true });
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  it('can disable Cancel while the form is being sent, keeping its focus', async () => {
+    const onCancel = vi.fn();
+    renderForm({ isCancelDisabled: true, onCancel });
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    expect(cancel).toHaveAttribute('aria-disabled', 'true');
+    expect(cancel).toBeEnabled();
+
+    cancel.focus();
+    await userEvent.click(cancel);
+
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(cancel).toHaveFocus();
   });
 
   it('disables the submit button but not Cancel', () => {
