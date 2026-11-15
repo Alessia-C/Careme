@@ -1,18 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
-import { mockEmptyProducts, mockNoSession } from './helpers';
+import { loggedInSession, mockEmptyProducts, mockNoSession } from './helpers';
 
 async function mockApi(page: Page) {
   await mockNoSession(page);
   await mockEmptyProducts(page);
   await page.route('**/api/auth/login', (route) =>
-    route.fulfill({
-      status: 200,
-      json: {
-        user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
-        // Far in the future, so the renewal timer never fires during the test.
-        expires_at: 4102444800,
-      },
-    }),
+    route.fulfill({ status: 200, json: loggedInSession }),
   );
   await page.route('**/api/auth/logout', (route) =>
     route.fulfill({

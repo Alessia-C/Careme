@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { mockSession } from './helpers';
 
 // Fake API with a logged-in user and the products endpoint the page and the
 // drawer use. It records the body of every POST so a test can check what was
@@ -6,16 +7,7 @@ import { test, expect, type Page } from '@playwright/test';
 async function mockApi(page: Page) {
   const created: unknown[] = [];
 
-  await page.route('**/api/auth/me', (route) =>
-    route.fulfill({
-      status: 200,
-      json: {
-        user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
-        // Far in the future, so the renewal timer never fires during the test.
-        expires_at: 4102444800,
-      },
-    }),
-  );
+  await mockSession(page);
   await page.route(
     (url) => url.pathname === '/api/products',
     (route) => {
