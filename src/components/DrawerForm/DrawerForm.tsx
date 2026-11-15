@@ -11,7 +11,9 @@ interface DrawerFormProps {
   // disabled, because a disabled button loses the focus the user has on it.
   // The caller ignores a second submit.
   isSubmitting?: boolean;
-  // While the form is being sent, leaving it would hide the answer.
+  // While the form is being sent, leaving it would hide the answer. Like the
+  // submit button, Cancel is aria-disabled and not disabled, so the focus the
+  // user may have on it is not lost.
   isCancelDisabled?: boolean;
   // Messages (warnings, errors) shown under the fields.
   feedback?: ReactNode;
@@ -47,7 +49,7 @@ const DrawerForm = ({
         label="Cancel"
         variant="secondary"
         appearance="outline"
-        disabled={isCancelDisabled}
+        aria-disabled={isCancelDisabled || undefined}
         onClick={onCancel}
       />
     </div>

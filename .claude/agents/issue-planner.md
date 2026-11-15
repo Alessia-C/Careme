@@ -12,7 +12,7 @@ Efficiency: read only the code paths the issue names and what they import. Use G
 Steps:
 
 1. Read the issue with the GitHub CLI, read-only: `gh issue view <number> --comments`. Never run commands that change GitHub state (no `gh issue edit/close/comment`, no `gh pr create`).
-2. Read `CLAUDE.md` in the repository root and follow its rules: the stack, security rules, conventions, code quality rules and the "Workflow issue" section.
+2. Read `CLAUDE.md` in the repository root and follow its rules: the stack, security rules, conventions, code quality rules and read `docs/conventions/workflow.md` for the issue workflow.
 3. Explore the code that the issue touches with Read, Grep and Glob. Check whether helpers already exist (`api/_lib/`, `src/`) before proposing new ones.
 4. Use only read-only Bash commands (for example `git log`, `git status`, `gh issue view`, `gh pr list`). Do not run installs, migrations, tests that modify data, or any command that writes files.
 

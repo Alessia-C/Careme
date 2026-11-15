@@ -53,9 +53,15 @@ function renderTab(queryClient = new QueryClient()) {
 beforeEach(() => {
   FakeBroadcastChannel.instances = [];
   vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel);
-  useAuthStore
-    .getState()
-    .setSession({ id: 'user-1', email: 'jane@example.com' }, 'user');
+  useAuthStore.getState().setSession(
+    {
+      id: 'user-1',
+      email: 'jane@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    'user',
+  );
 });
 
 afterEach(() => {

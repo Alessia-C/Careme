@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { Role } from '../../shared/validation';
 
-type AuthUser = { id: string; email: string } | null;
+type AuthUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+} | null;
 
 // 'pending': the first GET /api/auth/me after a page load is still running.
 // 'failed': it could not tell (network error, 5xx): the login page warns once,

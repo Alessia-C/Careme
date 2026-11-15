@@ -71,7 +71,10 @@ beforeEach(() => {
     error: null,
   });
   rpc.mockResolvedValue({ data: true, error: null });
-  single.mockResolvedValue({ data: { role: 'user' }, error: null });
+  single.mockResolvedValue({
+    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+    error: null,
+  });
 });
 
 afterEach(() => {
@@ -380,8 +383,11 @@ describe('withAuth - account and role', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it('should pass the id, the email and the role read from the database to the handler', async () => {
-    single.mockResolvedValue({ data: { role: 'admin' }, error: null });
+  it('should pass the id, the email, the role and the names read from the database to the handler', async () => {
+    single.mockResolvedValue({
+      data: { role: 'admin', first_name: 'Ada', last_name: 'Lovelace' },
+      error: null,
+    });
 
     await callWithAuth();
 
@@ -389,7 +395,24 @@ describe('withAuth - account and role', () => {
       id: 'user-1',
       email: 'jane@example.com',
       role: 'admin',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
     });
+  });
+
+  it('should pass empty strings for names that are null in the database', async () => {
+    single.mockResolvedValue({
+      data: { role: 'user', first_name: null, last_name: null },
+      error: null,
+    });
+
+    await callWithAuth();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ firstName: '', lastName: '' }),
+    );
   });
 
   it('should ignore a role sent by the client', async () => {
@@ -399,6 +422,8 @@ describe('withAuth - account and role', () => {
       id: 'user-1',
       email: 'jane@example.com',
       role: 'user',
+      firstName: 'Jane',
+      lastName: 'Doe',
     });
   });
 });
@@ -448,6 +473,18 @@ describe('withAuth - unexpected failures', () => {
 
   it('should return a generic 500 when the role is not a known value', async () => {
     single.mockResolvedValue({ data: { role: 'superuser' }, error: null });
+
+    const res = await callWithAuth();
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should return a generic 500 when a name is not a string or null', async () => {
+    single.mockResolvedValue({
+      data: { role: 'user', first_name: 42, last_name: 'Doe' },
+      error: null,
+    });
 
     const res = await callWithAuth();
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AuthLayout from '../../components/AuthLayout/AuthLayout';
 import CheckEmailMessage from './components/CheckEmailMessage/CheckEmailMessage';
 import SignupForm from './components/SignupForm/SignupForm';
+import styles from './SignupPage.module.css';
 
 const PAGE_INFO = {
   title: 'Sign up – Careme',
@@ -18,7 +19,7 @@ function SignupPage() {
   }
 
   return (
-    <AuthLayout info={PAGE_INFO}>
+    <AuthLayout info={PAGE_INFO} panelClassName={styles.signupPanel}>
       <SignupForm onSuccess={() => setIsDone(true)} />
     </AuthLayout>
   );

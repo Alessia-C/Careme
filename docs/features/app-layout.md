@@ -19,6 +19,7 @@ A shared shell (skip link, header with logo and Logout button, main content area
   3. `<main id="main" tabindex="-1">` containing the current page (`<Outlet />`). The `tabindex="-1"` lets the skip link move focus into `main` in every browser.
 - `AppHeader` shows:
   - The "Careme" logo on the left. It is the SVG [`src/assets/icons/logo.svg`](../../src/assets/icons/logo.svg) used as a CSS mask, colored with `--color-primary-800`. It has `role="img"` and `aria-label="Careme"`.
+  - A user badge with the initials of the logged-in user, placed before the Logout button, see [User badge](user-badge.md).
   - A "Logout" button on the right (`Button`, secondary variant, text appearance) with a log-out icon. It logs the user out, see [Logout](logout.md).
   - A visually hidden live region ([`VisuallyHiddenStatus`](../../src/components/VisuallyHiddenStatus/VisuallyHiddenStatus.tsx), `role="status"`, always in the DOM) that reads "Logging out…" while the logout request is in progress, see [Logout](logout.md).
 - Responsive behavior (breakpoint 768px):
@@ -54,6 +55,7 @@ None. The feature does not read or write any table.
 - Unit tests:
   - [`src/routes/AppLayout/AppLayout.test.tsx`](../../src/routes/AppLayout/AppLayout.test.tsx): header and page content inside `main`, skip link targets `#main`, `main` is focusable with `tabindex="-1"`, skip link first in tab order, Logout reached right after the skip link.
   - [`src/routes/AppLayout/components/AppHeader/AppHeader.test.tsx`](../../src/routes/AppLayout/components/AppHeader/AppHeader.test.tsx): logo exposed as image "Careme", Logout button with its label as accessible name, header in the banner landmark.
+  - [`src/routes/AppLayout/components/UserBadge/UserBadge.test.tsx`](../../src/routes/AppLayout/components/UserBadge/UserBadge.test.tsx): badge initials, accessible name and not interactive, see [User badge](user-badge.md).
   - [`src/components/Button/Button.test.tsx`](../../src/components/Button/Button.test.tsx): `Button` with the new `icon` prop and label in a `<span>`.
   - [`src/router.test.tsx`](../../src/router.test.tsx): the app header is shown on protected pages; the document title is set on `/login` and `/signup`.
 - E2E tests: [`e2e/logout.spec.ts`](../../e2e/logout.spec.ts) covers the Logout button and tab sync (see [Logout](logout.md))
@@ -65,8 +67,9 @@ None. The feature does not read or write any table.
 
 ## Changelog
 
-| Date       | Change                                       | PR  |
-| ---------- | -------------------------------------------- | --- |
-| 2026-10-25 | Initial implementation                       | TBD |
-| 2026-10-25 | Logout button wired, `useLogoutSync` mounted | TBD |
-| 2026-11-01 | `main` background is `--color-grey-100`      | TBD |
+| Date       | Change                                                                   | PR  |
+| ---------- | ------------------------------------------------------------------------ | --- |
+| 2026-10-25 | Initial implementation                                                   | TBD |
+| 2026-10-25 | Logout button wired, `useLogoutSync` mounted                             | TBD |
+| 2026-11-01 | `main` background is `--color-grey-100`                                  | TBD |
+| 2026-11-14 | User badge with initials in the header (see [User badge](user-badge.md)) | TBD |

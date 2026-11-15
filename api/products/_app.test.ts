@@ -102,7 +102,10 @@ beforeEach(() => {
   });
   rpc.mockResolvedValue({ data: true, error: null });
   single
-    .mockResolvedValueOnce({ data: { role: 'user' }, error: null })
+    .mockResolvedValueOnce({
+      data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+      error: null,
+    })
     .mockResolvedValue({ data: createdProduct, error: null });
   maybeSingle.mockResolvedValue({ data: null, error: null });
   range.mockResolvedValue({ data: [listedProduct], count: 1, error: null });

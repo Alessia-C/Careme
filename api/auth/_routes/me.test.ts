@@ -56,7 +56,10 @@ beforeEach(() => {
     error: null,
   });
   rpc.mockResolvedValue({ data: true, error: null });
-  single.mockResolvedValue({ data: { role: 'user' }, error: null });
+  single.mockResolvedValue({
+    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+    error: null,
+  });
 });
 
 afterEach(() => {
@@ -79,16 +82,40 @@ describe('GET /api/auth/me', () => {
     expect(getUser).not.toHaveBeenCalled();
   });
 
-  it('should return the user with the role read from the database', async () => {
-    single.mockResolvedValue({ data: { role: 'admin' }, error: null });
+  it('should return the user with the role and the names read from the database', async () => {
+    single.mockResolvedValue({
+      data: { role: 'admin', first_name: 'Ada', last_name: 'Lovelace' },
+      error: null,
+    });
 
     const res = await callHandler('GET', validHeaders);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
-      user: { id: 'user-1', email: 'jane@example.com', role: 'admin' },
+      user: {
+        id: 'user-1',
+        email: 'jane@example.com',
+        role: 'admin',
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+      },
       expires_at: EXPIRES_AT,
     });
+  });
+
+  it('should return empty strings for names that are null in the database', async () => {
+    single.mockResolvedValue({
+      data: { role: 'user', first_name: null, last_name: null },
+      error: null,
+    });
+
+    const res = await callHandler('GET', validHeaders);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: expect.objectContaining({ first_name: '', last_name: '' }),
+      }),
+    );
   });
 
   it('should accept the session cookie sent by the browser', async () => {

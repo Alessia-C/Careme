@@ -4,12 +4,15 @@ import Button from '../../../../components/Button/Button';
 import { useEndSession } from '../../../../hooks/useEndSession/useEndSession';
 import { logout } from '../../../../lib/authApi';
 import { broadcastLogout } from '../../../../lib/logoutChannel';
+import useAuthStore from '../../../../stores/authStore';
+import UserBadge from '../UserBadge/UserBadge';
 import styles from './AppHeader.module.css';
 
 // Logo and logout icon are CSS masks, so they take their color from the
 // design tokens (logo) or from the text (icon) and not from the SVG files.
 // role="img" + aria-label keep the logo readable as "Careme".
 function AppHeader() {
+  const user = useAuthStore((state) => state.user);
   const endSession = useEndSession();
   // onSettled, not onSuccess: even if the request failed the user asked to
   // leave, so the local session is dropped anyway (shared devices). The login
@@ -33,6 +36,13 @@ function AppHeader() {
         {isPending ? 'Logging out…' : ''}
       </VisuallyHiddenStatus>
       <div className={styles.actions}>
+        {user && (
+          <UserBadge
+            firstName={user.firstName}
+            lastName={user.lastName}
+            email={user.email}
+          />
+        )}
         <Button
           label="Logout"
           variant="secondary"

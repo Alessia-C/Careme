@@ -51,6 +51,10 @@ Lets a logged-in user add a product (name, brand, category, status, optional not
 ### Closing
 
 - Cancel, the close (X) button, `Esc` and a click on the backdrop close the drawer. Nothing is created and the typed values are discarded. The focus goes back to the "Add product" button.
+- With unsaved changes (a text field with something other than spaces, or a select that is not on its default), every one of these first opens the shared "Unsaved changes" modal ([`UnsavedChangesModal`](../../src/components/UnsavedChangesModal/UnsavedChangesModal.tsx)): "Continue editing" keeps the form as it is, "Discard" closes the drawer. Without changes, or after a successful creation, it closes without asking. After a failed attempt the values are kept, so it still asks.
+- Navigation inside the app (e.g. the browser Back button) is held by [`useUnsavedChangesGuard`](../../src/hooks/useUnsavedChangesGuard/useUnsavedChangesGuard.ts) with the same modal, and reloading or closing the tab shows the browser's own warning. Both are active only while the drawer is open and has changes. Going to `/login` (end of the session) is never held.
+- While the product is being sent, Cancel is disabled and the X, `Esc` and the backdrop are ignored, because the answer is on its way.
+- Logout does not ask: with the drawer open the header cannot be used (modal dialog), so the user has to close the drawer first, and that already asks. Not guarded on purpose: a guard on the logout button would be unreachable.
 - On phones the X is hidden: Cancel and `Esc` close the drawer, and the panel covers the whole page, so there is no backdrop to click.
 - While the drawer is open the rest of the page, header included, cannot be used (modal dialog).
 
@@ -98,3 +102,4 @@ Reads and writes `products` only through the API (the frontend never talks to Su
 | 2026-11-01 | Initial implementation (drawer, phone layout)                                                                  | TBD |
 | 2026-11-01 | The list refreshes after a creation (#67)                                                                      | TBD |
 | 2026-11-02 | Fields shared with the edit mode (`ProductFields`); the Note has `maxLength` 500; `DrawerForm` extracted (#69) | TBD |
+| 2026-11-15 | Unsaved changes warning when leaving the drawer (#165)                                                         | TBD |

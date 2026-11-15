@@ -11,7 +11,7 @@ Efficiency: start from the files the user names or from `git diff main...HEAD --
 
 Steps:
 
-1. Read `CLAUDE.md`, especially "Architecture", "Security rules", "Conventions" and "Code quality". Those are the baseline.
+1. Read `CLAUDE.md`, especially "Security rules", "Conventions" and "Code quality". Those are the baseline. Then read `docs/architecture/backend.md` and `docs/architecture/database.md` for the Express, session and schema details.
 2. Read the existing backend building blocks before proposing anything: `api/_lib/http.ts` (`withMethod`, `withObjectBody`), `api/_lib/auth.ts` (`withAuth`, `getAccessToken`, `setSessionCookies`), `api/_lib/supabase.ts`, `api/_lib/sentry.ts`, `shared/`. Reuse them; do not propose near-duplicates.
 3. Read-only Bash only (`git`, `ls`, `npm ls`). Never run `supabase db push`, seeds, installs or anything that writes to the database or GitHub.
 

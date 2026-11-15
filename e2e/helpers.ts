@@ -20,3 +20,23 @@ export async function mockEmptyProducts(page: Page) {
     (route) => route.fulfill({ status: 200, json: { products: [], total: 0 } }),
   );
 }
+
+// Body of GET /api/auth/me for a logged-in user. The names feed the header
+// badge: without them the app treats the session as invalid.
+export const loggedInSession = {
+  user: {
+    id: 'user-1',
+    email: 'jane@example.com',
+    first_name: 'Jane',
+    last_name: 'Doe',
+    role: 'user',
+  },
+  // Far in the future, so the renewal timer never fires during the test.
+  expires_at: 4102444800,
+};
+
+export async function mockSession(page: Page) {
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 200, json: loggedInSession }),
+  );
+}

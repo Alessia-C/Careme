@@ -1,1 +1,3 @@
+# Git hooks do not load the shell profile, so nvm's node may not be on PATH.
+[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
 npx lint-staged

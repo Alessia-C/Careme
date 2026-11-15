@@ -1,0 +1,35 @@
+name: Sync staging with main
+
+# After a release (merge commit from staging to main), main is one commit
+# ahead of staging. Fast-forward staging to main so no extra commit or PR is
+# needed. Requires a branch protection bypass for this workflow on staging.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-staging
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Fast-forward staging to main
+        run: |
+          git fetch origin staging main
+          # Only a fast-forward is safe: if staging has commits main lacks,
+          # fail and let a person merge main into staging instead.
+          if ! git merge-base --is-ancestor origin/staging origin/main; then
+            echo "::error::staging has commits that main does not have; cannot fast-forward."
+            exit 1
+          fi
+          git push origin origin/main:refs/heads/staging

@@ -73,13 +73,16 @@ beforeEach(() => {
     ok: true,
     expiresAt: nowSeconds + 2 * 3600,
   });
-  useAuthStore
-    .getState()
-    .setSession(
-      { id: 'user-1', email: 'jane@example.com' },
-      'user',
-      nowSeconds + 3600,
-    );
+  useAuthStore.getState().setSession(
+    {
+      id: 'user-1',
+      email: 'jane@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    'user',
+    nowSeconds + 3600,
+  );
 });
 
 afterEach(() => {

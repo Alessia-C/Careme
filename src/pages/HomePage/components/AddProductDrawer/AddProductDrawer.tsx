@@ -28,7 +28,7 @@ interface AddProductDrawerProps {
 // time the drawer opens: what the user typed before is never shown again.
 const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
   const queryClient = useQueryClient();
-  const { values, isValid, field } = useForm(PRODUCT_FORM_RULES, {
+  const { values, isValid, isDirty, field } = useForm(PRODUCT_FORM_RULES, {
     category: 'makeup',
     status: 'new',
   });
@@ -42,6 +42,9 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       void queryClient.invalidateQueries({
         queryKey: PRODUCTS_LIST_QUERY_KEY,
       });
+      // Straight to onClose, not through the drawer's own close request: the
+      // values are still there (the form is dirty), but they were just saved,
+      // so there is nothing to ask about.
       onClose();
     },
   });
@@ -62,6 +65,8 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       onSubmit={handleSubmit}
       submitLabel={isSubmitting ? 'Adding…' : 'Add Product'}
       isSubmitDisabled={!isValid || isSubmitting}
+      isDirty={isDirty}
+      isSubmitting={isSubmitting}
       feedback={feedback}
     >
       <ProductFields field={field} />

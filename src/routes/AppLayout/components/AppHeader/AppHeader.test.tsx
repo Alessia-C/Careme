@@ -37,9 +37,15 @@ function renderHeader(queryClient = new QueryClient()) {
 beforeEach(() => {
   vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel);
   vi.mocked(logout).mockResolvedValue({ ok: true });
-  useAuthStore
-    .getState()
-    .setSession({ id: 'user-1', email: 'jane@example.com' }, 'user');
+  useAuthStore.getState().setSession(
+    {
+      id: 'user-1',
+      email: 'jane@example.com',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    'user',
+  );
 });
 
 afterEach(() => {
@@ -171,5 +177,33 @@ describe('AppHeader - logout', () => {
       confirmed: false,
     });
     expect(postMessage).toHaveBeenCalledWith('logout-unconfirmed');
+  });
+});
+
+describe('AppHeader - user badge', () => {
+  it('shows the badge with the initials and the full name of the user', () => {
+    renderHeader();
+
+    expect(screen.getByRole('img', { name: 'Jane Doe' })).toHaveTextContent(
+      'JD',
+    );
+  });
+
+  it('places the badge before the Logout action', () => {
+    renderHeader();
+
+    const badge = screen.getByRole('img', { name: 'Jane Doe' });
+    const logout = screen.getByRole('button', { name: 'Logout' });
+    expect(
+      badge.compareDocumentPosition(logout) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('shows no badge when there is no session', () => {
+    useAuthStore.setState({ user: null, role: null });
+    renderHeader();
+
+    expect(screen.queryByRole('img', { name: /Jane/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
   });
 });

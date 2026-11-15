@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { mockSession } from './helpers';
 
 const PAGE_SIZE = 12;
 
@@ -19,16 +20,7 @@ async function mockApi(
 ) {
   const requests: string[] = [];
 
-  await page.route('**/api/auth/me', (route) =>
-    route.fulfill({
-      status: 200,
-      json: {
-        user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
-        // Far in the future, so the renewal timer never fires during the test.
-        expires_at: 4102444800,
-      },
-    }),
-  );
+  await mockSession(page);
   await page.route(
     (url) => url.pathname === '/api/products',
     (route) => {
@@ -104,15 +96,7 @@ test('Load more adds the next page', async ({ page }) => {
 
 test('an error can be retried', async ({ page }) => {
   let failing = true;
-  await page.route('**/api/auth/me', (route) =>
-    route.fulfill({
-      status: 200,
-      json: {
-        user: { id: 'user-1', email: 'jane@example.com', role: 'user' },
-        expires_at: 4102444800,
-      },
-    }),
-  );
+  await mockSession(page);
   await page.route(
     (url) => url.pathname === '/api/products',
     (route) =>

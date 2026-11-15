@@ -12,17 +12,29 @@ describe('isAuthenticated', () => {
   });
 
   it('returns true after a session is set in the store', () => {
-    useAuthStore
-      .getState()
-      .setSession({ id: 'user-1', email: 'test@example.com' }, 'user');
+    useAuthStore.getState().setSession(
+      {
+        id: 'user-1',
+        email: 'test@example.com',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      },
+      'user',
+    );
 
     expect(isAuthenticated()).toBe(true);
   });
 
   it('returns false again after the session is cleared', () => {
-    useAuthStore
-      .getState()
-      .setSession({ id: 'user-1', email: 'test@example.com' }, 'user');
+    useAuthStore.getState().setSession(
+      {
+        id: 'user-1',
+        email: 'test@example.com',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      },
+      'user',
+    );
     useAuthStore.getState().clearSession();
 
     expect(isAuthenticated()).toBe(false);

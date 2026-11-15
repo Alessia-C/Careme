@@ -35,16 +35,24 @@ None.
 
 ### `200 OK`
 
-| Field        | Type                | Description                                                                                       |
-| ------------ | ------------------- | ------------------------------------------------------------------------------------------------- |
-| `user.id`    | `string`            | The user's id (`auth.users.id`)                                                                   |
-| `user.email` | `string`            | The user's email                                                                                  |
-| `user.role`  | `"user" \| "admin"` | Read from `profiles.role`, never from the request                                                 |
-| `expires_at` | `number`            | Unix time in seconds when the access token expires, read from the `exp` claim of the verified JWT |
+| Field             | Type                | Description                                                                                       |
+| ----------------- | ------------------- | ------------------------------------------------------------------------------------------------- |
+| `user.id`         | `string`            | The user's id (`auth.users.id`)                                                                   |
+| `user.email`      | `string`            | The user's email                                                                                  |
+| `user.role`       | `"user" \| "admin"` | Read from `profiles.role`, never from the request                                                 |
+| `user.first_name` | `string`            | Read from `profiles.first_name`. `""` when the profile has no first name                          |
+| `user.last_name`  | `string`            | Read from `profiles.last_name`. `""` when the profile has no last name                            |
+| `expires_at`      | `number`            | Unix time in seconds when the access token expires, read from the `exp` claim of the verified JWT |
 
 ```json
 {
-  "user": { "id": "5b1c...", "email": "jane@example.com", "role": "user" },
+  "user": {
+    "id": "5b1c...",
+    "email": "jane@example.com",
+    "role": "user",
+    "first_name": "Jane",
+    "last_name": "Doe"
+  },
   "expires_at": 1793000000
 }
 ```
@@ -76,7 +84,7 @@ curl http://localhost:3000/api/auth/me -b cookies.txt
 
 ## Notes
 
-- The whole endpoint is [`withAuth`](README.md#conventions): the handler echoes `id`, `email` and `role`, which `withAuth` already has, and decodes `exp` from the token that `withAuth` has just verified (`getTokenExpiry()`; decoding is not a verification). No extra Supabase call is made.
+- The whole endpoint is [`withAuth`](README.md#conventions): the handler echoes `id`, `email`, `role` and the names, which `withAuth` already has, and decodes `exp` from the token that `withAuth` has just verified (`getTokenExpiry()`; decoding is not a verification). No extra Supabase call is made.
 - Read-only `GET` with no side effects, so it needs no CSRF defence; the `SameSite=Strict` cookie is not sent on cross-site requests anyway.
 - The frontend treats `401` and `403` as "no session" and anything else (network error, `429`, `5xx`, malformed body) as a failure it cannot interpret: see [Session restore](../features/session-restore.md).
 - **Requires** `SUPABASE_URL` and `SUPABASE_ANON_KEY` (see the [README](../../README.md#environment-variables)).

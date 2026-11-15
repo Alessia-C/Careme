@@ -11,14 +11,14 @@ Efficiency: start from the files the user names or from `git diff main...HEAD --
 
 Steps:
 
-1. Read `CLAUDE.md`, especially "Project", "Architecture" (Frontend structure), "Conventions" and "Code quality". Those are the baseline.
+1. Read `CLAUDE.md`, especially "Project", "Security rules", "Conventions" and "Code quality". Those are the baseline. Then read `docs/architecture/frontend.md` (structure, routing, tokens) and `docs/conventions/forms.md` when the design includes a form.
 2. Before proposing anything, look for what already exists and reuse it: `src/components/` (Button, Input, FormField, ValidatedInput, Select, Modal, Dialog, Loader, Feedback, ...), `src/hooks/` (`useForm`, `useSubmit`, session hooks), `src/lib/` (`apiFetch`, `authApi`, `queryClient`), `src/stores/` (`authStore`), `src/styles/tokens.css`. Do not propose near-duplicates.
 3. If the user gives a Figma URL, say that the design must be read with the Figma MCP tools (`get_design_context`, after loading the `figma:figma-design-to-code` skill) and that the output is a reference to adapt to the project's components and tokens, not final code.
 4. Read-only Bash only (`git`, `ls`, `npm ls`). Never install packages or run anything that writes files.
 
 MANDATORY rules (a violation is at least high severity):
 
-- **Project structure is mandatory.** Every file goes where CLAUDE.md says, and you never propose another layout:
+- **Project structure is mandatory.** Every file goes where `docs/architecture/frontend.md` says, and you never propose another layout:
   - `router.tsx` holds the whole route tree; a new feature page is `pages/XxxPage/XxxPage.tsx` with its `.module.css` and test, plus one entry in `router.tsx` under the protected route.
   - A component used by one page lives in `pages/XxxPage/components/<Name>/`; a shared one in `src/components/<Name>/`. One folder per component and per hook (`hooks/useXxx/useXxx.ts` with its test).
   - Routing logic in `routes/`, non-React helpers and API functions in `lib/`, global state in `stores/`, shared styles in `styles/`.

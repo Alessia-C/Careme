@@ -1,10 +1,14 @@
 {
   "regions": ["dub1"],
+  "rewrites": [
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/signup", "destination": "/index.html" }
+  ],
   "git": {
     "deploymentEnabled": {
       "staging": true,
       "main": true,
-      "*": false
+      "*": true
     }
   }
 }
