@@ -8,8 +8,9 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: var(--color-primary-900);
-  color: var(--color-white-100);
+  /* 13.98:1 contrast (WCAG AA needs 4.5:1 for 14px text). */
+  background-color: var(--color-primary-50);
+  color: var(--color-black-100);
   font: var(--text-body-small);
   white-space: nowrap;
   user-select: none;
