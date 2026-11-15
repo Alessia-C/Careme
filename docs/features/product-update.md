@@ -53,7 +53,7 @@ A change is any difference from the loaded product **after trimming** (`useForm.
 
 ### Reusable pieces
 
-[`UnsavedChangesModal`](../../src/components/UnsavedChangesModal/UnsavedChangesModal.tsx) and [`useUnsavedChangesGuard`](../../src/hooks/useUnsavedChangesGuard/useUnsavedChangesGuard.ts) are ready to be reused by [#165](https://github.com/Alessia-C/Careme/issues/165), which is not implemented yet.
+[`UnsavedChangesModal`](../../src/components/UnsavedChangesModal/UnsavedChangesModal.tsx) and [`useUnsavedChangesGuard`](../../src/hooks/useUnsavedChangesGuard/useUnsavedChangesGuard.ts) are also used by [`FormDrawer`](../../src/components/FormDrawer/FormDrawer.tsx), so the [Add product](add-product.md) drawer asks the same way ([#165](https://github.com/Alessia-C/Careme/issues/165)).
 
 ## Business rules
 

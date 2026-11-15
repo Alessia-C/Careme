@@ -28,7 +28,7 @@ interface AddProductDrawerProps {
 // time the drawer opens: what the user typed before is never shown again.
 const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
   const queryClient = useQueryClient();
-  const { values, isValid, field } = useForm(PRODUCT_FORM_RULES, {
+  const { values, isValid, isDirty, field } = useForm(PRODUCT_FORM_RULES, {
     category: 'makeup',
     status: 'new',
   });
@@ -62,6 +62,8 @@ const AddProductDrawer = ({ open, onClose }: AddProductDrawerProps) => {
       onSubmit={handleSubmit}
       submitLabel={isSubmitting ? 'Adding…' : 'Add Product'}
       isSubmitDisabled={!isValid || isSubmitting}
+      isDirty={isDirty}
+      isSubmitting={isSubmitting}
       feedback={feedback}
     >
       <ProductFields field={field} />
