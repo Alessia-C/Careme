@@ -50,6 +50,9 @@ describe('ProductEditForm', () => {
     const saving = screen.getByRole('button', { name: 'Saving…' });
     expect(saving).toHaveAttribute('aria-disabled', 'true');
     expect(saving).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 });

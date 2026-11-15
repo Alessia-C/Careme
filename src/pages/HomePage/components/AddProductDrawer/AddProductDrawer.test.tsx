@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import AddProductDrawer from './AddProductDrawer';
 
@@ -18,7 +19,14 @@ const renderDrawer = (onClose = vi.fn()) => {
   const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
   render(
     <QueryClientProvider client={queryClient}>
-      <AddProductDrawer open onClose={onClose} />
+      <RouterProvider
+        router={createMemoryRouter([
+          {
+            path: '/',
+            element: <AddProductDrawer open onClose={onClose} />,
+          },
+        ])}
+      />
     </QueryClientProvider>,
   );
   return { onClose, invalidate };
@@ -259,7 +267,27 @@ describe('AddProductDrawer', () => {
     );
   });
 
-  it('closes without sending anything from Cancel', async () => {
+  it('closes from Cancel without asking when nothing was typed', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderDrawer();
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('does not count spaces or a change of select as typed text', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderDrawer();
+
+    await user.type(screen.getByLabelText('Name*'), '   ');
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks before closing with typed text, and Continue editing keeps it', async () => {
     const user = userEvent.setup();
     const fetchMock = mockApi();
     const { onClose, invalidate } = renderDrawer();
@@ -267,20 +295,55 @@ describe('AddProductDrawer', () => {
     await fillValidForm(user);
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole('alertdialog', { name: 'Unsaved changes' }),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Continue editing' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Name*')).toHaveValue('Eye Palette');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(invalidate).not.toHaveBeenCalled();
   });
 
-  it('closes without sending anything from the close button', async () => {
+  it('closes without sending anything on Discard, from the close button', async () => {
     const user = userEvent.setup();
     const fetchMock = mockApi();
     const { onClose } = renderDrawer();
 
     await fillValidForm(user);
     await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('closes after a successful creation without asking', async () => {
+    const user = userEvent.setup();
+    mockApi();
+    const { onClose } = renderDrawer();
+
+    await fillValidForm(user);
+    await user.click(submitButton());
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('still asks after a failed attempt, because the text is kept', async () => {
+    const user = userEvent.setup();
+    mockApi(() => new Response(null, { status: 500 }));
+    const { onClose } = renderDrawer();
+
+    await fillValidForm(user);
+    await user.click(submitButton());
+    await screen.findByRole('alert');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

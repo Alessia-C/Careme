@@ -628,7 +628,10 @@ describe('ProductDetailDrawer: update', () => {
     const saving = screen.getByRole('button', { name: 'Saving…' });
     expect(saving).toHaveAttribute('aria-disabled', 'true');
     expect(saving).toHaveFocus();
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('sends only one request when Save is pressed twice while saving', async () => {
