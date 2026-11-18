@@ -17,6 +17,8 @@ The backend is a set of Vercel serverless functions in [`api/`](../../api/). A s
 | `POST`   | [`/api/auth/refresh`](auth-refresh.md)    | Refresh cookie | Renews the session and rotates both cookies              |
 | `POST`   | [`/api/auth/logout`](auth-logout.md)      | JWT            | Revokes the caller's current session                     |
 | `GET`    | [`/api/auth/me`](auth-me.md)              | JWT            | Returns the current user, to restore the session on load |
+| `POST`   | [`/api/auth/recover`](auth-recover.md)    | None           | Emails a password reset link, same answer for any email  |
+| `POST`   | [`/api/auth/reset`](auth-reset.md)        | Recovery token | Sets a new password and revokes all the user's sessions  |
 | `POST`   | [`/api/products`](products-create.md)     | JWT            | Creates a product for the caller, flagging a duplicate   |
 | `GET`    | [`/api/products`](products-list.md)       | JWT            | Lists the caller's products, with search and pagination  |
 | `GET`    | [`/api/products/:id`](products-detail.md) | JWT            | Returns one of the caller's products, with its note      |

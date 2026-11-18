@@ -258,20 +258,31 @@ export function isInvalidSessionError(error: unknown): boolean {
   );
 }
 
-// Supabase creates the session before the profile can be checked, so a blocked
-// user still gets one. It is revoked so no valid token is left on Supabase.
-// Best effort: the user is refused either way and RLS blocks the token, so a
-// failure is reported to Sentry (supabase-js returns errors instead of
-// throwing, nobody would see it otherwise) and not turned into a 500.
+type RevokeOptions = {
+  // 'local' revokes only this session, 'global' all the user's sessions.
+  scope?: 'local' | 'global';
+  // Sentry tag, to tell apart the callers of this helper.
+  context?: string;
+};
+
+// Revokes a session on Supabase so no valid token is left behind. Used for
+// sessions Supabase creates before the profile can be checked (a blocked user
+// still gets one) and after a password reset (all the user's sessions).
+// Best effort: the outcome for the caller does not depend on it (a blocked user
+// is refused anyway and RLS blocks the token), so a failure is reported to
+// Sentry (supabase-js returns errors instead of throwing, nobody would see it
+// otherwise) and not turned into a 500.
 export async function revokeSessionBestEffort(
   supabase: ReturnType<typeof createAnonClient>,
   accessToken: string,
+  {
+    scope = 'local',
+    context = 'revoke-blocked-user-session',
+  }: RevokeOptions = {},
 ) {
-  const { error } = await supabase.auth.admin.signOut(accessToken, 'local');
+  const { error } = await supabase.auth.admin.signOut(accessToken, scope);
   if (error) {
-    Sentry.captureException(error, {
-      tags: { context: 'revoke-blocked-user-session' },
-    });
+    Sentry.captureException(error, { tags: { context } });
     await Sentry.flush(2000);
   }
 }

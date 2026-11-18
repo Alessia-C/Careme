@@ -2,7 +2,9 @@ import { Router } from 'express';
 import login from './_routes/login.js';
 import logout from './_routes/logout.js';
 import me from './_routes/me.js';
+import recover from './_routes/recover.js';
 import refresh from './_routes/refresh.js';
+import reset from './_routes/reset.js';
 import signup from './_routes/signup.js';
 
 // router.all and not router.post/get: Express would answer a wrong method with
@@ -19,3 +21,5 @@ authRouter.all('/signup', signup);
 authRouter.all('/logout', logout);
 authRouter.all('/refresh', refresh);
 authRouter.all('/me', me);
+authRouter.all('/recover', recover);
+authRouter.all('/reset', reset);
