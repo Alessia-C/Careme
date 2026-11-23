@@ -32,8 +32,11 @@ const NOW_SECONDS = 1790000000;
 
 // Only the payload matters to the handler (the signature is verified by
 // Supabase, which is faked here).
-function makeAccessToken(amr: unknown, label = 'recovery') {
-  const payload = Buffer.from(JSON.stringify({ amr, label }));
+// Passing `undefined` as exp builds a token without the claim, whereas leaving
+// it out gives a valid one.
+function makeAccessToken(amr: unknown, ...rest: [exp?: unknown]) {
+  const exp = rest.length > 0 ? rest[0] : NOW_SECONDS + 3600;
+  const payload = Buffer.from(JSON.stringify({ amr, exp }));
   return `header.${payload.toString('base64url')}.signature`;
 }
 
@@ -49,17 +52,22 @@ const validBody = {
   password: 'Valid123!',
 };
 
-const verifiedSession = {
-  data: {
-    user: { id: 'user-1', email: 'test@example.com' },
-    session: {
-      access_token: 'verified-jwt',
-      refresh_token: 'verified-refresh',
-      expires_in: 3600,
+// Supabase hands back the token it verified, which is the one that was sent.
+function verifiedSession({
+  access_token,
+  refresh_token,
+}: {
+  access_token: string;
+  refresh_token: string;
+}) {
+  return Promise.resolve({
+    data: {
+      user: { id: 'user-1', email: 'test@example.com' },
+      session: { access_token, refresh_token, expires_in: 3600 },
     },
-  },
-  error: null,
-};
+    error: null,
+  });
+}
 
 const POLICY_MESSAGE = expect.stringContaining('Invalid password');
 const INVALID_LINK = { message: 'Invalid or expired link' };
@@ -80,7 +88,7 @@ beforeEach(() => {
     auth: { setSession, updateUser, admin: { signOut } },
     rpc,
   });
-  setSession.mockResolvedValue(verifiedSession);
+  setSession.mockImplementation(verifiedSession);
   rpc.mockResolvedValue({ data: true, error: null });
   updateUser.mockResolvedValue({ data: {}, error: null });
   signOut.mockResolvedValue({ error: null });
@@ -165,6 +173,16 @@ describe('POST /api/auth/reset - recovery session', () => {
       makeAccessToken(recoveryAmr('otp', NOW_SECONDS - 16 * 60)),
     ],
     ['an amr entry without a timestamp', makeAccessToken([{ method: 'otp' }])],
+    ['an amr list of strings', makeAccessToken(['otp'])],
+    [
+      'an amr timestamp in the future',
+      makeAccessToken(recoveryAmr('otp', NOW_SECONDS + 10 * 60)),
+    ],
+    // Without a valid exp, setSession would skip verifying the access token
+    // and build the session from the refresh token alone.
+    ['a token without exp', makeAccessToken(recoveryAmr(), undefined)],
+    ['a token with a non-numeric exp', makeAccessToken(recoveryAmr(), 'soon')],
+    ['an expired token', makeAccessToken(recoveryAmr(), NOW_SECONDS - 1)],
   ])(
     'should return 400 without calling Supabase for %s',
     async (_label, token) => {
@@ -192,6 +210,50 @@ describe('POST /api/auth/reset - recovery session', () => {
       expect(res.status).toHaveBeenCalledWith(200);
     },
   );
+
+  it('should accept a session with several amr entries when one is a recent email link', async () => {
+    const res = await callHandler('POST', {
+      ...validBody,
+      accessToken: makeAccessToken([
+        { method: 'password', timestamp: NOW_SECONDS - 3600 },
+        { method: 'otp', timestamp: NOW_SECONDS - 60 },
+      ]),
+    });
+
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('should tolerate a small clock skew on the amr timestamp', async () => {
+    const res = await callHandler('POST', {
+      ...validBody,
+      accessToken: makeAccessToken(recoveryAmr('otp', NOW_SECONDS + 30)),
+    });
+
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('should refuse a session that Supabase rebuilt from the refresh token', async () => {
+    // Supabase hands back another token when it did not verify the one that
+    // was sent: the claims checked before say nothing about it.
+    setSession.mockResolvedValue({
+      data: {
+        user: { id: 'user-1', email: 'test@example.com' },
+        session: {
+          access_token: 'rebuilt-jwt',
+          refresh_token: 'rebuilt-refresh',
+          expires_in: 3600,
+        },
+      },
+      error: null,
+    });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(INVALID_LINK);
+    expect(updateUser).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledWith('rebuilt-jwt', 'local');
+  });
 
   it.each([
     ['expired', { status: 401, code: 'session_expired' }],
@@ -274,7 +336,7 @@ describe('POST /api/auth/reset - successful reset', () => {
   it('should revoke every session of the user', async () => {
     await callHandler('POST', validBody);
 
-    expect(signOut).toHaveBeenCalledWith('verified-jwt', 'global');
+    expect(signOut).toHaveBeenCalledWith(accessToken, 'global');
   });
 
   it('should not set any cookie: the user logs in again', async () => {
@@ -289,7 +351,6 @@ describe('POST /api/auth/reset - successful reset', () => {
     const sent = JSON.stringify(res.json.mock.calls);
     expect(sent).not.toContain(accessToken);
     expect(sent).not.toContain('refresh-token');
-    expect(sent).not.toContain('verified-jwt');
     expect(sent).not.toContain('Valid123!');
   });
 
@@ -315,10 +376,10 @@ describe('POST /api/auth/reset - blocked user', () => {
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ message: 'Account blocked' });
     expect(updateUser).not.toHaveBeenCalled();
-    expect(signOut).toHaveBeenCalledWith('verified-jwt', 'local');
+    expect(signOut).toHaveBeenCalledWith(accessToken, 'local');
   });
 
-  it('should fail closed when the status check fails: no password change', async () => {
+  it('should fail closed when the status check fails: no password change, session closed', async () => {
     rpc.mockResolvedValue({
       data: null,
       error: new Error('rpc is_active failed'),
@@ -328,7 +389,39 @@ describe('POST /api/auth/reset - blocked user', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(updateUser).not.toHaveBeenCalled();
-    expect(signOut).not.toHaveBeenCalledWith('verified-jwt', 'global');
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith(accessToken, 'local');
+  });
+});
+
+describe('POST /api/auth/reset - recovery session after a failure', () => {
+  it.each([
+    ['weak_password', { status: 422, code: 'weak_password' }],
+    ['same_password', { status: 422, code: 'same_password' }],
+    ['a rate limit', { status: 429, code: 'over_request_rate_limit' }],
+  ])(
+    'should keep the session open on %s so the user can retry with the same link',
+    async (_label, error) => {
+      updateUser.mockResolvedValue({ data: null, error });
+
+      await callHandler('POST', validBody);
+
+      expect(signOut).not.toHaveBeenCalled();
+    },
+  );
+
+  it('should close the session when updating the password fails unexpectedly', async () => {
+    updateUser.mockResolvedValue({
+      data: null,
+      error: new Error('connection refused to db.internal:5432'),
+    });
+
+    const res = await callHandler('POST', validBody);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith(accessToken, 'local');
+    expect(signOut).not.toHaveBeenCalledWith(accessToken, 'global');
   });
 });
 
@@ -397,7 +490,6 @@ describe('POST /api/auth/reset - unexpected failures', () => {
     const res = await callHandler('POST', validBody);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(signOut).not.toHaveBeenCalled();
   });
 
   it('should return a generic 500 when the Supabase env vars are missing', async () => {

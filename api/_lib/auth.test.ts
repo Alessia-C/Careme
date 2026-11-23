@@ -13,7 +13,9 @@ import {
   getSessionCookieName,
   getSessionExpiry,
   getTokenExpiry,
+  readTokenClaims,
   requireAccessToken,
+  revokeSessionBestEffort,
   setSessionCookies,
   withAuth,
 } from './auth.js';
@@ -26,12 +28,21 @@ import {
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
-const { getUser, rpc, single, from, createClient } = vi.hoisted(() => ({
-  getUser: vi.fn(),
-  rpc: vi.fn(),
-  single: vi.fn(),
-  from: vi.fn(),
-  createClient: vi.fn(),
+const { getUser, rpc, single, from, createClient, captureException } =
+  vi.hoisted(() => ({
+    getUser: vi.fn(),
+    rpc: vi.fn(),
+    single: vi.fn(),
+    from: vi.fn(),
+    createClient: vi.fn(),
+    captureException: vi.fn(),
+  }));
+
+// Sentry is faked to check what is reported without sending anything.
+vi.mock('@sentry/node', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sentry/node')>()),
+  captureException,
+  flush: vi.fn(),
 }));
 
 // Only createClient is faked: withAuth also needs the real
@@ -289,6 +300,75 @@ describe('getTokenExpiry', () => {
     ['with a non-numeric exp', makeToken({ exp: 'soon' })],
   ])('should throw for a token %s', (_label, token) => {
     expect(() => getTokenExpiry(token)).toThrow();
+  });
+});
+
+describe('readTokenClaims', () => {
+  const makeToken = (payload: unknown) =>
+    `header.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.sig`;
+
+  it('should return the claims of the payload', () => {
+    expect(readTokenClaims(makeToken({ exp: 1, amr: [] }))).toEqual({
+      exp: 1,
+      amr: [],
+    });
+  });
+
+  it.each([
+    ['not a JWT', 'not-a-jwt'],
+    ['a payload that is not base64url JSON', 'header.@@@.sig'],
+    ['a payload that is not an object', makeToken('text')],
+    ['a null payload', makeToken(null)],
+    ['an empty string', ''],
+  ])('should return undefined for %s', (_label, token) => {
+    expect(readTokenClaims(token)).toBeUndefined();
+  });
+});
+
+describe('revokeSessionBestEffort', () => {
+  const signOut = vi.fn();
+  // Same kind of fake as the other tests: only what the helper calls.
+  const supabase = { auth: { admin: { signOut } } } as unknown as Parameters<
+    typeof revokeSessionBestEffort
+  >[0];
+
+  beforeEach(() => {
+    signOut.mockResolvedValue({ error: null });
+  });
+
+  it('should revoke only the given session by default', async () => {
+    await revokeSessionBestEffort(supabase, 'jwt');
+
+    expect(signOut).toHaveBeenCalledWith('jwt', 'local');
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it('should revoke every session of the user with the global scope', async () => {
+    await revokeSessionBestEffort(supabase, 'jwt', { scope: 'global' });
+
+    expect(signOut).toHaveBeenCalledWith('jwt', 'global');
+  });
+
+  it('should report a failure to Sentry with the default context', async () => {
+    const error = new Error('signout failed');
+    signOut.mockResolvedValue({ error });
+
+    await revokeSessionBestEffort(supabase, 'jwt');
+
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { context: 'revoke-blocked-user-session' },
+    });
+  });
+
+  it('should report a failure to Sentry with the given context', async () => {
+    const error = new Error('signout failed');
+    signOut.mockResolvedValue({ error });
+
+    await revokeSessionBestEffort(supabase, 'jwt', { context: 'custom' });
+
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { context: 'custom' },
+    });
   });
 });
 

@@ -4,7 +4,7 @@ import {
   isAuthSessionMissingError,
 } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/node';
-import { isRole, type Role } from '../../shared/validation.js';
+import { isObject, isRole, type Role } from '../../shared/validation.js';
 import { getCookie } from './cookies.js';
 import { sendTooManyRequests, type Handler } from './http.js';
 import {
@@ -122,14 +122,31 @@ export function getSessionExpiry(session: {
   );
 }
 
+// Decodes the payload of a JWT WITHOUT verifying the signature, so its claims
+// can be forged. Use it only on a token that was already verified, or as a
+// pre-filter before Supabase verifies the token. Undefined when the token is
+// not a JWT with a JSON object payload.
+export function readTokenClaims(
+  token: string,
+): Record<string, unknown> | undefined {
+  const payload = token.split('.')[1];
+  if (!payload) {
+    return undefined;
+  }
+  try {
+    const claims: unknown = JSON.parse(
+      Buffer.from(payload, 'base64url').toString(),
+    );
+    return isObject(claims) ? claims : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Reads the `exp` claim of a token that withAuth has already verified, so the
 // payload can be trusted: decoding here is not a replacement for verifying.
 export function getTokenExpiry(token: string): number {
-  const payload = token.split('.')[1] ?? '';
-  // The cast only names the field to check: `exp` is validated right below.
-  const { exp } = JSON.parse(Buffer.from(payload, 'base64url').toString()) as {
-    exp?: unknown;
-  };
+  const exp = readTokenClaims(token)?.exp;
   if (typeof exp !== 'number') {
     throw new Error('Unexpected token without exp');
   }

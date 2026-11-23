@@ -4,11 +4,41 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const dsn = process.env.SENTRY_DSN;
 
+// With `dataCollection` set, the SDK starts from "collect everything": request
+// and response bodies, cookies, headers (Authorization included), the query
+// string and the local variables of stack frames. Those carry passwords, session
+// tokens and recovery tokens, so everything is switched off explicitly: an error
+// report only needs the message, the stack and the route tag.
+export const sentryDataCollection: NonNullable<
+  Sentry.NodeOptions['dataCollection']
+> = {
+  userInfo: false,
+  cookies: false,
+  httpHeaders: false,
+  httpBodies: [],
+  urlQueryParams: false,
+  databaseQueryData: false,
+  stackFrameVariables: false,
+};
+
+// Second line of defence next to sentryDataCollection: whatever an integration
+// attaches, the request body and cookies never leave the server.
+export function scrubRequestData<
+  T extends { request?: { data?: unknown; cookies?: unknown } },
+>(event: T): T {
+  if (event.request) {
+    delete event.request.data;
+    delete event.request.cookies;
+  }
+  return event;
+}
+
 if (dsn) {
   Sentry.init({
     dsn,
     environment: process.env.VERCEL_ENV ?? 'development',
-    dataCollection: { userInfo: false },
+    dataCollection: sentryDataCollection,
+    beforeSend: scrubRequestData,
     initialScope: { tags: { runtime: 'serverless' } },
   });
 }
