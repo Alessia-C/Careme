@@ -9,9 +9,9 @@ import route from './reset.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.
-const { verifyOtp, updateUser, signOut, rpc, createClient, captureException } =
+const { setSession, updateUser, signOut, rpc, createClient, captureException } =
   vi.hoisted(() => ({
-    verifyOtp: vi.fn(),
+    setSession: vi.fn(),
     updateUser: vi.fn(),
     signOut: vi.fn(),
     rpc: vi.fn(),
@@ -28,14 +28,33 @@ vi.mock('@sentry/node', async (importOriginal) => ({
   flush: vi.fn(),
 }));
 
-const validBody = { token: 'hashed-token', password: 'Valid123!' };
+const NOW_SECONDS = 1790000000;
 
-const recovered = {
+// Only the payload matters to the handler (the signature is verified by
+// Supabase, which is faked here).
+function makeAccessToken(amr: unknown, label = 'recovery') {
+  const payload = Buffer.from(JSON.stringify({ amr, label }));
+  return `header.${payload.toString('base64url')}.signature`;
+}
+
+const recoveryAmr = (method = 'otp', timestamp = NOW_SECONDS - 60) => [
+  { method, timestamp },
+];
+
+const accessToken = makeAccessToken(recoveryAmr());
+
+const validBody = {
+  accessToken,
+  refreshToken: 'refresh-token',
+  password: 'Valid123!',
+};
+
+const verifiedSession = {
   data: {
     user: { id: 'user-1', email: 'test@example.com' },
     session: {
-      access_token: 'recovery-jwt',
-      refresh_token: 'refresh-token',
+      access_token: 'verified-jwt',
+      refresh_token: 'verified-refresh',
       expires_in: 3600,
     },
   },
@@ -54,18 +73,21 @@ async function callHandler(method: string, body: unknown) {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(NOW_SECONDS * 1000);
   stubSupabaseEnv();
   createClient.mockReturnValue({
-    auth: { verifyOtp, updateUser, admin: { signOut } },
+    auth: { setSession, updateUser, admin: { signOut } },
     rpc,
   });
-  verifyOtp.mockResolvedValue(recovered);
+  setSession.mockResolvedValue(verifiedSession);
   rpc.mockResolvedValue({ data: true, error: null });
   updateUser.mockResolvedValue({ data: {}, error: null });
   signOut.mockResolvedValue({ error: null });
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.clearAllMocks();
   vi.unstubAllEnvs();
 });
@@ -75,7 +97,7 @@ describe('POST /api/auth/reset - request shape', () => {
     const res = await callHandler('GET', validBody);
 
     expect(res.status).toHaveBeenCalledWith(405);
-    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(setSession).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -86,29 +108,32 @@ describe('POST /api/auth/reset - request shape', () => {
     const res = await callHandler('POST', body);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(setSession).not.toHaveBeenCalled();
   });
 });
 
-describe('POST /api/auth/reset - token', () => {
+describe('POST /api/auth/reset - recovery session', () => {
   it.each([
-    ['missing', undefined],
-    ['empty', ''],
-    ['blank', '   '],
-    ['not a string', 12345],
+    ['accessToken missing', { accessToken: undefined }],
+    ['accessToken empty', { accessToken: '' }],
+    ['accessToken blank', { accessToken: '   ' }],
+    ['accessToken not a string', { accessToken: 12345 }],
+    ['refreshToken missing', { refreshToken: undefined }],
+    ['refreshToken empty', { refreshToken: '' }],
+    ['refreshToken not a string', { refreshToken: 12345 }],
   ])(
-    'should return 400 and not call Supabase when the token is %s',
-    async (_label, token) => {
-      const res = await callHandler('POST', { ...validBody, token });
+    'should return 400 and not call Supabase when %s',
+    async (_label, override) => {
+      const res = await callHandler('POST', { ...validBody, ...override });
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(INVALID_LINK);
-      expect(verifyOtp).not.toHaveBeenCalled();
+      expect(setSession).not.toHaveBeenCalled();
       expect(updateUser).not.toHaveBeenCalled();
     },
   );
 
-  it('should reject a missing token even when the password is invalid', async () => {
+  it('should reject a missing session even when the password is invalid', async () => {
     const res = await callHandler('POST', { password: 'weak' });
 
     expect(res.status).toHaveBeenCalledWith(400);
@@ -122,17 +147,60 @@ describe('POST /api/auth/reset - token', () => {
     });
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(setSession).not.toHaveBeenCalled();
     expect(updateUser).not.toHaveBeenCalled();
   });
 
   it.each([
-    ['expired', { status: 403, code: 'otp_expired' }],
-    ['unknown', { status: 400, code: 'validation_failed' }],
+    ['not a JWT', 'not-a-jwt'],
+    ['a JWT with an unreadable payload', 'header.@@@.signature'],
+    ['a JWT without amr', makeAccessToken(undefined)],
+    ['a JWT with an amr that is not a list', makeAccessToken('otp')],
+    [
+      'a password login session (stolen or ordinary)',
+      makeAccessToken(recoveryAmr('password')),
+    ],
+    [
+      'a recovery session older than the limit',
+      makeAccessToken(recoveryAmr('otp', NOW_SECONDS - 16 * 60)),
+    ],
+    ['an amr entry without a timestamp', makeAccessToken([{ method: 'otp' }])],
   ])(
-    'should return a generic 400 when the token is %s, with a valid password',
+    'should return 400 without calling Supabase for %s',
+    async (_label, token) => {
+      const res = await callHandler('POST', {
+        ...validBody,
+        accessToken: token,
+      });
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(INVALID_LINK);
+      // An ordinary session must not even be refreshed (rotated) by setSession.
+      expect(setSession).not.toHaveBeenCalled();
+      expect(updateUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['otp', 'recovery'])(
+    'should accept a recent session recorded as %s',
+    async (method) => {
+      const res = await callHandler('POST', {
+        ...validBody,
+        accessToken: makeAccessToken(recoveryAmr(method)),
+      });
+
+      expect(res.status).toHaveBeenCalledWith(200);
+    },
+  );
+
+  it.each([
+    ['expired', { status: 401, code: 'session_expired' }],
+    ['forged', { status: 403, code: 'bad_jwt' }],
+    ['revoked', { status: 400, code: 'refresh_token_not_found' }],
+  ])(
+    'should return a generic 400 when Supabase rejects the session as %s, with a valid password',
     async (_label, error) => {
-      verifyOtp.mockResolvedValue({
+      setSession.mockResolvedValue({
         data: { user: null, session: null },
         error,
       });
@@ -152,14 +220,13 @@ describe('POST /api/auth/reset - password policy', () => {
     ['too weak', 'weak'],
     ['not a string', 12345678],
   ])(
-    'should return 400 and keep the token unused when the password is %s',
+    'should return 400 and not call Supabase when the password is %s',
     async (_label, password) => {
       const res = await callHandler('POST', { ...validBody, password });
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ message: POLICY_MESSAGE });
-      // verifyOtp consumes the token: a weak password must not burn the link.
-      expect(verifyOtp).not.toHaveBeenCalled();
+      expect(setSession).not.toHaveBeenCalled();
       expect(updateUser).not.toHaveBeenCalled();
     },
   );
@@ -192,12 +259,12 @@ describe('POST /api/auth/reset - password policy', () => {
 });
 
 describe('POST /api/auth/reset - successful reset', () => {
-  it('should verify the token as a recovery token and update the password', async () => {
+  it('should verify the session with Supabase and update the password', async () => {
     const res = await callHandler('POST', validBody);
 
-    expect(verifyOtp).toHaveBeenCalledWith({
-      token_hash: 'hashed-token',
-      type: 'recovery',
+    expect(setSession).toHaveBeenCalledWith({
+      access_token: accessToken,
+      refresh_token: 'refresh-token',
     });
     expect(updateUser).toHaveBeenCalledWith({ password: 'Valid123!' });
     expect(res.status).toHaveBeenCalledWith(200);
@@ -207,7 +274,7 @@ describe('POST /api/auth/reset - successful reset', () => {
   it('should revoke every session of the user', async () => {
     await callHandler('POST', validBody);
 
-    expect(signOut).toHaveBeenCalledWith('recovery-jwt', 'global');
+    expect(signOut).toHaveBeenCalledWith('verified-jwt', 'global');
   });
 
   it('should not set any cookie: the user logs in again', async () => {
@@ -216,13 +283,14 @@ describe('POST /api/auth/reset - successful reset', () => {
     expect(res.setHeader).not.toHaveBeenCalled();
   });
 
-  it('should not return the token, the password or the session', async () => {
+  it('should not return the tokens, the password or the session', async () => {
     const res = await callHandler('POST', validBody);
 
     const sent = JSON.stringify(res.json.mock.calls);
-    expect(sent).not.toContain('hashed-token');
+    expect(sent).not.toContain(accessToken);
+    expect(sent).not.toContain('refresh-token');
+    expect(sent).not.toContain('verified-jwt');
     expect(sent).not.toContain('Valid123!');
-    expect(sent).not.toContain('recovery-jwt');
   });
 
   it('should report a failed session revocation to Sentry but still succeed', async () => {
@@ -247,11 +315,9 @@ describe('POST /api/auth/reset - blocked user', () => {
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ message: 'Account blocked' });
     expect(updateUser).not.toHaveBeenCalled();
-    expect(signOut).toHaveBeenCalledWith('recovery-jwt', 'local');
+    expect(signOut).toHaveBeenCalledWith('verified-jwt', 'local');
   });
-});
 
-describe('POST /api/auth/reset - blocked check failure', () => {
   it('should fail closed when the status check fails: no password change', async () => {
     rpc.mockResolvedValue({
       data: null,
@@ -262,13 +328,13 @@ describe('POST /api/auth/reset - blocked check failure', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(updateUser).not.toHaveBeenCalled();
-    expect(signOut).not.toHaveBeenCalledWith('recovery-jwt', 'global');
+    expect(signOut).not.toHaveBeenCalledWith('verified-jwt', 'global');
   });
 });
 
 describe('POST /api/auth/reset - rate limit', () => {
-  it('should return 429 when verifying the token is rate limited', async () => {
-    verifyOtp.mockResolvedValue({
+  it('should return 429 when verifying the session is rate limited', async () => {
+    setSession.mockResolvedValue({
       data: { user: null, session: null },
       error: { status: 429, code: 'over_request_rate_limit' },
     });
@@ -295,8 +361,8 @@ describe('POST /api/auth/reset - rate limit', () => {
 });
 
 describe('POST /api/auth/reset - unexpected failures', () => {
-  it('should return a generic 500 when verifying the token fails unexpectedly', async () => {
-    verifyOtp.mockResolvedValue({
+  it('should return a generic 500 when verifying the session fails unexpectedly', async () => {
+    setSession.mockResolvedValue({
       data: { user: null, session: null },
       error: Object.assign(new Error('upstream down'), { status: 500 }),
     });
@@ -311,7 +377,7 @@ describe('POST /api/auth/reset - unexpected failures', () => {
   });
 
   it('should return a generic 500 when Supabase returns no session', async () => {
-    verifyOtp.mockResolvedValue({
+    setSession.mockResolvedValue({
       data: { user: null, session: null },
       error: null,
     });
@@ -340,6 +406,6 @@ describe('POST /api/auth/reset - unexpected failures', () => {
     const res = await callHandler('POST', validBody);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(setSession).not.toHaveBeenCalled();
   });
 });
