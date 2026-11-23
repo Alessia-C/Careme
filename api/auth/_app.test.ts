@@ -159,6 +159,36 @@ describe('auth app - request body', () => {
   });
 });
 
+describe('auth app - password recovery routes', () => {
+  it.each(['/api/auth/recover', '/api/auth/reset'])(
+    'should answer 405 to GET on %s',
+    async (path) => {
+      const res = await fetch(`${baseUrl}${path}`);
+
+      expect(res.status).toBe(405);
+    },
+  );
+
+  it.each(['/api/auth/recover', '/api/auth/reset'])(
+    'should answer 415 to a form-encoded body on %s (CSRF defence)',
+    async (path) => {
+      const res = await post(
+        path,
+        'email=a%40b.c',
+        'application/x-www-form-urlencoded',
+      );
+
+      expect(res.status).toBe(415);
+    },
+  );
+
+  it('should treat the recovery paths as case sensitive', async () => {
+    const res = await post('/api/auth/RECOVER', '{}');
+
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('auth app - authentication', () => {
   it('should answer 401 to /me without a session', async () => {
     const res = await fetch(`${baseUrl}/api/auth/me`);

@@ -4,7 +4,7 @@ import {
   isAuthSessionMissingError,
 } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/node';
-import { isRole, type Role } from '../../shared/validation.js';
+import { isObject, isRole, type Role } from '../../shared/validation.js';
 import { getCookie } from './cookies.js';
 import { sendTooManyRequests, type Handler } from './http.js';
 import {
@@ -122,14 +122,31 @@ export function getSessionExpiry(session: {
   );
 }
 
+// Decodes the payload of a JWT WITHOUT verifying the signature, so its claims
+// can be forged. Use it only on a token that was already verified, or as a
+// pre-filter before Supabase verifies the token. Undefined when the token is
+// not a JWT with a JSON object payload.
+export function readTokenClaims(
+  token: string,
+): Record<string, unknown> | undefined {
+  const payload = token.split('.')[1];
+  if (!payload) {
+    return undefined;
+  }
+  try {
+    const claims: unknown = JSON.parse(
+      Buffer.from(payload, 'base64url').toString(),
+    );
+    return isObject(claims) ? claims : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Reads the `exp` claim of a token that withAuth has already verified, so the
 // payload can be trusted: decoding here is not a replacement for verifying.
 export function getTokenExpiry(token: string): number {
-  const payload = token.split('.')[1] ?? '';
-  // The cast only names the field to check: `exp` is validated right below.
-  const { exp } = JSON.parse(Buffer.from(payload, 'base64url').toString()) as {
-    exp?: unknown;
-  };
+  const exp = readTokenClaims(token)?.exp;
   if (typeof exp !== 'number') {
     throw new Error('Unexpected token without exp');
   }
@@ -258,20 +275,31 @@ export function isInvalidSessionError(error: unknown): boolean {
   );
 }
 
-// Supabase creates the session before the profile can be checked, so a blocked
-// user still gets one. It is revoked so no valid token is left on Supabase.
-// Best effort: the user is refused either way and RLS blocks the token, so a
-// failure is reported to Sentry (supabase-js returns errors instead of
-// throwing, nobody would see it otherwise) and not turned into a 500.
+type RevokeOptions = {
+  // 'local' revokes only this session, 'global' all the user's sessions.
+  scope?: 'local' | 'global';
+  // Sentry tag, to tell apart the callers of this helper.
+  context?: string;
+};
+
+// Revokes a session on Supabase so no valid token is left behind. Used for
+// sessions Supabase creates before the profile can be checked (a blocked user
+// still gets one) and after a password reset (all the user's sessions).
+// Best effort: the outcome for the caller does not depend on it (a blocked user
+// is refused anyway and RLS blocks the token), so a failure is reported to
+// Sentry (supabase-js returns errors instead of throwing, nobody would see it
+// otherwise) and not turned into a 500.
 export async function revokeSessionBestEffort(
   supabase: ReturnType<typeof createAnonClient>,
   accessToken: string,
+  {
+    scope = 'local',
+    context = 'revoke-blocked-user-session',
+  }: RevokeOptions = {},
 ) {
-  const { error } = await supabase.auth.admin.signOut(accessToken, 'local');
+  const { error } = await supabase.auth.admin.signOut(accessToken, scope);
   if (error) {
-    Sentry.captureException(error, {
-      tags: { context: 'revoke-blocked-user-session' },
-    });
+    Sentry.captureException(error, { tags: { context } });
     await Sentry.flush(2000);
   }
 }

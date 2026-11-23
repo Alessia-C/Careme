@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeReq, makeRes } from './test-helpers.js';
-import { errorHandler } from './sentry.js';
+import {
+  errorHandler,
+  scrubRequestData,
+  sentryDataCollection,
+} from './sentry.js';
 
 const { captureException, flush } = vi.hoisted(() => ({
   captureException: vi.fn(),
@@ -108,4 +112,38 @@ describe('errorHandler', () => {
       expect(captureException).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('Sentry data collection', () => {
+  it('should switch off bodies, cookies, headers, query strings and local variables', () => {
+    // These carry passwords and session or recovery tokens: with
+    // `dataCollection` set the SDK collects them unless told otherwise.
+    expect(sentryDataCollection).toEqual({
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+    });
+  });
+
+  it('should remove the request body and cookies from an event', () => {
+    const event = {
+      request: {
+        url: 'https://careme.example/api/auth/reset',
+        data: { accessToken: 'secret', password: 'Secret123!' },
+        cookies: { 'sb-access-token': 'secret' },
+      },
+    };
+
+    expect(scrubRequestData(event)).toEqual({
+      request: { url: 'https://careme.example/api/auth/reset' },
+    });
+  });
+
+  it('should leave an event without a request untouched', () => {
+    expect(scrubRequestData({})).toEqual({});
+  });
 });
