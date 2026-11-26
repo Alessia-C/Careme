@@ -1,6 +1,4 @@
 // @vitest-environment node
-import type { AddressInfo } from 'node:net';
-import type { Server } from 'node:http';
 import {
   afterAll,
   afterEach,
@@ -11,7 +9,11 @@ import {
   it,
   vi,
 } from 'vitest';
-import { stubSupabaseEnv } from '../_lib/test-helpers.js';
+import {
+  startTestServer,
+  stubSignedInSupabase,
+  stubSupabaseEnv,
+} from '../_lib/test-helpers.js';
 import app from './index.js';
 
 // These tests go through a real HTTP server, so they check the wiring that the
@@ -33,15 +35,10 @@ vi.mock('@supabase/supabase-js', async (importOriginal) => ({
   createClient,
 }));
 
-let server: Server;
-let baseUrl: string;
+let server: Awaited<ReturnType<typeof startTestServer>>;
 
 beforeAll(async () => {
-  server = app.listen(0);
-  await new Promise((resolve) => server.once('listening', resolve));
-  // address() is string | AddressInfo | null; after listen(0) on TCP it is
-  // always an AddressInfo.
-  baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  server = await startTestServer(app);
 });
 
 afterAll(() => {
@@ -50,28 +47,15 @@ afterAll(() => {
 
 beforeEach(() => {
   stubSupabaseEnv();
-  const query = {
-    select: vi.fn(),
-    eq: vi.fn(),
-    update,
-    single,
-    maybeSingle,
-  };
-  query.select.mockReturnValue(query);
-  query.eq.mockReturnValue(query);
+  const query = stubSignedInSupabase(
+    { getUser, rpc, single, from, createClient },
+    { update, maybeSingle },
+  );
   update.mockReturnValue(query);
-  from.mockReturnValue(query);
-  createClient.mockReturnValue({ auth: { getUser }, rpc, from });
-  getUser.mockResolvedValue({
-    data: { user: { id: 'user-1', email: 'jane@example.com' } },
+  maybeSingle.mockResolvedValue({
+    data: { first_name: 'Anna', last_name: 'Rossi' },
     error: null,
   });
-  rpc.mockResolvedValue({ data: true, error: null });
-  single.mockResolvedValue({
-    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
-    error: null,
-  });
-  maybeSingle.mockResolvedValue({ data: { id: 'user-1' }, error: null });
 });
 
 afterEach(() => {
@@ -87,7 +71,7 @@ function send(
   body?: string,
   headers: Record<string, string> = {},
 ) {
-  return fetch(`${baseUrl}${path}`, {
+  return fetch(`${server.baseUrl}${path}`, {
     method,
     headers: {
       'content-type': 'application/json',

@@ -6,6 +6,7 @@ import {
 } from '../../_lib/auth.js';
 import { sendTooManyRequests } from '../../_lib/http.js';
 import { createUserClient, isRateLimitError } from '../../_lib/supabase.js';
+import { invalid, type Parsed } from '../../_lib/validation.js';
 import {
   PRODUCT_LIST_COLUMNS,
   PRODUCT_SEARCH_MAX_LENGTH,
@@ -22,11 +23,6 @@ type ListFilters = {
   limit: number;
   offset: number;
 };
-
-type ParsedFilters =
-  { ok: true; value: ListFilters } | { ok: false; message: string };
-
-const invalid = (message: string): ParsedFilters => ({ ok: false, message });
 
 // Characters that are wildcards in LIKE (% _ \), in the PostgREST filter
 // syntax (* , ( ) ") or that would close the quoted value. They are rejected
@@ -58,7 +54,7 @@ function parseIntegerParam(
   return parsedValue >= min && parsedValue <= max ? parsedValue : undefined;
 }
 
-function parseListFilters(query: Request['query']): ParsedFilters {
+function parseListFilters(query: Request['query']): Parsed<ListFilters> {
   const limit = parseIntegerParam(
     query.limit,
     PRODUCTS_DEFAULT_LIMIT,

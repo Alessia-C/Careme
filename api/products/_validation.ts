@@ -8,6 +8,7 @@ import {
   type ProductStatus,
 } from '../../shared/products.js';
 import { hasNulCharacter, readText } from '../../shared/validation.js';
+import { invalid, type Parsed } from '../_lib/validation.js';
 
 export type ProductInput = {
   name: string;
@@ -17,17 +18,12 @@ export type ProductInput = {
   note: string | null;
 };
 
-export type ParsedProduct =
-  { ok: true; value: ProductInput } | { ok: false; message: string };
-
-const invalid = (message: string): ParsedProduct => ({ ok: false, message });
-
 // Validates the body and returns the values to save (trimmed), or the message
 // for the first invalid field. Shared by create and update: both take the
 // whole product, so they must accept exactly the same input.
 export function parseProductInput(
   body: Record<string, unknown>,
-): ParsedProduct {
+): Parsed<ProductInput> {
   const name = readText(body.name, PRODUCT_NAME_MAX_LENGTH);
   if (name === undefined) {
     return invalid(

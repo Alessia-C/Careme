@@ -6,7 +6,7 @@ import {
 import * as Sentry from '@sentry/node';
 import { isObject, isRole, type Role } from '../../shared/validation.js';
 import { getCookie } from './cookies.js';
-import { sendTooManyRequests, type Handler } from './http.js';
+import { sendTooManyRequests, withObjectBody, type Handler } from './http.js';
 import {
   createAnonClient,
   createUserClient,
@@ -247,6 +247,18 @@ export function requireAccessToken(req: Request): string {
     throw new Error('Unexpected request without token');
   }
   return token;
+}
+
+// For handlers behind withAuth that write data: reads the token and the JSON
+// body together. It runs inside withAuth, so an anonymous caller gets 401
+// before any 415 or 400 about the body.
+export function handleTokenAndBody(
+  req: Request,
+  res: Response,
+  handler: (token: string, body: Record<string, unknown>) => unknown,
+) {
+  const token = requireAccessToken(req);
+  return withObjectBody((_req, _res, body) => handler(token, body))(req, res);
 }
 
 export type AuthContext = {

@@ -1,14 +1,10 @@
 import type { Request, Response } from 'express';
 import {
-  requireAccessToken,
+  handleTokenAndBody,
   withAuth,
   type AuthContext,
 } from '../_lib/auth.js';
-import {
-  sendTooManyRequests,
-  withMethod,
-  withObjectBody,
-} from '../_lib/http.js';
+import { sendTooManyRequests, withMethod } from '../_lib/http.js';
 import { createUserClient, isRateLimitError } from '../_lib/supabase.js';
 import { parseAccountInput } from './_validation.js';
 
@@ -35,7 +31,7 @@ async function updateAccount(
     .from('profiles' as never)
     .update({ first_name, last_name } as never)
     .eq('id', auth.id)
-    .select('id')
+    .select('first_name, last_name')
     .maybeSingle();
   if (isRateLimitError(error)) {
     return sendTooManyRequests(res);
@@ -47,20 +43,25 @@ async function updateAccount(
     return res.status(404).json({ message: 'Account not found' });
   }
 
+  // Without generated DB types the row has no type: these are the two columns
+  // selected above, just written with validated strings.
+  const saved = profile as { first_name: string; last_name: string };
+
   return res.status(200).json({
-    account: { first_name, last_name, email: auth.email },
+    account: {
+      first_name: saved.first_name,
+      last_name: saved.last_name,
+      email: auth.email,
+    },
   });
 }
 
-// withAuth wraps withObjectBody, so an anonymous caller gets 401 before any 415
-// or 400 raised by this handler.
 function handleUpdate(req: Request, res: Response, auth: AuthContext) {
   // Personal data that depends on the cookie: no cache may keep it.
   res.setHeader('Cache-Control', 'no-store');
-  const token = requireAccessToken(req);
-  return withObjectBody((_req, _res, body) =>
+  return handleTokenAndBody(req, res, (token, body) =>
     updateAccount(res, auth, token, body),
-  )(req, res);
+  );
 }
 
 export default withMethod('PUT', withAuth(handleUpdate));

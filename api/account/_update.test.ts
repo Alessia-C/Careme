@@ -3,6 +3,7 @@ import { AuthApiError } from '@supabase/supabase-js';
 import {
   makeReq,
   makeRes,
+  stubSignedInSupabase,
   stubSupabaseEnv,
   withErrorHandler,
 } from '../_lib/test-helpers.js';
@@ -43,25 +44,13 @@ async function callHandler(
 
 beforeEach(() => {
   stubSupabaseEnv();
-  // Every query builder method returns the same object, so the calls can be
-  // chained like in the real client. withAuth ends with single(), the update
-  // with maybeSingle().
-  const query = { select: vi.fn(), eq, update, single, maybeSingle };
-  query.select.mockReturnValue(query);
-  eq.mockReturnValue(query);
+  // withAuth ends its query with single(), the update with maybeSingle().
+  const query = stubSignedInSupabase(
+    { getUser, rpc, single, from, createClient },
+    { eq, update, maybeSingle },
+  );
   update.mockReturnValue(query);
-  from.mockReturnValue(query);
-  createClient.mockReturnValue({ auth: { getUser }, rpc, from });
-  getUser.mockResolvedValue({
-    data: { user: { id: 'user-1', email: 'jane@example.com' } },
-    error: null,
-  });
-  rpc.mockResolvedValue({ data: true, error: null });
-  single.mockResolvedValue({
-    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
-    error: null,
-  });
-  maybeSingle.mockResolvedValue({ data: { id: 'user-1' }, error: null });
+  maybeSingle.mockResolvedValue({ data: validBody, error: null });
 });
 
 afterEach(() => {
@@ -76,6 +65,17 @@ describe('PUT /api/account', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       account: { ...validBody, email: 'jane@example.com' },
+    });
+  });
+
+  it('should answer with the names read back from the database', async () => {
+    const saved = { first_name: 'Saved', last_name: 'Names' };
+    maybeSingle.mockResolvedValue({ data: saved, error: null });
+
+    const res = await callHandler('PUT', validBody);
+
+    expect(res.json).toHaveBeenCalledWith({
+      account: { ...saved, email: 'jane@example.com' },
     });
   });
 

@@ -30,7 +30,7 @@ Lets a new visitor create a Careme account with first name, last name, email and
 - Error messages are always generic and never say whether an email is already registered (anti-enumeration). The API answers a duplicate email with the same generic `400` as other failures, so the UI cannot tell them apart and shows no link to reset the password.
 - The only error with its own message is the rate limit (`429`).
 - The password policy is defined once in [`shared/validation.ts`](../../shared/validation.ts) and used by both the checklist and the API.
-- The client check is a convenience: the API enforces the same rules server-side.
+- The client check is a convenience: the API enforces the same rules server-side. It is also stricter on the names: at most 50 characters after trimming and no NUL character.
 - After signup the user has no session. The account becomes usable only after the email is confirmed.
 - `role` and `status` are never sent by the form.
 
@@ -64,6 +64,7 @@ The page reads and writes no table directly. The API creates the Supabase Auth u
 
 ## Changelog
 
-| Date       | Change                 | PR  |
-| ---------- | ---------------------- | --- |
-| 2026-10-25 | Initial implementation | TBD |
+| Date       | Change                                                                             | PR  |
+| ---------- | ---------------------------------------------------------------------------------- | --- |
+| 2026-10-25 | Initial implementation                                                             | TBD |
+| 2026-11-26 | API: names limited to 50 characters, NUL characters refused; the form is unchanged | TBD |

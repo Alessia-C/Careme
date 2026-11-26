@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   makeReq,
   makeRes,
+  stubSignedInSupabase,
   stubSupabaseEnv,
   withErrorHandler,
 } from '../_lib/test-helpers.js';
@@ -36,20 +37,7 @@ async function callHandler(
 
 beforeEach(() => {
   stubSupabaseEnv();
-  const query = { select: vi.fn(), eq: vi.fn(), single };
-  query.select.mockReturnValue(query);
-  query.eq.mockReturnValue(query);
-  from.mockReturnValue(query);
-  createClient.mockReturnValue({ auth: { getUser }, rpc, from });
-  getUser.mockResolvedValue({
-    data: { user: { id: 'user-1', email: 'jane@example.com' } },
-    error: null,
-  });
-  rpc.mockResolvedValue({ data: true, error: null });
-  single.mockResolvedValue({
-    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
-    error: null,
-  });
+  stubSignedInSupabase({ getUser, rpc, single, from, createClient });
 });
 
 afterEach(() => {

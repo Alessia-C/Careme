@@ -1,14 +1,10 @@
 import type { Request, Response } from 'express';
 import {
-  requireAccessToken,
+  handleTokenAndBody,
   withAuth,
   type AuthContext,
 } from '../../_lib/auth.js';
-import {
-  sendTooManyRequests,
-  withMethod,
-  withObjectBody,
-} from '../../_lib/http.js';
+import { sendTooManyRequests, withMethod } from '../../_lib/http.js';
 import { createUserClient, isRateLimitError } from '../../_lib/supabase.js';
 import { PRODUCT_COLUMNS, isUuid } from '../../../shared/products.js';
 import { parseProductInput } from '../_validation.js';
@@ -67,10 +63,9 @@ function handleUpdate(req: Request, res: Response, auth: AuthContext) {
   if (!isUuid(id)) {
     return sendNotFound(res);
   }
-  const token = requireAccessToken(req);
-  return withObjectBody((_req, _res, body) =>
+  return handleTokenAndBody(req, res, (token, body) =>
     updateProduct(res, auth, token, id, body),
-  )(req, res);
+  );
 }
 
 export default withMethod('PUT', withAuth(handleUpdate));
