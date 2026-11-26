@@ -70,6 +70,26 @@ describe('POST /api/auth/signup - validation', () => {
     ['firstName not a string', { ...validBody, firstName: 42 }, 'First name'],
     ['lastName missing', { ...validBody, lastName: undefined }, 'Last name'],
     ['lastName blank', { ...validBody, lastName: '' }, 'Last name'],
+    [
+      'firstName too long',
+      { ...validBody, firstName: 'a'.repeat(51) },
+      'First name',
+    ],
+    [
+      'lastName too long',
+      { ...validBody, lastName: 'a'.repeat(51) },
+      'Last name',
+    ],
+    [
+      'firstName with a NUL character',
+      { ...validBody, firstName: 'a\u0000b' },
+      'First name',
+    ],
+    [
+      'lastName with a NUL character',
+      { ...validBody, lastName: 'a\u0000b' },
+      'Last name',
+    ],
     ['email missing', { ...validBody, email: undefined }, 'Invalid email'],
     ['email malformed', { ...validBody, email: 'no-at-sign' }, 'Invalid email'],
     ['email not a string', { ...validBody, email: 123 }, 'Invalid email'],
@@ -112,6 +132,18 @@ describe('POST /api/auth/signup - successful signup', () => {
       password: validBody.password,
       options: { data: { first_name: 'Test', last_name: 'User' } },
     });
+  });
+
+  it('should accept names of 50 characters, counted after trimming', async () => {
+    const name = 'a'.repeat(50);
+
+    const res = await callHandler('POST', {
+      ...validBody,
+      firstName: ` ${name} `,
+      lastName: name,
+    });
+
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 
   it('should send only first_name and last_name as metadata', async () => {

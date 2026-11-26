@@ -1,6 +1,6 @@
 # API documentation
 
-The backend is a set of Vercel serverless functions in [`api/`](../../api/). A standalone endpoint is a file `api/<name>.ts`, served at `/api/<name>`. A domain with several endpoints (today `auth` and `products`) is one Express app exposed as a catch-all function (`api/auth/[...path].ts`, `api/products/index.ts` and `api/products/[...path].ts`): its router, handlers and tests live in files and folders starting with `_` (`api/auth/_app.ts`, `_router.ts`, `_routes/<endpoint>.ts`), which Vercel does not deploy as functions.
+The backend is a set of Vercel serverless functions in [`api/`](../../api/). A standalone endpoint is a file `api/<name>.ts`, served at `/api/<name>`. A domain with several endpoints (today `auth`, `products` and `account`) is one Express app exposed as a catch-all function (`api/auth/[...path].ts`, `api/products/index.ts` and `api/products/[...path].ts`; `api/account/index.ts` alone, as it serves a single path): its router, handlers and tests live in files and folders starting with `_` (`api/auth/_app.ts`, `_router.ts`, `_routes/<endpoint>.ts`), which Vercel does not deploy as functions.
 
 - **Local base URL:** `http://localhost:3000` (run with `vercel dev`, see the [README](../../README.md#running-the-app))
 - **Preview/production base URL:** the Vercel deployment URL
@@ -24,6 +24,8 @@ The backend is a set of Vercel serverless functions in [`api/`](../../api/). A s
 | `GET`    | [`/api/products/:id`](products-detail.md) | JWT              | Returns one of the caller's products, with its note      |
 | `PUT`    | [`/api/products/:id`](products-update.md) | JWT              | Replaces one of the caller's products                    |
 | `DELETE` | [`/api/products/:id`](products-delete.md) | JWT              | Deletes one of the caller's products                     |
+| `GET`    | [`/api/account`](account-get.md)          | JWT              | Returns the caller's names and email                     |
+| `PUT`    | [`/api/account`](account-update.md)       | JWT              | Updates the caller's first and last name                 |
 
 ## Conventions
 

@@ -7,21 +7,7 @@ import {
   type Category,
   type ProductStatus,
 } from '../../shared/products.js';
-import { hasNulCharacter, validateInput } from '../../shared/validation.js';
-
-// Returns the trimmed value, or undefined when it is not a non-empty string
-// within the limit.
-function readText(value: unknown, maxLength: number): string | undefined {
-  if (
-    typeof value !== 'string' ||
-    !validateInput(value) ||
-    hasNulCharacter(value)
-  ) {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length <= maxLength ? trimmed : undefined;
-}
+import { hasNulCharacter, readText } from '../../shared/validation.js';
 
 export type ProductInput = {
   name: string;

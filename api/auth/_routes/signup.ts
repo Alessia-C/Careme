@@ -6,9 +6,11 @@ import {
 } from '../../_lib/http.js';
 import { createAnonClient, isRateLimitError } from '../../_lib/supabase.js';
 import {
+  PROFILE_NAME_MAX_LENGTH,
   normalizeEmail,
+  profileNameError,
+  readText,
   validateEmail,
-  validateInput,
   validatePassword,
 } from '../../../shared/validation.js';
 
@@ -17,13 +19,15 @@ async function handleSignup(
   res: Response,
   body: Record<string, unknown>,
 ) {
-  const { email, password, firstName, lastName } = body;
+  const { email, password } = body;
 
-  if (typeof firstName !== 'string' || !validateInput(firstName)) {
-    return res.status(400).json({ message: 'First name is required' });
+  const firstName = readText(body.firstName, PROFILE_NAME_MAX_LENGTH);
+  if (firstName === undefined) {
+    return res.status(400).json({ message: profileNameError('First name') });
   }
-  if (typeof lastName !== 'string' || !validateInput(lastName)) {
-    return res.status(400).json({ message: 'Last name is required' });
+  const lastName = readText(body.lastName, PROFILE_NAME_MAX_LENGTH);
+  if (lastName === undefined) {
+    return res.status(400).json({ message: profileNameError('Last name') });
   }
   if (typeof email !== 'string' || !validateEmail(email)) {
     return res.status(400).json({ message: 'Invalid email' });
@@ -40,7 +44,7 @@ async function handleSignup(
     email: normalizeEmail(email),
     password,
     options: {
-      data: { first_name: firstName.trim(), last_name: lastName.trim() },
+      data: { first_name: firstName, last_name: lastName },
     },
   });
 
