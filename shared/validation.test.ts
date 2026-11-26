@@ -3,6 +3,8 @@ import {
   hasNulCharacter,
   isObject,
   normalizeEmail,
+  profileNameError,
+  readText,
   validateEmail,
   validateInput,
   validatePassword,
@@ -119,4 +121,34 @@ describe('validation hasNulCharacter', () => {
       expect(hasNulCharacter(value)).toBe(false);
     },
   );
+});
+
+describe('validation readText', () => {
+  it('should return the trimmed text', () => {
+    expect(readText('  Anna ', 10)).toBe('Anna');
+  });
+
+  it('should apply the limit after trimming', () => {
+    expect(readText('  abc  ', 3)).toBe('abc');
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['a number', 42],
+    ['empty', ''],
+    ['blank', '   '],
+    ['over the limit', 'abcd'],
+    ['with a NUL character', 'a\u0000b'],
+  ])('should return undefined when the value is %s', (_reason, value) => {
+    expect(readText(value, 3)).toBeUndefined();
+  });
+});
+
+describe('validation profileNameError', () => {
+  it('should name the field and the limit', () => {
+    expect(profileNameError('Last name')).toBe(
+      'Last name is required (max 50 characters)',
+    );
+  });
 });

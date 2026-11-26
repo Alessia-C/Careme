@@ -1,6 +1,4 @@
 // @vitest-environment node
-import type { AddressInfo } from 'node:net';
-import type { Server } from 'node:http';
 import {
   afterAll,
   afterEach,
@@ -11,7 +9,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import { stubSupabaseEnv } from '../_lib/test-helpers.js';
+import { startTestServer, stubSupabaseEnv } from '../_lib/test-helpers.js';
 import app from './_app.js';
 
 // These tests go through a real HTTP server, so they check the wiring that the
@@ -46,15 +44,12 @@ vi.mock('@supabase/supabase-js', async (importOriginal) => ({
   createClient,
 }));
 
-let server: Server;
+let server: Awaited<ReturnType<typeof startTestServer>>;
 let baseUrl: string;
 
 beforeAll(async () => {
-  server = app.listen(0);
-  await new Promise((resolve) => server.once('listening', resolve));
-  // address() is string | AddressInfo | null; after listen(0) on TCP it is
-  // always an AddressInfo.
-  baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  server = await startTestServer(app);
+  baseUrl = server.baseUrl;
 });
 
 afterAll(() => {

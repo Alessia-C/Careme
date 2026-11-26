@@ -34,6 +34,31 @@ export const validateInput = (input: string): boolean => {
 export const hasNulCharacter = (value: string): boolean =>
   value.includes('\u0000');
 
+// Returns the trimmed value, or undefined when it is not a non-empty string
+// within the limit.
+export function readText(
+  value: unknown,
+  maxLength: number,
+): string | undefined {
+  if (
+    typeof value !== 'string' ||
+    !validateInput(value) ||
+    hasNulCharacter(value)
+  ) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length <= maxLength ? trimmed : undefined;
+}
+
+// Mirrored by the check constraints on profiles.first_name and last_name.
+// String length counts UTF-16 units, so an emoji weighs two here and one in the
+// database: the API is the stricter of the two.
+export const PROFILE_NAME_MAX_LENGTH = 50;
+
+export const profileNameError = (label: 'First name' | 'Last name'): string =>
+  `${label} is required (max ${PROFILE_NAME_MAX_LENGTH} characters)`;
+
 export const normalizeEmail = (email: string): string =>
   email.trim().toLowerCase();
 

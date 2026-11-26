@@ -15,7 +15,7 @@ Lets a new visitor create a Careme account with first name, last name, email and
 1. The user opens `/signup`. The page has a form panel with the Careme logo and a decorative image panel (empty `alt`). The document title is "Sign up – Careme" and the heading is "Create your account".
 2. The form has five fields: First Name\*, Last Name\*, Email\*, Password\*, Confirm Password\*. The password fields have a show/hide toggle. Below the button there is a "Log in" link to `/login`.
 3. Validation:
-   - First name, last name and email show an inline error only after the field has been blurred (touched): "First name is required", "Last name is required", "Enter a valid email address".
+   - First name, last name and email show an inline error only after the field has been blurred (touched): "First name is required", "Last name is required", "Enter a valid email address". The form does not check the 50 character limit of the names: the API does, and a longer name makes the submit fail.
    - The password checklist (minimum 8 characters, maximum 20 characters, 1 uppercase letter, 1 lowercase letter, 1 number, 1 special character) is visible only while the Password field has focus. After the field is blurred the checklist disappears and only the error status (invalid input, no helper text) remains while the password does not meet the policy.
    - Confirm Password shows a single "Passwords match" requirement, visible only while that field has focus; after blur only the error status remains while the value differs from Password. It only checks that the value is not empty and equal to Password. It does not re-check the password policy.
 4. The "Create account" button is disabled until every field is valid: non-blank first name, last name and email in a valid format, a password that satisfies the policy, and a confirmation equal to the password.
@@ -30,7 +30,7 @@ Lets a new visitor create a Careme account with first name, last name, email and
 - Error messages are always generic and never say whether an email is already registered (anti-enumeration). The API answers a duplicate email with the same generic `400` as other failures, so the UI cannot tell them apart and shows no link to reset the password.
 - The only error with its own message is the rate limit (`429`).
 - The password policy is defined once in [`shared/validation.ts`](../../shared/validation.ts) and used by both the checklist and the API.
-- The client check is a convenience: the API enforces the same rules server-side.
+- The client check is a convenience: the API enforces the same rules server-side. It is also stricter on the names: at most 50 characters after trimming and no NUL character.
 - After signup the user has no session. The account becomes usable only after the email is confirmed.
 - `role` and `status` are never sent by the form.
 
@@ -64,6 +64,7 @@ The page reads and writes no table directly. The API creates the Supabase Auth u
 
 ## Changelog
 
-| Date       | Change                 | PR  |
-| ---------- | ---------------------- | --- |
-| 2026-10-25 | Initial implementation | TBD |
+| Date       | Change                                                                             | PR  |
+| ---------- | ---------------------------------------------------------------------------------- | --- |
+| 2026-10-25 | Initial implementation                                                             | TBD |
+| 2026-11-26 | API: names limited to 50 characters, NUL characters refused; the form is unchanged | TBD |

@@ -1,14 +1,10 @@
 import type { Request, Response } from 'express';
 import {
-  requireAccessToken,
+  handleTokenAndBody,
   withAuth,
   type AuthContext,
 } from '../../_lib/auth.js';
-import {
-  sendTooManyRequests,
-  withMethod,
-  withObjectBody,
-} from '../../_lib/http.js';
+import { sendTooManyRequests, withMethod } from '../../_lib/http.js';
 import { createUserClient, isRateLimitError } from '../../_lib/supabase.js';
 import { PRODUCT_COLUMNS } from '../../../shared/products.js';
 import { parseProductInput } from '../_validation.js';
@@ -77,14 +73,12 @@ async function createProduct(
     .json({ product, duplicate: duplicateOf !== null, duplicateOf });
 }
 
-// withAuth wraps withObjectBody (the opposite of the usual order) on purpose:
-// the handler needs the auth context together with the body, and an anonymous
-// caller must get 401 before any 415 or 400 about the body.
+// The body is checked inside withAuth (the opposite of the usual order) on
+// purpose: the handler needs the auth context together with the body.
 function handleCreate(req: Request, res: Response, auth: AuthContext) {
-  const token = requireAccessToken(req);
-  return withObjectBody((_req, _res, body) =>
+  return handleTokenAndBody(req, res, (token, body) =>
     createProduct(res, auth, token, body),
-  )(req, res);
+  );
 }
 
 export default withMethod('POST', withAuth(handleCreate));

@@ -32,12 +32,12 @@ None.
 
 | Field       | Type     | Required | Constraints                                                                                                     | Description                                     |
 | ----------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `firstName` | `string` | Yes      | Not empty after trimming                                                                                        | User's first name                               |
-| `lastName`  | `string` | Yes      | Not empty after trimming                                                                                        | User's last name                                |
+| `firstName` | `string` | Yes      | 1–50 chars after trimming, no NUL                                                                               | User's first name                               |
+| `lastName`  | `string` | Yes      | 1–50 chars after trimming, no NUL                                                                               | User's last name                                |
 | `email`     | `string` | Yes      | Valid email format. Trimmed and lowercased before use                                                           | Login email                                     |
 | `password`  | `string` | Yes      | 8–20 characters, with at least one uppercase letter, one lowercase letter, one number and one special character | Password, validated with `shared/validation.ts` |
 
-Any other field is ignored. In particular `role` and `status` can never be set from the request.
+Both names are trimmed before they are saved. Any other field is ignored. In particular `role` and `status` can never be set from the request.
 
 ```json
 {
@@ -69,7 +69,7 @@ Errors return JSON shaped `{ "message": string }`, except the `500` responses, w
 | Status                       | When                                                                                                                | Example body                                                                         |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `400 Bad Request`            | The body is missing or is not a JSON object                                                                         | `{ "message": "Missing or invalid request body" }`                                   |
-| `400 Bad Request`            | `firstName` or `lastName` is missing, not a string or blank                                                         | `{ "message": "First name is required" }`                                            |
+| `400 Bad Request`            | `firstName` or `lastName` is missing, not a string, blank, longer than 50 characters or holds a NUL                 | `{ "message": "First name is required (max 50 characters)" }`                        |
 | `400 Bad Request`            | `email` is missing, not a string or not a valid email                                                               | `{ "message": "Invalid email" }`                                                     |
 | `400 Bad Request`            | `password` is missing, not a string or does not meet the policy                                                     | `{ "message": "Invalid password: use 8-20 characters with an uppercase letter, …" }` |
 | `400 Bad Request`            | The email is already registered. The message is generic on purpose, see Notes                                       | `{ "message": "Unable to complete signup" }`                                         |

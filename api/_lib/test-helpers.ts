@@ -1,5 +1,6 @@
-import type { Request, Response } from 'express';
-import { vi } from 'vitest';
+import type { AddressInfo } from 'node:net';
+import type { Express, Request, Response } from 'express';
+import { vi, type Mock } from 'vitest';
 import { errorHandler } from './sentry.js';
 
 // Fakes with only the members the handlers use. The casts are justified: the
@@ -57,4 +58,46 @@ export function withErrorHandler(
       await errorHandler(err, req, res, vi.fn());
     }
   };
+}
+
+// Starts the app on an ephemeral port, for the tests that go through real HTTP.
+export async function startTestServer(app: Express) {
+  const server = app.listen(0);
+  await new Promise((resolve) => server.once('listening', resolve));
+  // address() is string | AddressInfo | null; after listen(0) on TCP it is
+  // always an AddressInfo.
+  const { port } = server.address() as AddressInfo;
+  return {
+    baseUrl: `http://127.0.0.1:${port}`,
+    close: () => server.close(),
+  };
+}
+
+type SupabaseFakes = Record<
+  'getUser' | 'rpc' | 'single' | 'from' | 'createClient',
+  Mock
+>;
+
+// A fake Supabase for which withAuth accepts the caller: an active user named
+// Jane Doe. The query methods chain like in the real client; `methods` adds the
+// ones a test needs besides select, eq and single. Returns the query object.
+export function stubSignedInSupabase(
+  { getUser, rpc, single, from, createClient }: SupabaseFakes,
+  methods: Record<string, Mock> = {},
+) {
+  const query = { select: vi.fn(), eq: vi.fn(), single, ...methods };
+  query.select.mockReturnValue(query);
+  query.eq.mockReturnValue(query);
+  from.mockReturnValue(query);
+  createClient.mockReturnValue({ auth: { getUser }, rpc, from });
+  getUser.mockResolvedValue({
+    data: { user: { id: 'user-1', email: 'jane@example.com' } },
+    error: null,
+  });
+  rpc.mockResolvedValue({ data: true, error: null });
+  single.mockResolvedValue({
+    data: { role: 'user', first_name: 'Jane', last_name: 'Doe' },
+    error: null,
+  });
+  return query;
 }
