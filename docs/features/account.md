@@ -1,6 +1,6 @@
 # Account
 
-Lets a logged-in user read their own profile data and change their first and last name. Only the backend exists: the account page will be built in a separate issue.
+Lets a logged-in user read their own profile data and change their first and last name. Only the backend exists: the account page will be built in a separate issue. The password is changed through a separate feature, see [Change password](change-password.md).
 
 |               |                                                                                             |
 | ------------- | ------------------------------------------------------------------------------------------- |
@@ -37,8 +37,8 @@ Reads and writes the caller's row of `profiles` ([migration](../../supabase/migr
 
 ## Tests
 
-- Unit tests: [`api/account/_get.test.ts`](../../api/account/_get.test.ts), [`api/account/_update.test.ts`](../../api/account/_update.test.ts), [`api/account/_validation.test.ts`](../../api/account/_validation.test.ts)
-- Wiring over HTTP: [`api/account/_wiring.test.ts`](../../api/account/_wiring.test.ts)
+- Unit tests: [`api/account/_routes/get.test.ts`](../../api/account/_routes/get.test.ts), [`api/account/_routes/update.test.ts`](../../api/account/_routes/update.test.ts), [`api/account/_validation.test.ts`](../../api/account/_validation.test.ts)
+- Wiring over HTTP: [`api/account/_app.test.ts`](../../api/account/_app.test.ts)
 - E2E tests: None (no UI yet)
 
 ## Open decisions

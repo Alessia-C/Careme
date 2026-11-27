@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
-import { withAuth, type AuthContext } from '../_lib/auth.js';
-import { withMethod } from '../_lib/http.js';
+import { withAuth, type AuthContext } from '../../_lib/auth.js';
+import { withMethod } from '../../_lib/http.js';
 
 // withAuth has already read the caller's profile with their own JWT, so no
 // second query is needed. The email comes from the verified session: profiles

@@ -14,11 +14,14 @@ import {
   createUserClient,
   isRateLimitError,
 } from '../../_lib/supabase.js';
-import { isObject, validatePassword } from '../../../shared/validation.js';
+import {
+  PASSWORD_POLICY_MESSAGE,
+  SAME_PASSWORD_MESSAGE,
+  isObject,
+  validatePassword,
+} from '../../../shared/validation.js';
 
 const INVALID_LINK_MESSAGE = 'Invalid or expired link';
-const PASSWORD_POLICY_MESSAGE =
-  'Invalid password: use 8-20 characters with an uppercase letter, a lowercase letter, a number and a special character';
 
 // How Supabase records that the session came from an emailed link. The
 // recovery link is verified by Supabase itself, which then sends the browser to
@@ -113,9 +116,7 @@ async function changePassword(
     return res.status(400).json({ message: PASSWORD_POLICY_MESSAGE });
   }
   if (updateError?.code === 'same_password') {
-    return res.status(400).json({
-      message: 'The new password must be different from the current one',
-    });
+    return res.status(400).json({ message: SAME_PASSWORD_MESSAGE });
   }
   if (updateError) {
     throw updateError;

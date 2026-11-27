@@ -6,7 +6,7 @@ Returns the profile data of the authenticated user: first name, last name and em
 | ---------- | ---------------------------------------------------------------------------- |
 | **Method** | `GET`                                                                        |
 | **Path**   | `/api/account`                                                               |
-| **Source** | [`api/account/_get.ts`](../../api/account/_get.ts)                           |
+| **Source** | [`api/account/_routes/get.ts`](../../api/account/_routes/get.ts)             |
 | **Auth**   | Supabase user JWT (`Authorization: Bearer <access_token>` or session cookie) |
 | **Status** | Stable                                                                       |
 

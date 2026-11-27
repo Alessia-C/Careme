@@ -6,6 +6,12 @@ export const PASSWORD_LOWERCASE_REGEX = /[a-z]/;
 export const PASSWORD_NUMBER_REGEX = /[0-9]/;
 export const PASSWORD_SPECIAL_CHAR_REGEX = /[!@#$%^&*(),.?":{}|<>]/;
 
+// The message the API sends when validatePassword refuses a password.
+export const PASSWORD_POLICY_MESSAGE = `Invalid password: use ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters with an uppercase letter, a lowercase letter, a number and a special character`;
+
+export const SAME_PASSWORD_MESSAGE =
+  'The new password must be different from the current one';
+
 export const validatePassword = (password: string): boolean => {
   const isValidLength =
     password.length >= PASSWORD_MIN_LENGTH &&

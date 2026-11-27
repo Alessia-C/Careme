@@ -288,15 +288,16 @@ export function isInvalidSessionError(error: unknown): boolean {
 }
 
 type RevokeOptions = {
-  // 'local' revokes only this session, 'global' all the user's sessions.
-  scope?: 'local' | 'global';
+  // 'local' revokes only this session, 'global' all the user's sessions,
+  // 'others' all of them but this one.
+  scope?: 'local' | 'global' | 'others';
   // Sentry tag, to tell apart the callers of this helper.
   context?: string;
 };
 
 // Revokes a session on Supabase so no valid token is left behind. Used for
 // sessions Supabase creates before the profile can be checked (a blocked user
-// still gets one) and after a password reset (all the user's sessions).
+// still gets one) and after a password reset or change (the user's sessions).
 // Best effort: the outcome for the caller does not depend on it (a blocked user
 // is refused anyway and RLS blocks the token), so a failure is reported to
 // Sentry (supabase-js returns errors instead of throwing, nobody would see it

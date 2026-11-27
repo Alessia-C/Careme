@@ -6,6 +6,7 @@ import {
 } from '../../_lib/http.js';
 import { createAnonClient, isRateLimitError } from '../../_lib/supabase.js';
 import {
+  PASSWORD_POLICY_MESSAGE,
   PROFILE_NAME_MAX_LENGTH,
   normalizeEmail,
   profileNameError,
@@ -33,10 +34,7 @@ async function handleSignup(
     return res.status(400).json({ message: 'Invalid email' });
   }
   if (typeof password !== 'string' || !validatePassword(password)) {
-    return res.status(400).json({
-      message:
-        'Invalid password: use 8-20 characters with an uppercase letter, a lowercase letter, a number and a special character',
-    });
+    return res.status(400).json({ message: PASSWORD_POLICY_MESSAGE });
   }
 
   const supabase = createAnonClient();
