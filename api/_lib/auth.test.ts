@@ -349,6 +349,12 @@ describe('revokeSessionBestEffort', () => {
     expect(signOut).toHaveBeenCalledWith('jwt', 'global');
   });
 
+  it('should revoke every other session with the others scope', async () => {
+    await revokeSessionBestEffort(supabase, 'jwt', { scope: 'others' });
+
+    expect(signOut).toHaveBeenCalledWith('jwt', 'others');
+  });
+
   it('should report a failure to Sentry with the default context', async () => {
     const error = new Error('signout failed');
     signOut.mockResolvedValue({ error });

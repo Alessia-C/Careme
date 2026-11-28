@@ -6,7 +6,7 @@ Updates the first and last name of the authenticated user. Both names are sent e
 | ---------- | ---------------------------------------------------------------------------- |
 | **Method** | `PUT`                                                                        |
 | **Path**   | `/api/account`                                                               |
-| **Source** | [`api/account/_update.ts`](../../api/account/_update.ts)                     |
+| **Source** | [`api/account/_routes/update.ts`](../../api/account/_routes/update.ts)       |
 | **Auth**   | Supabase user JWT (`Authorization: Bearer <access_token>` or session cookie) |
 | **Status** | Stable                                                                       |
 

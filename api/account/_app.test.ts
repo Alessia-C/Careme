@@ -14,21 +14,34 @@ import {
   stubSignedInSupabase,
   stubSupabaseEnv,
 } from '../_lib/test-helpers.js';
-import app from './index.js';
+import app from './_app.js';
 
 // These tests go through a real HTTP server, so they check the wiring that the
 // route tests (which call the handlers directly) cannot see: routing, the body
 // parser, the 404 and the order of the middleware.
-const { getUser, rpc, single, maybeSingle, update, from, createClient } =
-  vi.hoisted(() => ({
-    getUser: vi.fn(),
-    rpc: vi.fn(),
-    single: vi.fn(),
-    maybeSingle: vi.fn(),
-    update: vi.fn(),
-    from: vi.fn(),
-    createClient: vi.fn(),
-  }));
+const {
+  getUser,
+  rpc,
+  single,
+  maybeSingle,
+  update,
+  from,
+  createClient,
+  signInWithPassword,
+  updateUser,
+  signOut,
+} = vi.hoisted(() => ({
+  getUser: vi.fn(),
+  rpc: vi.fn(),
+  single: vi.fn(),
+  maybeSingle: vi.fn(),
+  update: vi.fn(),
+  from: vi.fn(),
+  createClient: vi.fn(),
+  signInWithPassword: vi.fn(),
+  updateUser: vi.fn(),
+  signOut: vi.fn(),
+}));
 
 vi.mock('@supabase/supabase-js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@supabase/supabase-js')>()),
@@ -51,6 +64,25 @@ beforeEach(() => {
     { getUser, rpc, single, from, createClient },
     { update, maybeSingle },
   );
+  createClient.mockReturnValue({
+    auth: { getUser, signInWithPassword, updateUser, admin: { signOut } },
+    rpc,
+    from,
+  });
+  signInWithPassword.mockResolvedValue({
+    data: {
+      user: { id: 'user-1' },
+      session: {
+        access_token: 'new-access',
+        refresh_token: 'new-refresh',
+        expires_in: 3600,
+        expires_at: 1790003600,
+      },
+    },
+    error: null,
+  });
+  updateUser.mockResolvedValue({ data: {}, error: null });
+  signOut.mockResolvedValue({ error: null });
   update.mockReturnValue(query);
   maybeSingle.mockResolvedValue({
     data: { first_name: 'Anna', last_name: 'Rossi' },
@@ -64,6 +96,11 @@ afterEach(() => {
 });
 
 const validBody = JSON.stringify({ first_name: 'Anna', last_name: 'Rossi' });
+const passwordBody = JSON.stringify({
+  current_password: 'Current123!',
+  new_password: 'Valid123!',
+  confirm_password: 'Valid123!',
+});
 
 function send(
   method: string,
@@ -119,15 +156,39 @@ describe('account app - routing', () => {
     },
   );
 
-  it.each(['/api/account/unknown', '/api/Account'])(
-    'should answer 404 with a JSON body on %s',
-    async (path) => {
-      const res = await send('GET', path);
+  it('should change the password on POST /api/account/password', async () => {
+    const res = await send('POST', '/api/account/password', passwordBody);
 
-      expect(res.status).toBe(404);
-      expect(await res.json()).toEqual({ message: 'Not found' });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(res.headers.getSetCookie()).toHaveLength(2);
+    expect(await res.json()).toEqual({
+      message: 'Password updated',
+      expires_at: 1790003600,
+    });
+  });
+
+  it.each(['GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'])(
+    'should answer 405 to %s on /api/account/password',
+    async (method) => {
+      const res = await send(method, '/api/account/password');
+
+      expect(res.status).toBe(405);
+      expect(updateUser).not.toHaveBeenCalled();
     },
   );
+
+  it.each([
+    '/api/account/unknown',
+    '/api/Account',
+    '/api/account/Password',
+    '/api/account/password/extra',
+  ])('should answer 404 with a JSON body on %s', async (path) => {
+    const res = await send('GET', path);
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ message: 'Not found' });
+  });
 
   it('should not advertise the framework', async () => {
     const res = await send('GET', '/api/account');
@@ -165,6 +226,27 @@ describe('account app - request body', () => {
   });
 });
 
+describe('account app - password request body', () => {
+  it('should answer 415 to a form-encoded body (CSRF defence)', async () => {
+    const res = await send(
+      'POST',
+      '/api/account/password',
+      'current_password=x',
+      { 'content-type': 'application/x-www-form-urlencoded' },
+    );
+
+    expect(res.status).toBe(415);
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('should answer 400 to malformed JSON', async () => {
+    const res = await send('POST', '/api/account/password', '{"current_');
+
+    expect(res.status).toBe(400);
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+});
+
 describe('account app - authentication', () => {
   it.each(['GET', 'PUT'])(
     'should answer 401 to %s without a session',
@@ -179,6 +261,15 @@ describe('account app - authentication', () => {
       expect(from).not.toHaveBeenCalled();
     },
   );
+
+  it('should answer 401 to a password change without a session', async () => {
+    const res = await send('POST', '/api/account/password', passwordBody, {
+      authorization: '',
+    });
+
+    expect(res.status).toBe(401);
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
 
   it('should answer 403 to a PUT from a blocked account', async () => {
     rpc.mockResolvedValue({ data: false, error: null });

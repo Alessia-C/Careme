@@ -6,8 +6,8 @@ import {
   stubSignedInSupabase,
   stubSupabaseEnv,
   withErrorHandler,
-} from '../_lib/test-helpers.js';
-import route from './_update.js';
+} from '../../_lib/test-helpers.js';
+import route from './update.js';
 
 // vi.mock is hoisted above the imports, so the fakes must be created with
 // vi.hoisted to already exist when the mock factory runs.

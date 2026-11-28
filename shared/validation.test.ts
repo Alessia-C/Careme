@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  PASSWORD_POLICY_MESSAGE,
   hasNulCharacter,
   isObject,
   normalizeEmail,
@@ -9,6 +10,14 @@ import {
   validateInput,
   validatePassword,
 } from './validation';
+
+describe('password policy message', () => {
+  it('should state the limits that validatePassword enforces', () => {
+    expect(PASSWORD_POLICY_MESSAGE).toBe(
+      'Invalid password: use 8-20 characters with an uppercase letter, a lowercase letter, a number and a special character',
+    );
+  });
+});
 
 describe('validation password', () => {
   it.each([

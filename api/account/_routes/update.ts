@@ -3,10 +3,10 @@ import {
   handleTokenAndBody,
   withAuth,
   type AuthContext,
-} from '../_lib/auth.js';
-import { sendTooManyRequests, withMethod } from '../_lib/http.js';
-import { createUserClient, isRateLimitError } from '../_lib/supabase.js';
-import { parseAccountInput } from './_validation.js';
+} from '../../_lib/auth.js';
+import { sendTooManyRequests, withMethod } from '../../_lib/http.js';
+import { createUserClient, isRateLimitError } from '../../_lib/supabase.js';
+import { parseAccountInput } from '../_validation.js';
 
 async function updateAccount(
   res: Response,
